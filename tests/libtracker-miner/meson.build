@@ -44,6 +44,12 @@ test('miner-monitor', monitor_test,
   # FIXME: why is this test so slow?
   timeout: 180)
 
+monitor_test = executable('tracker-miner-fs-test',
+  'tracker-miner-fs-test.c',
+  dependencies: [tracker_miners_common_dep, tracker_miner_dep, tracker_sparql],
+  c_args: test_c_args
+)
+
 priority_queue_test = executable('tracker-priority-queue-test',
   'tracker-priority-queue-test.c',
   dependencies: [tracker_miners_common_dep, tracker_miner, tracker_sparql],
