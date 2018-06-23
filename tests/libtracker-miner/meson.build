@@ -5,6 +5,9 @@ miner_test_c_args = test_c_args + [
   '-DTEST_MINERS_DIR="@0@/mock-miners"'.format(meson.current_source_dir()),
 ]
 
+environment = environment()
+environment.set('TRACKER_LANGUAGE_STOP_WORDS_DIR', '@0@/src/libtracker-common/stop-words'.format(meson.source_root()))
+
 crawler_test = executable('tracker-crawler-test',
   'tracker-crawler-test.c',
   shared_libtracker_miner_crawler_sources,
@@ -18,7 +21,8 @@ file_notifier_test = executable('tracker-file-notifier-test',
   dependencies: [tracker_miners_common_dep, tracker_miner, tracker_sparql],
   c_args: miner_test_c_args
 )
-test('miner-file-notifier', file_notifier_test)
+test('miner-file-notifier', file_notifier_test,
+     env: environment)
 
 file_system_test = executable('tracker-file-system-test',
   'tracker-file-system-test.c',
