@@ -1,0 +1,13 @@
+{
+    "test": {
+        "Filename": "roi.jpg",
+        "Comment": "JPG with regions of interest in the XMP"
+    },
+
+    "metadata": {
+        "@type": ["nfo:Image", "nmm:Photo"],
+        "nfo:hasRegionOfInterest": "@URNUUID@",
+        "nfo:width": "128",
+        "nfo:height": "128"
+    }
+}

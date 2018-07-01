@@ -1,0 +1,18 @@
+{
+    "test": {
+        "Filename": "audio-test-2.mp3",
+        "Bugzilla": "NB#177663",
+        "Comment": "Mp3 with id3v2 tags. Encoded wasn't extracted.\nBinary cut with dd of the original file."
+    },
+    "metadata": {
+        "@type": "nmm:MusicPiece",
+        "nie:title": "Vinegar",
+        "nfo:genre": "Pop",
+        "nie:copyright": "(P) 2008 Sony Music Entertainment Finland Oy",
+        "nmm:trackNumber": "1",
+        "nfo:codec": "MPEG",
+        "nfo:channels": "2",
+        "nfo:sampleRate": "44100",
+        "nfo:averageBitrate": "256000"
+    }
+}

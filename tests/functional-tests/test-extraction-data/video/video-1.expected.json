@@ -1,0 +1,13 @@
+{
+    "test": {
+        "Filename": "video-1.mp4",
+        "Comment": "Just one standard mp4"
+    },
+    "metadata": {
+        "@type": "nmm:Video",
+        "nie:title": "MPEG-4-x264.mp4",
+        "nfo:codec": "MPEG-4 AAC audio",
+        "nfo:height": "240",
+        "nfo:width": "320"
+    }
+}

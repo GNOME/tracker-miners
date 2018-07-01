@@ -1,0 +1,19 @@
+{
+    "test": {
+        "Filename": "test-image-1.jpg",
+        "Comment": "Basic jpeg example"
+    },
+    "metadata": {
+        "@type": "nmm:Photo",
+        "nfo:width": "699",
+        "nfo:height": "464",
+        "nao:hasTag": [ "test", "tracker" ],
+        "nie:title": "Kid",
+        "nmm:fnumber": "5",
+        "nmm:focalLength": "5",
+        "nie:comment": "This is a for tracker test",
+        "slo:location_postalAddress": "@URNUUID@",
+        "nfo:horizontalResolution": "20",
+        "nfo:verticalResolution": "20"
+    }
+}

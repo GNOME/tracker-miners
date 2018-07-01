@@ -1,0 +1,12 @@
+{
+    "test": {
+        "Filename": "powerpoint.ppt",
+        "Comment": "Powerpoint document (unknown version!)"
+    },
+    "metadata": {
+        "@type": "nfo:PaginatedTextDocument",
+        "nie:generator": "Microsoft PowerPoint",
+        "nfo:wordCount": "573",
+        "nie:title": "ARTificial Life"
+    }
+}

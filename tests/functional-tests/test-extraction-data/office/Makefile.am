@@ -1,12 +1,12 @@
 docs = \
 	office-doc.doc \
-	office-doc.expected \
+	office-doc.expected.json \
 	powerpoint.ppt \
-	powerpoint.expected
+	powerpoint.expected.json
 
 pdfs = \
 	pdf-doc.pdf \
-	pdf-doc.expected
+	pdf-doc.expected.json
 
 officetestdir = $(datadir)/tracker-tests/test-extraction-data/office
 

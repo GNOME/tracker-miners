@@ -1,0 +1,20 @@
+{
+    "test": {
+        "Filename": "audio-test-1.mp3",
+        "Bugzilla": "",
+        "Comment": "Basic MP3 example"
+    },
+    "metadata": {
+        "@type": "nmm:MusicPiece",
+        "nie:title": "Simply Juvenile",
+        "nfo:genre": "Pop",
+        "nie:copyright": "none",
+        "nie:comment": "I am for simple MP3 testing",
+        "nmm:trackNumber": "13",
+        "nfo:codec": "MPEG",
+        "nfo:channels": "1",
+        "nfo:duration": "15",
+        "nfo:sampleRate": "22050",
+        "nfo:averageBitrate": "32000"
+    }
+}

@@ -1,0 +1,20 @@
+{
+    "test": {
+        "Filename": "test-image-4.CR2",
+        "Bugzilla": "",
+        "Comment": "Basic RAW example"
+    },
+    "metadata": {
+        "@type": "nmm:Photo",
+        "nfo:equipment": "urn:equipment:Canon:Canon%20EOS%2070D:",
+        "nfo:width": "5472",
+        "nfo:height": "3648",
+        "nfo:orientation": "nfo:orientation-left",
+        "nmm:flash": "nmm:flash-off",
+        "nmm:fnumber": "4",
+        "nmm:focalLength": "18",
+        "nmm:isoSpeed": "1250",
+        "nmm:meteringMode": "nmm:metering-mode-pattern",
+        "nmm:whiteBalance": "nmm:white-balance-auto"
+    }
+}

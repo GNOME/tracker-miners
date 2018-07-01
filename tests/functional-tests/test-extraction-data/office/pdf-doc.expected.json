@@ -1,0 +1,10 @@
+{
+    "test": {
+        "Filename": "pdf-doc.pdf",
+        "Comment": "PDF document from the office tools"
+    },
+    "metadata": {
+        "@type": "nfo:PaginatedTextDocument",
+        "nfo:pageCount": "22"
+    }
+}

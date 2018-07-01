@@ -1,0 +1,18 @@
+{
+    "test": {
+        "Filename": "office-doc.doc",
+        "Comment": "MS Office document (unknown version)"
+    },
+    "metadata": {
+        "@type": "nfo:PaginatedTextDocument",
+        "nie:generator": "Microsoft Word 10.0",
+        "nfo:wordCount": "3053",
+        "nie:title": "Public Comments on Performance Based Payments",
+        "nco:creator": [
+            {
+                "@type": "nco:Contact",
+                "nco:fullname": "capitadj"
+            }
+        ]
+    }
+}
