@@ -204,30 +204,6 @@ class ExtractionTestCase (ut.TestCase):
                                                           section))
 
 
-def run_all ():
-    ##
-    # Traverse the TEST_DATA_PATH directory looking for .description files
-    # Add a new TestCase to the suite per .description file and run the suite.
-    #
-    # Is we do this inside a single TestCase an error in one test would stop the whole
-    # testing.
-    ##
-    if (os.path.exists (os.getcwd() + "/test-extraction-data")):
-        # Use local directory if available
-        TEST_DATA_PATH = os.getcwd() + "/test-extraction-data"
-    else:
-        TEST_DATA_PATH = os.path.join (cfg.DATADIR, "tracker-tests",
-                                       "test-extraction-data")
-    print "Loading test descriptions from", TEST_DATA_PATH
-    extractionTestSuite = ut.TestSuite ()
-    for root, dirs, files in os.walk (TEST_DATA_PATH):
-         descriptions = [os.path.join (root, f) for f in files if f.endswith ("expected")]
-         for descfile in descriptions:
-             tc = ExtractionTestCase(descfile=descfile)
-             extractionTestSuite.addTest(tc)
-    result = ut.TextTestRunner (verbosity=1).run (extractionTestSuite)
-    sys.exit(not result.wasSuccessful())
-
 def run_one (filename):
     ##
     # Run just one .description file
@@ -242,15 +218,10 @@ def run_one (filename):
     sys.exit(not result.wasSuccessful())
 
 
-if __name__ == "__main__":
-    if (len (sys.argv) == 1):
-        run_all ()
-    else:
-        if os.path.exists (sys.argv[1]) and sys.argv[1].endswith (".expected"):
-            run_one (sys.argv[1])
-        # FIXME: for the case when invoked by testrunner (see create-tests-xml.py)
-        elif sys.argv[1] == "ExtractionTestCase":
-            run_all ()
-        else:
-            print "Usage: %s [FILE.expected]" % (sys.argv[0])
-        
+test = sys.argv[1]
+
+if os.path.exists (sys.argv[1]) and sys.argv[1].endswith (".expected"):
+    run_one (sys.argv[1])
+else:
+    print("Usage: %s [FILE.expected]" % (sys.argv[0]))
+    sys.exit(1)
