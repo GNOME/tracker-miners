@@ -10,12 +10,35 @@ functional_tests = [
   '300-miner-basic-ops',
   '301-miner-resource-removal',
   '310-fts-indexing',
-  '400-extractor-metadata',
   '410-extractor-decorator',
   '500-writeback',
   '501-writeback-details',
   '600-applications-camera',
   '601-applications-sync',
+]
+
+extractor_tests = [
+  'audio/audio-test-1.expected',
+  'audio/empty_albumi_song3.expected',
+  'audio/Jazz_Audio_OPLs0.expected',
+  'audio/audio-test-2.expected',
+  'images/test-image-1.expected',
+  'images/xmp-loaded-1.expected',
+  'images/test-image-3.expected',
+  'images/corrupted-image.expected',
+  'images/test-iptcdata-records.expected',
+  'images/roi2.expected',
+  'images/test-image-4.expected',
+  'images/test-image-2.expected',
+  'images/comment-extension-block.expected',
+  'images/roi.expected',
+  'video/184505.expected',
+  'video/video-1.expected',
+  'video/video-2.expected',
+  'playlists/playlist-test-1.expected',
+  'office/office-doc.expected',
+  'office/powerpoint.expected',
+  'office/pdf-doc.expected',
 ]
 
 config_json_full_path = join_paths(meson.current_build_dir(), 'configuration.json')
@@ -37,4 +60,11 @@ foreach t: functional_tests
     workdir: meson.current_source_dir(),
     # FIXME: these tests are all too slow
     timeout: 180)
+endforeach
+
+foreach t: extractor_tests
+  test('functional/extract/' + t, test_runner,
+    args: ['./400-extractor-metadata.py', join_paths('test-extraction-data', t)],
+    env: test_env,
+    workdir: meson.current_source_dir())
 endforeach
