@@ -2,25 +2,25 @@ imagedir = $(datadir)/tracker-tests/test-extraction-data/images
 
 image_DATA = \
 	test-image-2.png \
-	test-image-2.expected
+	test-image-2.expected.json
 
 gifs = \
 	xmp-loaded-1.gif \
-	xmp-loaded-1.expected \
-	comment-extension-block.expected \
+	xmp-loaded-1.expected.json \
+	comment-extension-block.expected.json \
 	comment-extension-block.gif \
 	corrupted-image.gif \
-	corrupted-image.expected
+	corrupted-image.expected.json
 
 tiffs = \
 	test-image-3.tif \
-	test-image-3.expected
+	test-image-3.expected.json
 
 jpegs = \
 	test-image-1.jpg \
-	test-image-1.expected \
+	test-image-1.expected.json \
 	test-iptcdata-records.jpg \
-	test-iptcdata-records.expected
+	test-iptcdata-records.expected.json
 
 if HAVE_LIBGIF
 image_DATA += $(gifs)

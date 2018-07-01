@@ -1,52 +1,36 @@
 test-extraction-data
 ====================
 
-The python test will traverse recursively this directory, loading the .expected files as tests.
+Each test for the extractor is defined by a .expected file.
 
 .expected file format
 =====================
 
-It is a .ini (.desktop) formatted file with two mandatory sections: TestFile and Metadata.
+It is a JSON file with two toplevel key: "test" and "metadata".
 
-The TestFile section contains the 
+The "test" key should contain the following subkeys:
 * Filename (mandatory): relative path from the .expected of the file under test.
 * Bugzilla (optional): reference to a bug related with the file.
 * Comment (optional): brief description of why that file is in the test suite (problematic, format example...)
-* ExpectedFailure (optional): If this key is present, we expect the extraction to fail.
-    If ExpectedFailure is included, it is recommended to fill the Bugzilla field! 
 
-The Metadata section contains pairs of property=values with few special rules:
-1. The ':' in the properties is replaced with ̈́_'. Note that in the values is ok to have ':'.
-  
-   E.G.    nfo:duration=5 -> nfo_duration=5
-       but a=nmm:Video    -> a=nmm:Video 
+The "metadata" section lists the metadata we expect to see returned by
+tracker-extract (when tracker-extract is run with --output-format=json-ld).
 
-2. If the property name is prefixed with '@' then the property is expected in the extraction, but the value
-   won't be checked. 
+There are a few special rules:
 
-   E.G.     The extraction is:    slo:location [a slo:GeoPoint; slo:postalAddress <urn:uuid:123-123>];
+1. If the property name is prefixed with '@' then the property is expected in the extraction, but the value
+   won't be checked.
 
-       @slo_location=   -> PASS slo:location is in the extraction
-
-3. If the property name is prefixed with '!' then the property is NOT expected in the extraction
+2. If the property name is prefixed with '!' then the property is NOT expected in the extraction
    If the negated property has a value, it forbids the exact value. Otherwise, it forbids the property at all.
 
-   E.G.   The extraction is:    a nmm:Video; nfo:duration 50.
+   E.G.   The extraction is:    { "@type": "nmm:Video", "nfo:duration": 50 }
 
-       !a=nmm:Audio     -> PASS because there is no "a nmm:Audio"
-       !nfo_duration=12 -> PASS because duration has a different value
-       !nfo_duration=   -> FAIL because there shouldn't be any nfo:duration at all
+       { "!@type": "nmm:Audio" }     -> PASS because there is no { "@type": "nmm:Audio" }
+       { "!nfo_duration": "12" }     -> PASS because duration has a different value
+       { "!nfo_duration": null} }    -> FAIL because there shouldn't be any nfo:duration at all
 
-4. The translation of the extraction results to a python dictionary is very basic. 
-   It handles a couple of special cases, relevant for testing:
-   E.G.
-
-         slo:location [a slo:GeoLocation; slo:PostalAddress "XXX"]      -> slo_location_postalAddress=XXX
-
-   Note 24/08/2011: Tags are translated as "nao_Tag=value, value, value" instead of 
-                    the old "nao_Tag_preflabel=value, value, value"
-
-5. There is (so far only) one constant defined to use in the values:
+3. There is (so far only) one constant defined to use in the values:
 
    @URNUUID@  meaning an automatic generated urn:uuid:1231-123-123 URL
      [This constant must not be used with multiple-valued properties. The code only check the first result.]
@@ -56,13 +40,15 @@ Example
 
 Everything together should look like this:
 
-[TestFile]
-Filename=x.mp4
-Bugzilla=GB#123123
-Comment=Video usually clasiffied as Audio by mistake
-
-[Metadata]
-a=nmm:Video
-!a=nmm:Audio
-nfo_duration=123
-
+{
+    "test": {
+        "Filename": "x.mp4",
+        "Bugzilla": "GB#123123",
+        "Comment": "Video usually clasiffied as Audio by mistake"
+    },
+    "metadata": {
+        "@type": "nmm:Video",
+        "!@type": "nmm:Audio",
+        "nfo:duration": 123
+    }
+}

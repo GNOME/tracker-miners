@@ -1,6 +1,6 @@
 playlists = \
 	playlist-test-1.m3u \
-	playlist-test-1.expected
+	playlist-test-1.expected.json
 
 if HAVE_TOTEM_PL_PARSER
 playlisttestdir = $(datadir)/tracker-tests/test-extraction-data/playlists

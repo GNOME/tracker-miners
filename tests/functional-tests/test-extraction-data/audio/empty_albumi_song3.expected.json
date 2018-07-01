@@ -1,0 +1,11 @@
+{
+    "test": {
+        "Filename": "empty_albumi_song3.mp3",
+        "Bugzilla": "NB#223536, NB#223148",
+        "Comment": "Mp3 with empty Artist and album. Made extractor crash."
+    },
+    "metadata": {
+        "@type": "nmm:MusicPiece",
+        "nie:title": "song3"
+    }
+}

@@ -1,6 +1,7 @@
 #!/usr/bin/python
 #
 # Copyright (C) 2010, Nokia <ivan.frade@nokia.com>
+# Copyright (C) 2018, Sam Thursfield <sam@afuera.me.uk>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -24,12 +25,12 @@ directory (containing xxx.expected files)
 """
 
 from common.utils import configuration as cfg
-from common.utils.extractor import get_tracker_extract_output
+from common.utils.extractor import get_tracker_extract_jsonld_output
 import unittest2 as ut
+import json
 import os
 import sys
 
-import ConfigParser
 
 
 class ExtractionTestCase (ut.TestCase):
@@ -42,22 +43,17 @@ class ExtractionTestCase (ut.TestCase):
         """
         ut.TestCase.__init__ (self, methodName)
 
-        # Load the description file
-        assert descfile
-        self.rel_description = descfile
-        self.configParser = self.__load_description_file (self.rel_description)
+        self.descfile = descfile
+        try:
+            with open(descfile) as f:
+                self.spec = json.load(f)
+        except ValueError as e:
+            self.fail("Error loading %s: %s" % (descfile, e))
 
         # Add a method to the class called after the description file
-        methodName = self.rel_description.lower()[:-len(".expected")].replace (" ", "_")[-60:]
+        methodName = descfile.lower()[:-len(".expected")].replace (" ", "_")[-60:]
 
-        if (self.__is_expected_failure ()):
-            setattr (self,
-                     methodName,
-                     self.expected_failure_test_extraction)
-        else:
-            setattr (self,
-                     methodName,
-                     self.generic_test_extraction)
+        setattr (self, methodName, self.generic_test_extraction)
 
         # unittest framework will run the test called "self._testMethodName"
         # So we set that variable to our new name
@@ -69,50 +65,19 @@ class ExtractionTestCase (ut.TestCase):
         """
         assert False
 
-    def __load_description_file (self, descfile):
-        configParser = ConfigParser.RawConfigParser ()
-        # Make it case sensitive:
-        configParser.optionxform = str
-
-        abs_description = os.path.abspath (descfile)
-        loaded_files = configParser.read (abs_description)
-        if not abs_description in loaded_files:
-            raise Exception("Unable to load %s" % (abs_description))
-
-        return configParser
-
-    def __is_expected_failure (self):
-        assert self.configParser
-        return self.configParser.has_option ("TestFile", "ExpectedFailure")
-
     def __get_bugnumber (self):
-        assert self.configParser
-        if self.configParser.has_option ("TestFile", "Bugzilla"):
-            return "'" + self.configParser.get ("TestFile", "Bugzilla") + "'"
-        else:
-            return None
-
-    def expected_failure_test_extraction (self):
-        try:
-            self.generic_test_extraction ()
-        except Exception:
-            raise ut.case._ExpectedFailure(sys.exc_info())
-
-        if self.__get_bugnumber ():
-            raise Exception ("Unexpected success. Maybe bug: " + self.__get_bugnumber () + " has been fixed?")
-        else:
-            raise Exception ("Unexpected success. Check " + self.rel_description)
+        return self.spec['test'].get('Bugzilla')
 
     def generic_test_extraction (self):
-        abs_description = os.path.abspath (self.rel_description)
+        abs_description = os.path.abspath (self.descfile)
 
         # Filename contains the file to extract, in a relative path to the description file
         desc_root, desc_file = os.path.split (abs_description)
 
-        filename_to_extract = self.configParser.get ("TestFile", "Filename")
+        filename_to_extract = self.spec['test']['Filename']
         self.file_to_extract = os.path.join (desc_root, filename_to_extract)
 
-        result = get_tracker_extract_output(self.file_to_extract)
+        result = get_tracker_extract_jsonld_output(self.file_to_extract)
         self.__assert_extraction_ok (result)
 
     def assertDictHasKey (self, d, key, msg=None):
@@ -135,74 +100,102 @@ class ExtractionTestCase (ut.TestCase):
             self.fail (self._formatMessage (msg, standardMsg))
 
     def __assert_extraction_ok (self, result):
-        self.__check_section ("Metadata", result)
+        self.__check (self.spec['metadata'], result)
 
-    def __check_section (self, section, result):
-        error_missing_prop = "Property '%s' hasn't been extracted from file \n'%s'\n (requested on '%s' [%s])"
-        error_wrong_value = "on property '%s' from file %s\n (requested on: '%s' [%s])"
-        error_extra_prop = "Property '%s' was explicitely banned for file \n'%s'\n (requested on '%s' [%s])"
-        error_extra_prop_v = "Property '%s' with value '%s' was explicitely banned for file \n'%s'\n (requested on %s' [%s])"
+    def __check (self, spec, result):
+        error_missing_prop = "Property '%s' hasn't been extracted from file \n'%s'\n (requested on '%s')"
+        error_wrong_value = "on property '%s' from file %s\n (requested on: '%s')"
+        error_wrong_length = "Length mismatch on property '%s' from file %s\n (requested on: '%s')"
+        error_extra_prop = "Property '%s' was explicitely banned for file \n'%s'\n (requested on '%s')"
+        error_extra_prop_v = "Property '%s' with value '%s' was explicitely banned for file \n'%s'\n (requested on %s')"
 
         expected_pairs = [] # List of expected (key, value)
         unexpected_pairs = []  # List of unexpected (key, value)
         expected_keys = []  # List of expected keys (the key must be there, value doesnt matter)
 
-        for k, v in self.configParser.items (section):
+        for k, v in spec.items():
             if k.startswith ("!"):
-                unexpected_pairs.append ( (k[1:].replace ("_", ":"), v) )
+                unexpected_pairs.append ( (k[1:], v) )
+            elif k == '@type':
+                expected_keys.append ( '@type' )
             elif k.startswith ("@"):
-                expected_keys.append ( k[1:].replace ("_", ":") )
+                expected_keys.append ( k[1:] )
             else:
-                expected_pairs.append ( (k.replace ("_", ":"), v) )
+                expected_pairs.append ( (k, v) )
 
 
         for (prop, value) in expected_pairs:
             self.assertDictHasKey (result, prop,
                                    error_missing_prop % (prop,
                                                          self.file_to_extract,
-                                                         self.rel_description,
-                                                         section))
+                                                         self.descfile))
             if value == "@URNUUID@":
-                # Watch out! We take only the FIRST element. Incompatible with multiple-valued props.
-                self.assertIsURN (result [prop][0],
+                self.assertIsURN (result [prop][0]['@id'],
                                   error_wrong_value % (prop,
                                                        self.file_to_extract,
-                                                       self.rel_description,
-                                                       section))
+                                                       self.descfile))
             else:
-                self.assertIn (value, result [prop],
-                               error_wrong_value % (prop,
-                                                    self.file_to_extract,
-                                                    self.rel_description,
-                                                    section))
+                if isinstance(value, list):
+                    self.assertEqual (len(value), len(result[prop]),
+                                      error_wrong_length % (prop,
+                                                            self.file_to_extract,
+                                                            self.descfile))
+
+                    for i in range(0, len(value)):
+                        self.__check(spec[prop][i], result[prop][i])
+                else:
+                    self.assertEqual (str(value), str(result [prop]),
+                                      error_wrong_value % (prop,
+                                                           self.file_to_extract,
+                                                           self.descfile))
 
         for (prop, value) in unexpected_pairs:
             # There is no prop, or it is but not with that value
             if (value == ""):
                 self.assertFalse (result.has_key (prop), error_extra_prop % (prop,
                                                                              self.file_to_extract,
-                                                                             self.rel_description,
-                                                                             section))
+                                                                             self.descfile))
             else:
                 if (value == "@URNUUID@"):
                     self.assertIsURN (result [prop][0], error_extra_prop % (prop,
                                                                             self.file_to_extract,
-                                                                            self.rel_description,
-                                                                            section))
+                                                                            self.descfile))
                 else:
                     self.assertNotIn (value, result [prop], error_extra_prop_v % (prop,
                                                                                   value,
                                                                                   self.file_to_extract,
-                                                                                  self.rel_description,
-                                                                                  section))
+                                                                                  self.descfile))
 
         for prop in expected_keys:
              self.assertDictHasKey (result, prop,
                                     error_missing_prop % (prop,
                                                           self.file_to_extract,
-                                                          self.rel_description,
-                                                          section))
+                                                          self.descfile))
 
+
+def run_all ():
+    ##
+    # Traverse the TEST_DATA_PATH directory looking for .description files
+    # Add a new TestCase to the suite per .description file and run the suite.
+    #
+    # Is we do this inside a single TestCase an error in one test would stop the whole
+    # testing.
+    ##
+    if (os.path.exists (os.getcwd() + "/test-extraction-data")):
+        # Use local directory if available
+        TEST_DATA_PATH = os.getcwd() + "/test-extraction-data"
+    else:
+        TEST_DATA_PATH = os.path.join (cfg.DATADIR, "tracker-tests",
+                                       "test-extraction-data")
+    print "Loading test descriptions from", TEST_DATA_PATH
+    extractionTestSuite = ut.TestSuite ()
+    for root, dirs, files in os.walk (TEST_DATA_PATH):
+         descriptions = [os.path.join (root, f) for f in files if f.endswith ("expected")]
+         for descfile in descriptions:
+             tc = ExtractionTestCase(descfile=descfile)
+             extractionTestSuite.addTest(tc)
+    result = ut.TextTestRunner (verbosity=1).run (extractionTestSuite)
+    sys.exit(not result.wasSuccessful())
 
 def run_one (filename):
     ##
@@ -218,10 +211,10 @@ def run_one (filename):
     sys.exit(not result.wasSuccessful())
 
 
-test = sys.argv[1]
-
-if os.path.exists (sys.argv[1]) and sys.argv[1].endswith (".expected"):
+if len(sys.argv) == 2:
     run_one (sys.argv[1])
+elif len(sys.argv) == 1:
+    run_all ()
 else:
-    print("Usage: %s [FILE.expected]" % (sys.argv[0]))
+    sys.stderr.write("Too many arguments.")
     sys.exit(1)

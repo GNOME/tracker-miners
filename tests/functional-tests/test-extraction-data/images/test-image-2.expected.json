@@ -1,0 +1,12 @@
+{
+    "test": {
+        "Filename": "test-image-2.png",
+        "Bugzilla": "",
+        "Comment": "Basic png example"
+    },
+    "metadata": {
+        "@type": "nmm:Photo",
+        "nfo:width": "211",
+        "nfo:height": "217"
+    }
+}

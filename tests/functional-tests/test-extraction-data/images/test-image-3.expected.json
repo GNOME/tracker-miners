@@ -1,0 +1,16 @@
+{
+    "test": {
+        "Filename": "test-image-3.tif",
+        "Bugzilla": "",
+        "Comment": "Basic TIFF example"
+    },
+    "metadata": {
+        "@type": "nmm:Photo",
+        "nfo:width": "37",
+        "nfo:height": "39",
+        "nie:title": "/home/amit/Desktop/test-image-3.tif",
+        "nfo:orientation": {
+            "@id": "nfo:orientation-top"
+        }
+    }
+}
