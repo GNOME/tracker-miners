@@ -95,7 +95,7 @@ static GOptionEntry entries[] = {
 	  N_("Force a module to be used for extraction (e.g. “foo” for “foo.so”)"),
 	  N_("MODULE") },
 	{ "output-format", 'o', 0, G_OPTION_ARG_STRING, &output_format_name,
-	  N_("Output results format: “sparql”, or “turtle”"),
+	  N_("Output results format: “sparql”, “turtle” or “jsonld”"),
 	  N_("FORMAT") },
 	{ "domain-ontology", 'd', 0,
 	  G_OPTION_ARG_STRING, &domain_ontology_name,
