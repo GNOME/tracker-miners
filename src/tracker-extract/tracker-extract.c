@@ -662,9 +662,9 @@ tracker_extract_file (TrackerExtract      *extract,
 }
 
 void
-tracker_extract_get_metadata_by_cmdline (TrackerExtract *object,
-                                         const gchar    *uri,
-                                         const gchar    *mime,
+tracker_extract_get_metadata_by_cmdline (TrackerExtract             *object,
+                                         const gchar                *uri,
+                                         const gchar                *mime,
                                          TrackerSerializationFormat  output_format)
 {
 	GError *error = NULL;
@@ -730,6 +730,20 @@ tracker_extract_get_metadata_by_cmdline (TrackerExtract *object,
 				if (turtle) {
 					g_print ("%s\n", turtle);
 					g_free (turtle);
+				}
+			} else {
+				/* JSON-LD extraction */
+				char *json;
+
+				/* If this was going into the tracker-store we'd generate a unique ID
+				 * here, so that the data persisted across file renames.
+				 */
+				tracker_resource_set_identifier (resource, uri);
+
+				json = tracker_resource_print_jsonld (resource, NULL);
+				if (json) {
+					g_print ("%s\n", json);
+					g_free (json);
 				}
 			}
 
