@@ -46,7 +46,7 @@ test-autotools-fedora27:
 
     # Now build tracker-miners using Autotools, linking against new Tracker.
     - PKG_CONFIG_PATH=/opt/tracker/lib64/pkgconfig/ su tracker -c './autogen.sh --prefix=/opt/tracker'
-    - su tracker -c './autogen.sh --disable-functional-tests'
+    - su tracker -c './autogen.sh'
     - su tracker -c 'make -j'
     - su tracker -c 'LD_LIBRARY_PATH=/opt/tracker/lib64 make check'
 
@@ -75,6 +75,6 @@ test-meson-fedora27:
     - dnf install -y git
     - su tracker -c 'mkdir subprojects; cd subprojects; git clone https://gitlab.gnome.org/GNOME/tracker'
     - su tracker -c 'mkdir build'
-    - su tracker -c 'cd build; meson .. --prefix=/usr -Dfunctional_tests=false'
+    - su tracker -c 'cd build; meson .. --prefix=/usr'
     - su tracker -c 'cd build; ninja'
     - su tracker -c 'cd build; meson test --suite tracker-miners --print-errorlogs'
