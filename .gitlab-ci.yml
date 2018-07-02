@@ -24,7 +24,7 @@ test-autotools-fedora27:
   before_script:
     # This takes a long time, we could prebuild a Docker image that already
     # contains this stuff instead, and use that.
-    - dnf install -y 'dnf-command(builddep)' dbus-devel dbus-x11 libseccomp-devel make meson redhat-rpm-config
+    - dnf install -y 'dnf-command(builddep)' dbus-devel dbus-x11 libseccomp-devel make meson python3-gobject redhat-rpm-config
     - dnf builddep -y tracker tracker-miners
 
     - useradd -Um tracker
@@ -46,9 +46,10 @@ test-autotools-fedora27:
 
     # Now build tracker-miners using Autotools, linking against new Tracker.
     - PKG_CONFIG_PATH=/opt/tracker/lib64/pkgconfig/ su tracker -c './autogen.sh --prefix=/opt/tracker'
-    - su tracker -c './autogen.sh --disable-functional-tests'
+    - su tracker -c './autogen.sh'
     - su tracker -c 'make -j'
     - su tracker -c 'LD_LIBRARY_PATH=/opt/tracker/lib64 make check'
+    - su tracker -c 'LD_LIBRARY_PATH=/opt/tracker/lib64 make functional-test'
 
 test-meson-fedora27:
   stage: test
@@ -57,7 +58,7 @@ test-meson-fedora27:
   before_script:
     # This takes a long time, we could prebuild a Docker image that already
     # contains this stuff instead, and use that.
-    - dnf install -y 'dnf-command(builddep)' dbus-devel dbus-x11 libseccomp-devel meson redhat-rpm-config
+    - dnf install -y 'dnf-command(builddep)' dbus-devel dbus-x11 libseccomp-devel meson python3-gobject redhat-rpm-config
     - dnf builddep -y tracker tracker-miners
 
     - useradd -Um tracker
@@ -75,6 +76,6 @@ test-meson-fedora27:
     - dnf install -y git
     - su tracker -c 'mkdir subprojects; cd subprojects; git clone https://gitlab.gnome.org/GNOME/tracker'
     - su tracker -c 'mkdir build'
-    - su tracker -c 'cd build; meson .. --prefix=/usr -Dfunctional_tests=false'
+    - su tracker -c 'cd build; meson .. --prefix=/usr'
     - su tracker -c 'cd build; ninja'
     - su tracker -c 'cd build; meson test --suite tracker-miners --print-errorlogs'
