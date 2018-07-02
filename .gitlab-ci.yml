@@ -25,6 +25,7 @@ test-autotools-fedora-latest:
     - PKG_CONFIG_PATH=/opt/tracker/lib64/pkgconfig/ su tracker -c './autogen.sh --prefix=/opt/tracker'
     - su tracker -c 'make -j'
     - su tracker -c 'LD_LIBRARY_PATH=/opt/tracker/lib64 VERBOSE=1 make check'
+    - su tracker -c 'LD_LIBRARY_PATH=/opt/tracker/lib64 make functional-test'
 
 test-meson-fedora-latest:
   stage: test
@@ -41,6 +42,6 @@ test-meson-fedora-latest:
     # that Tracker is installed on the host here, thanks to `dnf builddep`.
     - su tracker -c 'mkdir subprojects; cd subprojects; git clone https://gitlab.gnome.org/GNOME/tracker'
     - su tracker -c 'mkdir build'
-    - su tracker -c 'cd build; meson .. --prefix=/usr -Dfunctional_tests=false'
+    - su tracker -c 'cd build; meson .. --prefix=/usr'
     - su tracker -c 'cd build; ninja'
     - su tracker -c 'cd build; meson test --suite tracker-miners --print-errorlogs'
