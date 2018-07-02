@@ -1,0 +1,78 @@
+stages:
+  - test
+
+# Note that using Fedora 28 triggered some weird compiler bug for me:
+#
+#   GISCAN   Tracker_C-2.0.gir
+#   annobin: Tracker_2.0.c: Error: plugin built for compiler version (8.0.1) but run with compiler version (8.1.1)
+#   cc1: error: fail to initialize plugin /usr/lib/gcc/x86_64-redhat-linux/8/plugin/annobin.so
+#   Traceback (most recent call last):
+#     File "/usr/lib64/python3.6/distutils/unixccompiler.py", line 127, in _compile
+#       extra_postargs)
+#     File "/usr/lib64/python3.6/distutils/ccompiler.py", line 909, in spawn
+#       spawn(cmd, dry_run=self.dry_run)
+#     File "/usr/lib64/python3.6/distutils/spawn.py", line 36, in spawn
+#       _spawn_posix(cmd, search_path, dry_run=dry_run)
+#     File "/usr/lib64/python3.6/distutils/spawn.py", line 159, in _spawn_posix
+#       % (cmd, exit_status))
+#   distutils.errors.DistutilsExecError: command 'gcc' failed with exit status 1
+#
+test-autotools-fedora27:
+  stage: test
+  image: fedora:27
+
+  before_script:
+    # This takes a long time, we could prebuild a Docker image that already
+    # contains this stuff instead, and use that.
+    - dnf install -y 'dnf-command(builddep)' dbus-devel dbus-x11 libseccomp-devel make redhat-rpm-config
+    - dnf builddep -y tracker-miners
+
+    - useradd -Um tracker
+    - chown -R tracker:tracker .
+
+  script:
+    # First build and install latest Tracker using Meson (the Autotools build
+    # of Tracker is tested already in tracker.git, we don't need to suffer that
+    # again).
+    - mkdir /opt/tracker; chown tracker:tracker /opt/tracker
+    - su tracker -c 'git clone https://gitlab.gnome.org/GNOME/tracker'
+    - su tracker -c 'cd tracker; mkdir build'
+    - su tracker -c 'cd tracker/build; meson .. --prefix=/opt/tracker -Ddbus_services=/opt/tracker/share/dbus-1/services -Dsystemd_user_services=/opt/tracker/lib/systemd/user'
+    - su tracker -c 'cd tracker/build; ninja install'
+    # Delete the build tree now that we're done with it, or `intltool-update`
+    # raise a spurious error later during `make check`.
+    - su tracker -c 'rm -Rf tracker'
+
+    # Now build tracker-miners using Autotools, linking against new Tracker.
+    - PKG_CONFIG_PATH=/opt/tracker/lib64/pkgconfig/ su tracker -c './autogen.sh --prefix=/opt/tracker'
+    - su tracker -c './autogen.sh --disable-functional-tests'
+    - su tracker -c 'make -j'
+    - su tracker -c 'LD_LIBRARY_PATH=/opt/tracker/lib64 make check'
+
+test-meson-fedora27:
+  stage: test
+  image: fedora:27
+
+  before_script:
+    # This takes a long time, we could prebuild a Docker image that already
+    # contains this stuff instead, and use that.
+    - dnf install -y 'dnf-command(builddep)' dbus-devel dbus-x11 libseccomp-devel make redhat-rpm-config
+    - dnf builddep -y tracker-miners
+
+    - useradd -Um tracker
+    - chown -R tracker:tracker .
+
+  script:
+    # We can build and test tracker-miners against tracker just by building
+    # tracker as a submodule.
+    #
+    # Note that this approach doesn't currently work for the functional-tests,
+    # they require the ontologies and domain rules from tracker to be installed
+    # somewhere. It would be nice to improve the functional-tests so that they
+    # will run without depending on any files outside of the build tree.
+    - dnf install -y git
+    - su tracker -c 'mkdir subprojects; cd subprojects; git clone https://gitlab.gnome.org/GNOME/tracker'
+    - su tracker -c 'mkdir build'
+    - su tracker -c 'cd build; meson .. -Dfunctional_tests=false'
+    - su tracker -c 'cd build; ninja'
+    - su tracker -c 'cd build; meson test --suite tracker-miners --print-errorlogs'
