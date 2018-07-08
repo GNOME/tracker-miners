@@ -82,6 +82,8 @@ TRACKER_MINER_FS_PATH = os.path.normpath(expandvars(config['TRACKER_MINER_FS_PAT
 TRACKER_STORE_PATH = os.path.normpath(expandvars(config['TRACKER_STORE_PATH']))
 TRACKER_WRITEBACK_PATH = os.path.normpath(expandvars(config['TRACKER_WRITEBACK_PATH']))
 
+DATADIR = os.path.normpath(expandvars(config['RAW_DATAROOT_DIR']))
+
 TEST_TMP_DIR = os.path.join (os.environ["HOME"], "tracker-tests")
 
 TEST_MONITORED_TMP_DIR = TEST_TMP_DIR
