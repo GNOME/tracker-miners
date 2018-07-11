@@ -291,7 +291,7 @@ read_metadata (GifFileType          *gifFile,
 	                                            NULL);
 
 	if (md.artist) {
-		TrackerResource *artist = tracker_extract_new_contact (xd->creator);
+		TrackerResource *artist = tracker_extract_new_contact (md.artist);
 
 		tracker_resource_add_relation (metadata, "nco:contributor", artist);
 
