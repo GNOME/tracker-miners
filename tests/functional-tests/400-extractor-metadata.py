@@ -53,7 +53,12 @@ class ExtractionTestCase (ut.TestCase):
         # Add a method to the class called after the description file
         methodName = descfile.lower()[:-len(".expected")].replace (" ", "_")[-60:]
 
-        setattr (self, methodName, self.generic_test_extraction)
+        if (self.spec['test'].get('ExpectedFailure', False)):
+            setattr (self,
+                    methodName,
+                    self.expected_failure_test_extraction)
+        else:
+            setattr (self, methodName, self.generic_test_extraction)
 
         # unittest framework will run the test called "self._testMethodName"
         # So we set that variable to our new name
@@ -79,6 +84,17 @@ class ExtractionTestCase (ut.TestCase):
 
         result = get_tracker_extract_jsonld_output(self.file_to_extract)
         self.__assert_extraction_ok (result)
+
+    def expected_failure_test_extraction (self):
+        try:
+            self.generic_test_extraction ()
+        except Exception:
+            raise ut.case._ExpectedFailure(sys.exc_info())
+
+        if self.__get_bugnumber ():
+            raise Exception ("Unexpected success. Maybe bug: " + self.__get_bugnumber () + " has been fixed?")
+        else:
+            raise Exception ("Unexpected success. Check " + self.rel_description)
 
     def assertDictHasKey (self, d, key, msg=None):
         if not isinstance(d, dict):
