@@ -81,6 +81,8 @@ class ExtractionTestCase (ut.TestCase):
         self.__assert_extraction_ok (result)
 
     def assertDictHasKey (self, d, key, msg=None):
+        if not isinstance(d, dict):
+            self.fail ("Expected dict, got %s" % d)
         if not d.has_key (key):
             standardMsg = "Missing: %s\n" % (key)
             self.fail (self._formatMessage (msg, standardMsg))
@@ -100,7 +102,11 @@ class ExtractionTestCase (ut.TestCase):
             self.fail (self._formatMessage (msg, standardMsg))
 
     def __assert_extraction_ok (self, result):
-        self.__check (self.spec['metadata'], result)
+        try:
+            self.__check (self.spec['metadata'], result)
+        except AssertionError as e:
+            print("\ntracker-extract returned: %s" % json.dumps(result, indent=4))
+            raise
 
     def __check (self, spec, result):
         error_missing_prop = "Property '%s' hasn't been extracted from file \n'%s'\n (requested on '%s')"
@@ -118,33 +124,33 @@ class ExtractionTestCase (ut.TestCase):
                 unexpected_pairs.append ( (k[1:], v) )
             elif k == '@type':
                 expected_keys.append ( '@type' )
-            elif k.startswith ("@"):
-                expected_keys.append ( k[1:] )
             else:
                 expected_pairs.append ( (k, v) )
 
 
-        for (prop, value) in expected_pairs:
+        for prop, expected_value in expected_pairs:
             self.assertDictHasKey (result, prop,
                                    error_missing_prop % (prop,
                                                          self.file_to_extract,
                                                          self.descfile))
-            if value == "@URNUUID@":
+            if expected_value == "@URNUUID@":
                 self.assertIsURN (result [prop][0]['@id'],
                                   error_wrong_value % (prop,
                                                        self.file_to_extract,
                                                        self.descfile))
             else:
-                if isinstance(value, list):
-                    self.assertEqual (len(value), len(result[prop]),
+                if isinstance(expected_value, list):
+                    self.assertEqual (len(expected_value), len(result[prop]),
                                       error_wrong_length % (prop,
                                                             self.file_to_extract,
                                                             self.descfile))
 
-                    for i in range(0, len(value)):
+                    for i in range(0, len(expected_value)):
                         self.__check(spec[prop][i], result[prop][i])
+                elif isinstance(expected_value, dict):
+                    self.__check(expected_value, result[prop])
                 else:
-                    self.assertEqual (str(value), str(result [prop]),
+                    self.assertEqual (str(spec[prop]), str(result [prop]),
                                       error_wrong_value % (prop,
                                                            self.file_to_extract,
                                                            self.descfile))
