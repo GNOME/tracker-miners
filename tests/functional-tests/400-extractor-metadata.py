@@ -140,6 +140,10 @@ class ExtractionTestCase (ut.TestCase):
                                                        self.descfile))
             else:
                 if isinstance(expected_value, list):
+                    if not isinstance(result[prop], list):
+                        raise AssertionError("Expected a list property for %s, but got a %s: %s" % (
+                            prop, type(result[prop]).__name__, result[prop]))
+
                     self.assertEqual (len(expected_value), len(result[prop]),
                                       error_wrong_length % (prop,
                                                             self.file_to_extract,
