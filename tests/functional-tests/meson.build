@@ -20,7 +20,6 @@ functional_tests = [
 extractor_tests = [
   'audio/audio-test-1.expected.json',
   'audio/empty_albumi_song3.expected.json',
-  'audio/Jazz_Audio_OPLs0.expected.json',
   'audio/audio-test-2.expected.json',
   'images/test-image-1.expected.json',
   'images/xmp-loaded-1.expected.json',
