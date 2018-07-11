@@ -26,6 +26,8 @@ test-autotools-fedora27:
     # contains this stuff instead, and use that.
     - dnf install -y 'dnf-command(builddep)' dbus-devel dbus-x11 libseccomp-devel make meson redhat-rpm-config
     - dnf builddep -y tracker tracker-miners
+    # LibRaw is a build dep of 'master', but not of the version in Fedora 27
+    - dnf install LibRaw-devel
 
     - useradd -Um tracker
     - chown -R tracker:tracker .
@@ -59,6 +61,8 @@ test-meson-fedora27:
     # contains this stuff instead, and use that.
     - dnf install -y 'dnf-command(builddep)' dbus-devel dbus-x11 libseccomp-devel meson redhat-rpm-config
     - dnf builddep -y tracker tracker-miners
+    # LibRaw is a build dep of 'master', but not of the version in Fedora 27
+    - dnf install LibRaw-devel
 
     - useradd -Um tracker
     - chown -R tracker:tracker .
