@@ -189,7 +189,7 @@ tracker_extract_new_location (const char *street_address,
 
 		g_free (addruri);
 
-		if (address) {
+		if (street_address) {
 			tracker_resource_set_string (address, "nco:streetAddress", street_address);
 		}
 
