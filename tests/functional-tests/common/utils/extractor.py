@@ -37,9 +37,13 @@ def get_tracker_extract_jsonld_output(filename, mime_type=None):
     if mime_type is not None:
         command.extend(['--mime', mime_type])
 
+    # We depend on parsing the output, so verbosity MUST be 0.
+    env = os.environ.copy()
+    env['TRACKER_VERBOSITY'] = '0'
+
     try:
         log ('Running: %s' % ' '.join(command))
-        output = subprocess.check_output (command)
+        output = subprocess.check_output (command, env=env)
     except subprocess.CalledProcessError as e:
         raise Exception("Error %i from %s, output, see stderr for details" %
                         (e.returncode, tracker_extract))
