@@ -22,11 +22,7 @@ tests = \
 	311-fts-file-operations.py \
 	312-fts-stopwords.py \
 	400-extractor-metadata.py \
-	410-extractor-decorator.py \
-	500-writeback.py \
-	501-writeback-details.py \
-	600-applications-camera.py \
-	601-applications-sync.py
+	410-extractor-decorator.py
 
 TEST_RUNNER = $(top_srcdir)/tests/functional-tests/test-runner.sh
 
