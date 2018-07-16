@@ -41,6 +41,9 @@ CONF_OPTIONS = {
         'index-single-directories': GLib.Variant.new_strv([]),
         'index-optical-discs': GLib.Variant.new_boolean(False),
         'index-removable-devices': GLib.Variant.new_boolean(False),
+    },
+    'org.freedesktop.Tracker.Store': {
+        'graphupdated-delay': GLib.Variant.new_int32(100)
     }
 }
 
@@ -102,6 +105,7 @@ class CommonTrackerWritebackTest (ut.TestCase):
     def tearDownClass (self):
         #print "Stopping the daemon in test mode (Doing nothing now)"
         self.system.tracker_writeback_testing_stop ()
+        log ("Test finished")
     
 
     @staticmethod

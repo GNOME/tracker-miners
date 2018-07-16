@@ -24,7 +24,8 @@ on the files. Note that these tests are highly platform dependant.
 import os
 import time
 
-from common.utils.extractor import get_tracker_extract_output
+from common.utils.extractor import get_tracker_extract_jsonld_output
+from common.utils.helpers import log
 from common.utils.writebacktest import CommonTrackerWritebackTest as CommonTrackerWritebackTest
 import unittest2 as ut
 from common.utils.expectedFailure import expectedFailureBug
@@ -82,9 +83,11 @@ class WritebackBasicDataTest (CommonTrackerWritebackTest):
         self.__clean_property (prop, filename)
         self.tracker.update (SPARQL_TMPL % (prop, TEST_VALUE, filename))
 
+        log("Waiting for change on %s" % filename_real)
         self.wait_for_file_change(filename_real, initial_mtime)
+        log("Got the change")
 
-        results = get_tracker_extract_output (filename, mimetype)
+        results = get_tracker_extract_jsonld_output (filename, mimetype)
         keyDict = expectedKey or prop
         self.assertIn (TEST_VALUE, results[keyDict])
         self.__clean_property (prop, filename, False)
@@ -116,7 +119,7 @@ class WritebackBasicDataTest (CommonTrackerWritebackTest):
 
         time.sleep (REASONABLE_TIMEOUT)
 
-        results = get_tracker_extract_output (filename, mimetype)
+        results = get_tracker_extract_jsonld_output (filename, mimetype)
         self.assertIn ("testTag", results ["nao:hasTag"])
 
 
@@ -181,4 +184,4 @@ class WritebackBasicDataTest (CommonTrackerWritebackTest):
         self.__writeback_hasTag_test (self.get_test_filaname_png (), "image/png")
 
 if __name__ == "__main__":
-    ut.main ()
+    ut.main (failfast=True)
