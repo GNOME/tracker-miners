@@ -73,43 +73,30 @@ class MinerFTSBasicTest (CommonTrackerMinerFTSTest):
         results = self.search_word ("trikc")
         self.assertEquals (len (results), 0)
 
-
-    def test_05_word_in_multiple_files (self):
-        # Safeguard, in the case we modify the DEFAULT_TEXT later...
-        assert "content" in DEFAULT_TEXT
-
-        self.set_text (DEFAULT_TEXT)
-        results = self.search_word ("content")
-        self.assertEquals (len (results), 4)
-        self.assertIn ( uri (self.testfile), results)
-        self.assertIn ( uri ("test-monitored/file1.txt"), results)
-        self.assertIn ( uri ("test-monitored/dir1/file2.txt"), results)
-        self.assertIn ( uri ("test-monitored/dir1/dir2/file3.txt"), results)
-
-    def test_06_word_multiple_times_in_file (self):
+    def test_05_word_multiple_times_in_file (self):
         TEXT = "automobile is red. automobile is big. automobile is great!"
         self.basic_test (TEXT, "automobile")
 
-    def test_07_sentence (self):
+    def test_06_sentence (self):
         TEXT = "plastic is fantastic"
         self.basic_test (TEXT, TEXT)
 
-    def test_08_partial_sentence (self):
+    def test_07_partial_sentence (self):
         TEXT = "plastic is fantastic"
         self.basic_test (TEXT, "is fantastic")
 
-    def test_09_strange_word (self):
+    def test_08_strange_word (self):
         # FIXME Not sure what are we testing here
         TEXT = "'summer.time'"
         self.basic_test (TEXT, "summer.time")
 
     # Skip the test 'search for .'
 
-    def test_10_mixed_letters_and_numbers (self):
+    def test_09_mixed_letters_and_numbers (self):
         TEXT = "abc123"
         self.basic_test (TEXT, "abc123")
 
-    def test_11_ignore_numbers (self):
+    def test_10_ignore_numbers (self):
         TEXT = "palabra 123123"
         self.set_text (TEXT)
         results = self.search_word ("123123")
