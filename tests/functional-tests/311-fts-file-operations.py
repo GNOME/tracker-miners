@@ -59,8 +59,6 @@ class MinerFTSFileOperationsTest (CommonTrackerMinerFTSTest):
     def test_02_empty_the_file (self):
         """
         Emptying the file, the indexed words are also removed
-
-        FIXME: this test currently fails!
         """
         TEXT = "automobile is red and big and whatnot"
         self.basic_test (TEXT, "automobile")
@@ -122,7 +120,7 @@ class MinerFTSFileOperationsTest (CommonTrackerMinerFTSTest):
         
         self.__recreate_file (path (TEST_16_SOURCE), TEXT)
         # the file is supposed to be ignored by tracker, so there is no notification..
-        time.sleep (5)
+        time.sleep (2)
 
         results = self.search_word ("airplane")
         self.assertEquals (len (results), 0)
@@ -142,4 +140,4 @@ class MinerFTSFileOperationsTest (CommonTrackerMinerFTSTest):
 
 
 if __name__ == "__main__":
-    ut.main ()
+    ut.main (failfast=True)
