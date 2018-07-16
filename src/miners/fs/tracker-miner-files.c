@@ -505,7 +505,7 @@ tracker_miner_files_init (TrackerMinerFiles *mf)
 
 	priv->writeback_tasks = g_hash_table_new_full (g_file_hash,
 	                                               (GEqualFunc) g_file_equal,
-	                                               NULL, cancel_and_unref);
+	                                               g_object_unref, cancel_and_unref);
 
 	priv->extract_check_cancellable = g_cancellable_new ();
 
@@ -3618,7 +3618,7 @@ tracker_miner_files_writeback_file (TrackerMinerFiles *mf,
 
 	if (!g_hash_table_contains (mf->private->writeback_tasks, file)) {
 		cancellable = g_cancellable_new ();
-		g_hash_table_insert (mf->private->writeback_tasks, file, cancellable);
+		g_hash_table_insert (mf->private->writeback_tasks, g_object_ref (file), cancellable);
 		sync_writeback_pause_state (mf);
 		g_signal_emit (mf, signals[WRITEBACK], 0, file, rdf_types,
 		               results, cancellable);
