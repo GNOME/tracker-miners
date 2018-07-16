@@ -99,7 +99,13 @@ class CommonTrackerMinerTest (ut.TestCase):
                 shutil.rmtree(dirname)
             os.makedirs(dirname)
 
-        self.system = TrackerSystemAbstraction ()
+        self.system = TrackerSystemAbstraction (
+            settings={
+                'org.freedesktop.Tracker.Store': {
+                    'graphupdated-delay': GLib.Variant('i', 100)
+                }
+            }
+        )
 
         self.system.tracker_miner_fs_testing_start (CONF_OPTIONS)
         self.tracker = self.system.store
