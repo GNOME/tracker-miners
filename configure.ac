@@ -436,6 +436,8 @@ if test "$native_win32" = "yes" ; then
    AC_DEFINE(OS_WIN32, 1, [Define if we are on win32])
 fi
 
+AC_SUBST(FUNCTIONAL_TESTS_TRACKER_EXTRACT_PATH, "@top_builddir@/src/tracker-extract/tracker-extract")
+AC_SUBST(FUNCTIONAL_TESTS_TRACKER_MINER_FS_PATH, "@top_builddir@/src/miners/fs/tracker-miner-fs")
 AC_SUBST(FUNCTIONAL_TESTS_TRACKER_STORE_PATH, "${libexecdir}/tracker-store")
 
 ####################################################################
