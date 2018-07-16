@@ -437,33 +437,41 @@ class StoreHelper (Helper):
 
         property_id = self.get_resource_id_by_uri(property_uri)
 
-        def find_property_change (inserts_list):
+        def find_property_change (change_list):
             matched = False
             remaining_events = []
 
-            for insert in inserts_list:
-                if insert[1] == subject_id and insert[2] == property_id:
-                    log("Matched property change: %s" % str(insert))
+            for change in change_list:
+                if change[1] == subject_id and change[2] == property_id:
+                    log("Matched property change: %s" % str(change))
                     matched = True
                 else:
-                    remaining_events += [insert]
+                    remaining_events += [change]
 
             return matched, remaining_events
 
-        def match_cb (inserts_list):
+        def match_inserts_cb (inserts_list):
             matched, remaining_events = find_property_change (inserts_list)
+            exit_loop = matched
+            return exit_loop, remaining_events
+
+        def match_deletes_cb (deletes_list):
+            matched, remaining_events = find_property_change (deletes_list)
             exit_loop = matched
             return exit_loop, remaining_events
 
         # Check the list of previously received events for matches
         (existing_match, self.inserts_list) = find_property_change (self.inserts_list)
+        (existing_match, self.deletes_list) = find_property_change (self.deletes_list)
 
         if not existing_match:
             self._enable_await_timeout ()
-            self.inserts_match_function = match_cb
+            self.inserts_match_function = match_inserts_cb
+            self.deletes_match_function = match_deletes_cb
             # Run the event loop until the correct notification arrives
             self.loop.run ()
             self.inserts_match_function = None
+            self.deletes_match_function = None
 
         if self.graph_updated_timed_out:
             raise Exception ("Timeout waiting for property change, subject %i "
