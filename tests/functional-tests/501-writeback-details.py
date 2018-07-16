@@ -18,7 +18,7 @@
 # Boston, MA  02110-1301, USA.
 #
 from common.utils.writebacktest import CommonTrackerWritebackTest as CommonTrackerWritebackTest
-from common.utils.extractor import get_tracker_extract_output
+from common.utils.extractor import get_tracker_extract_jsonld_output
 from common.utils.helpers import log
 import unittest2 as ut
 from common.utils.expectedFailure import expectedFailureBug
@@ -85,7 +85,7 @@ class WritebackKeepDateTest (CommonTrackerWritebackTest):
         self.wait_for_file_change (filename, initial_mtime)
 
         # Check the value is written in the file
-        metadata = get_tracker_extract_output (filename, "")
+        metadata = get_tracker_extract_jsonld_output (filename, "")
         self.assertIn (self.favorite, metadata ["nao:hasTag"],
                        "Tag hasn't been written in the file")
         
