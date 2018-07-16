@@ -9,7 +9,9 @@ config_json = configure_file(
 functional_tests = [
   '300-miner-basic-ops',
   '301-miner-resource-removal',
-  '310-fts-indexing',
+  '310-fts-basic',
+  '311-fts-file-operations',
+  '312-fts-stopwords',
   '410-extractor-decorator',
   '500-writeback',
   '501-writeback-details',

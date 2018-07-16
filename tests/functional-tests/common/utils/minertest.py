@@ -18,6 +18,7 @@
 # 02110-1301, USA.
 #
 from common.utils import configuration as cfg
+from common.utils.helpers import log
 from common.utils.system import TrackerSystemAbstraction
 import unittest2 as ut
 
@@ -120,3 +121,70 @@ class CommonTrackerMinerTest (ut.TestCase):
     def assertResourceMissing (self, urn):
         if self.tracker.ask ("ASK { <%s> a rdfs:Resource }" % urn) == True:
             self.fail ("Resource <%s> should not exist" % urn)
+
+
+class CommonTrackerMinerFTSTest (CommonTrackerMinerTest):
+    """
+    Superclass to share methods. Shouldn't be run by itself.
+    """
+    def prepare_directories (self):
+        # Override content from the base class
+        pass
+
+    def setUp (self):
+        self.testfile = "test-monitored/miner-fts-test.txt"
+        if os.path.exists (path (self.testfile)):
+            os.remove (path (self.testfile))
+
+        super(CommonTrackerMinerFTSTest, self).setUp()
+
+    def set_text (self, text):
+        exists = os.path.exists(path(self.testfile))
+
+        f = open (path (self.testfile), "w")
+        f.write (text)
+        f.close ()
+
+        if exists:
+            subject_id = self.tracker.get_resource_id(uri(self.testfile))
+            self.tracker.await_property_changed(
+                subject_id=subject_id, property_uri='nie:plainTextContent')
+        else:
+            self.tracker.await_resource_inserted(
+                rdf_class='nfo:Document', url=uri(self.testfile),
+                required_property='nie:plainTextContent')
+
+        self.tracker.reset_graph_updates_tracking()
+
+    def search_word (self, word):
+        """
+        Return list of URIs with the word in them
+        """
+        log ("Search for: %s" % word)
+        results = self.tracker.query ("""
+                SELECT ?url WHERE {
+                  ?u a nfo:TextDocument ;
+                      nie:url ?url ;
+                      fts:match '%s'.
+                 }
+                 """ % (word))
+        return [r[0] for r in results]
+
+    def basic_test (self, text, word):
+        """
+        Save the text on the testfile, search the word
+        and assert the testfile is only result.
+
+        Be careful with the default contents of the text files
+        ( see common/utils/minertest.py DEFAULT_TEXT )
+        """
+        self.set_text (text)
+        results = self.search_word (word)
+        self.assertEquals (len (results), 1)
+        self.assertIn ( uri (self.testfile), results)
+
+    def _query_id (self, uri):
+        query = "SELECT tracker:id(?urn) WHERE { ?urn nie:url \"%s\". }" % uri
+        result = self.tracker.query (query)
+        assert len (result) == 1
+        return int (result[0][0])

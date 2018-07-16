@@ -17,7 +17,10 @@ config_SCRIPTS = \
 
 tests = \
 	300-miner-basic-ops.py \
-	301-miner-resource-removal.py
+	301-miner-resource-removal.py \
+	310-fts-basic.py \
+	311-fts-file-operations.py \
+	312-fts-stopwords.py \
 	400-extractor-metadata.py \
 	410-extractor-decorator.py \
 	500-writeback.py \
