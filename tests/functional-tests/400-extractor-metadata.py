@@ -237,10 +237,13 @@ def run_one (filename):
     sys.exit(not result.wasSuccessful())
 
 
-if len(sys.argv) == 2:
-    run_one (sys.argv[1])
-elif len(sys.argv) == 1:
-    run_all ()
-else:
-    sys.stderr.write("Too many arguments.")
+try:
+    if len(sys.argv) == 2:
+        run_one (sys.argv[1])
+    elif len(sys.argv) == 1:
+        run_all ()
+    else:
+        raise RuntimeError("Too many arguments.")
+except RuntimeError as e:
+    sys.stderr.write("ERROR: %s\n" % e)
     sys.exit(1)
