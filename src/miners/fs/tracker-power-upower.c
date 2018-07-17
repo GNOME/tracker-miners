@@ -37,14 +37,15 @@ typedef struct {
 	gboolean   on_low_battery;
 } TrackerPowerPriv;
 
-static void     tracker_power_finalize          (GObject         *object);
-static void     tracker_power_get_property      (GObject         *object,
-                                                 guint            param_id,
-                                                 GValue                  *value,
-                                                 GParamSpec      *pspec);
+static void     tracker_power_initable_iface_init (GInitableIface *iface);
+static void     tracker_power_finalize            (GObject         *object);
+static void     tracker_power_get_property        (GObject         *object,
+                                                   guint            param_id,
+                                                   GValue                  *value,
+                                                   GParamSpec      *pspec);
 #ifdef HAVE_UP_CLIENT_GET_ON_LOW_BATTERY
-static void     tracker_power_client_changed_cb (UpClient        *client,
-                                                 TrackerPower    *power);
+static void     tracker_power_client_changed_cb   (UpClient        *client,
+                                                   TrackerPower    *power);
 #endif /* HAVE_UP_CLIENT_GET_ON_LOW_BATTERY */
 
 enum {
@@ -53,7 +54,8 @@ enum {
 	PROP_ON_LOW_BATTERY
 };
 
-G_DEFINE_TYPE (TrackerPower, tracker_power, G_TYPE_OBJECT);
+G_DEFINE_TYPE_WITH_CODE (TrackerPower, tracker_power, G_TYPE_OBJECT,
+                         G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE, tracker_power_initable_iface_init));
 
 static void
 tracker_power_class_init (TrackerPowerClass *klass)
@@ -121,27 +123,43 @@ on_warning_level_changed (UpDevice     *device,
 static void
 tracker_power_init (TrackerPower *power)
 {
+}
+static gboolean
+tracker_power_initable_init (GInitable     *initable,
+                             GCancellable  *cancellable,
+                             GError       **error)
+{
+	TrackerPower *power;
 	TrackerPowerPriv *priv;
 
 	g_message ("Initializing UPower...");
 
+	power = TRACKER_POWER (initable);
 	priv = GET_PRIV (power);
 
 	/* connect to a UPower instance */
 	priv->client = up_client_new ();
+
+	if (priv->client == NULL) {
+		g_set_error (error, G_IO_ERROR, G_IO_ERROR_DBUS_ERROR, "Unable to connect to UPower");
+		return FALSE;
+	}
+
 #ifdef HAVE_UP_CLIENT_GET_ON_LOW_BATTERY
 	g_signal_connect (priv->client, "changed",
 	                  G_CALLBACK (tracker_power_client_changed_cb), power);
 	tracker_power_client_changed_cb (priv->client, power);
 #else
-        g_signal_connect (priv->client, "notify::on-battery",
-                          G_CALLBACK (on_on_battery_changed), power);
+	g_signal_connect (priv->client, "notify::on-battery",
+	                  G_CALLBACK (on_on_battery_changed), power);
 	on_on_battery_changed (priv->client, NULL, power);
 	priv->composite_device = up_client_get_display_device (priv->client);
 	g_signal_connect (priv->composite_device, "notify::warning-level",
-			  G_CALLBACK (on_warning_level_changed), power);
+		              G_CALLBACK (on_warning_level_changed), power);
 	on_warning_level_changed (priv->composite_device, NULL, power);
 #endif /* HAVE_UP_CLIENT_GET_ON_LOW_BATTERY */
+
+	return TRUE;
 }
 
 static void
@@ -210,17 +228,32 @@ tracker_power_client_changed_cb (UpClient     *client,
 }
 #endif /* HAVE_UP_CLIENT_GET_ON_LOW_BATTERY */
 
+static void
+tracker_power_initable_iface_init (GInitableIface *iface)
+{
+	iface->init = tracker_power_initable_init;
+}
+
 /**
  * tracker_power_new:
  *
  * Creates a new instance of #TrackerPower.
  *
- * Returns: The newly created #TrackerPower.
+ * Returns: The newly created #TrackerPower, or %NULL if there was an error.
  **/
 TrackerPower *
 tracker_power_new ()
 {
-	return g_object_new (TRACKER_TYPE_POWER, NULL);
+	GError *error = NULL;
+	TrackerPower *object;
+
+	object = g_initable_new (TRACKER_TYPE_POWER, NULL, &error, NULL);
+
+	if (error) {
+		g_warning (error->message);
+	}
+
+	return object;
 }
 
 /**
