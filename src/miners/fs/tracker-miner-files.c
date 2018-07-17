@@ -481,12 +481,14 @@ tracker_miner_files_init (TrackerMinerFiles *mf)
 #if defined(HAVE_UPOWER) || defined(HAVE_HAL)
 	priv->power = tracker_power_new ();
 
-	g_signal_connect (priv->power, "notify::on-low-battery",
-	                  G_CALLBACK (battery_status_cb),
-	                  mf);
-	g_signal_connect (priv->power, "notify::on-battery",
-	                  G_CALLBACK (battery_status_cb),
-	                  mf);
+	if (priv->power) {
+		g_signal_connect (priv->power, "notify::on-low-battery",
+		                  G_CALLBACK (battery_status_cb),
+		                  mf);
+		g_signal_connect (priv->power, "notify::on-battery",
+		                  G_CALLBACK (battery_status_cb),
+		                  mf);
+	}
 #endif /* defined(HAVE_UPOWER) || defined(HAVE_HAL) */
 
 	priv->finished_handler = g_signal_connect_after (mf, "finished",
@@ -1589,6 +1591,10 @@ check_battery_status (TrackerMinerFiles *mf)
 	gboolean on_battery, on_low_battery;
 	gboolean should_pause = FALSE;
 	gboolean should_throttle = FALSE;
+
+	if (mf->private->power == NULL) {
+		return;
+	}
 
 	on_low_battery = tracker_power_get_on_low_battery (mf->private->power);
 	on_battery = tracker_power_get_on_battery (mf->private->power);
