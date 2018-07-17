@@ -85,7 +85,7 @@ class MinerFTSBasicTest (CommonTrackerMinerFTSTest):
         TEXT = "plastic is fantastic"
         self.basic_test (TEXT, "is fantastic")
 
-    @ut.skip("Currently fails with: fts5: syntax error near "."")
+    @ut.skip("Currently fails with: fts5: syntax error near '.'")
     def test_08_strange_word (self):
         # FIXME Not sure what are we testing here
         TEXT = "'summer.time'"
