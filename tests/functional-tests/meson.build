@@ -36,14 +36,26 @@ extractor_tests = [
   'images/test-image-2.expected.json',
   'images/comment-extension-block.expected.json',
   'images/roi.expected.json',
-  'video/184505.expected.json',
-  'video/video-1.expected.json',
-  'video/video-2.expected.json',
   'playlists/playlist-test-1.expected.json',
   'office/office-doc.expected.json',
   'office/powerpoint.expected.json',
   'office/pdf-doc.expected.json',
 ]
+
+detect_h264_codec = join_paths(meson.current_source_dir(), 'detect-h264-codec.sh')
+detect_h264_codec_result = run_command(detect_h264_codec)
+
+if detect_h264_codec_result.returncode() == 0
+  extractor_tests += [
+    'video/184505.expected.json',
+    'video/video-1.expected.json',
+    'video/video-2.expected.json',
+  ]
+else
+  # FIXME: it would be nicer to visibly mark the tests as 'skipped', but the Meson
+  # test runner doesn't support this at the moment.
+  warning('No GStreamer h264 codec was detected. Some extractor tests will be disabled.')
+endif
 
 config_json_full_path = join_paths(meson.current_build_dir(), 'configuration.json')
 dconf_profile_full_path = join_paths(meson.current_source_dir(), 'trackertest')
