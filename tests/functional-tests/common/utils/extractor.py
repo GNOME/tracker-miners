@@ -43,14 +43,14 @@ def get_tracker_extract_jsonld_output(filename, mime_type=None):
 
     try:
         log ('Running: %s' % ' '.join(command))
-        output = subprocess.check_output (command, env=env)
+        output = subprocess.check_output (command, env=env, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
         raise Exception("Error %i from %s, output, see stderr for details" %
                         (e.returncode, tracker_extract))
     try:
         data = json.loads(output)
     except ValueError as e:
-        raise RuntimeError("Invalid JSON returned by tracker-extract: "
+        raise RuntimeError("tracker-extract did not return valid JSON data."
                         "%s.\nOutput was: %s" % (e, output))
 
     return data
