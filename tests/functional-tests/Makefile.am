@@ -62,7 +62,7 @@ functional-test: ${tests}
 		export TRACKER_FUNCTIONAL_TEST_BUILD_DIR=$(top_builddir) ; \
 		export TRACKER_FUNCTIONAL_TEST_CONFIG=$(top_builddir)/tests/functional-tests/configuration.json ; \
 		$(TEST_RUNNER) python $(top_srcdir)/tests/functional-tests/400-extractor-metadata.py $$extractor_test; \
-	done \
+	done ; \
 	for test in ${tests} ; do \
 		export DCONF_PROFILE=$(abs_srcdir)/trackertest ; \
 		export LANG=en_US.UTF8 ; \
@@ -71,7 +71,7 @@ functional-test: ${tests}
 		export TRACKER_FUNCTIONAL_TEST_BUILD_DIR=$(top_builddir) ; \
 		export TRACKER_FUNCTIONAL_TEST_CONFIG=$(top_builddir)/tests/functional-tests/configuration.json ; \
 		$(TEST_RUNNER) python $(top_srcdir)/tests/functional-tests/$$test; \
-	done;
+	done
 
 EXTRA_DIST = \
 	$(config_SCRIPTS) \
