@@ -139,8 +139,8 @@ class CommonTrackerMinerFTSTest (CommonTrackerMinerTest):
 
     def setUp (self):
         self.testfile = "test-monitored/miner-fts-test.txt"
-        if os.path.exists (path (self.testfile)):
-            os.remove (path (self.testfile))
+        if os.path.exists (self.path (self.testfile)):
+            os.remove (self.path (self.testfile))
 
         super(CommonTrackerMinerFTSTest, self).setUp()
 

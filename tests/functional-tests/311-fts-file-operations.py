@@ -50,7 +50,7 @@ class MinerFTSFileOperationsTest (CommonTrackerMinerFTSTest):
         self.basic_test (TEXT, "automobile")
 
         id = self._query_id (self.uri (self.testfile))
-        os.remove self.path (self.testfile))
+        os.remove (self.path (self.testfile))
         self.tracker.await_resource_deleted (id)
 
         results = self.search_word ("automobile")
