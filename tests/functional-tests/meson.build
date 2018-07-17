@@ -42,7 +42,7 @@ extractor_tests = [
   'office/pdf-doc.expected.json',
 ]
 
-detect_h264_codec = join_paths(meson.current_source_dir(), 'detect-h264-plugin.sh')
+detect_h264_codec = join_paths(meson.current_source_dir(), 'detect-h264-codec.sh')
 detect_h264_codec_result = run_command(detect_h264_codec)
 
 if detect_h264_codec_result.returncode() == 0
