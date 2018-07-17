@@ -34,13 +34,16 @@ extractor_tests = \
   $(srcdir)/test-extraction-data/images/test-image-2.expected.json \
   $(srcdir)/test-extraction-data/images/comment-extension-block.expected.json \
   $(srcdir)/test-extraction-data/images/roi.expected.json \
-  $(srcdir)/test-extraction-data/video/184505.expected.json \
-  $(srcdir)/test-extraction-data/video/video-1.expected.json \
-  $(srcdir)/test-extraction-data/video/video-2.expected.json \
   $(srcdir)/test-extraction-data/playlists/playlist-test-1.expected.json \
   $(srcdir)/test-extraction-data/office/office-doc.expected.json \
   $(srcdir)/test-extraction-data/office/powerpoint.expected.json \
   $(srcdir)/test-extraction-data/office/pdf-doc.expected.json
+
+# These depend on having a H264 codec available, so are disabled by default.
+#
+# $(srcdir)/test-extraction-data/video/184505.expected.json \
+# $(srcdir)/test-extraction-data/video/video-1.expected.json \
+# $(srcdir)/test-extraction-data/video/video-2.expected.json
 
 tests = \
 	300-miner-basic-ops.py \
