@@ -31,18 +31,7 @@ import time
 
 import common.utils.configuration as cfg
 from common.utils.helpers import log
-from common.utils.minertest import MINER_TMP_DIR, path, uri
 from common.utils.system import TrackerSystemAbstraction
-
-
-CONF_OPTIONS = {
-    cfg.DCONF_MINER_SCHEMA: {
-        'index-recursive-directories': GLib.Variant.new_strv([]),
-        'index-single-directories': GLib.Variant.new_strv([MINER_TMP_DIR]),
-        'index-optical-discs': GLib.Variant.new_boolean(False),
-        'index-removable-devices': GLib.Variant.new_boolean(False),
-    }
-}
 
 
 CORRUPT_FILE = os.path.join(
@@ -57,20 +46,35 @@ VALID_FILE_TITLE = 'Simply Juvenile'
 
 TRACKER_EXTRACT_FAILURE_DATA_SOURCE = 'tracker:extractor-failure-data-source'
 
+def ensure_dir_exists(dirname):
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+
 
 class ExtractorDecoratorTest(ut.TestCase):
     def setUp(self):
-        if not os.path.exists(MINER_TMP_DIR):
-            os.makedirs(MINER_TMP_DIR)
-        assert os.path.isdir(MINER_TMP_DIR)
+        ensure_dir_exists(cfg.TEST_MONITORED_TMP_DIR)
 
-        self.system = TrackerSystemAbstraction(CONF_OPTIONS)
+        # It's important that this directory is NOT inside /tmp, because
+        # monitoring files in /tmp usually doesn't work.
+        self.datadir = tempfile.mkdtemp(dir=cfg.TEST_MONITORED_TMP_DIR)
+
+        config = {
+            cfg.DCONF_MINER_SCHEMA: {
+                'index-recursive-directories': GLib.Variant.new_strv([]),
+                'index-single-directories': GLib.Variant.new_strv([self.datadir]),
+                'index-optical-discs': GLib.Variant.new_boolean(False),
+                'index-removable-devices': GLib.Variant.new_boolean(False),
+            }
+        }
+
+        self.system = TrackerSystemAbstraction(config)
         self.system.tracker_miner_fs_testing_start()
 
     def tearDown(self):
         self.system.tracker_miner_fs_testing_stop()
 
-        shutil.rmtree(MINER_TMP_DIR)
+        shutil.rmtree(self.datadir)
 
     def test_reextraction(self):
         """Tests whether known files are still re-extracted on user request."""
@@ -78,7 +82,7 @@ class ExtractorDecoratorTest(ut.TestCase):
         store = self.system.store
 
         # Insert a valid file and wait extraction of its metadata.
-        file_path = os.path.join(MINER_TMP_DIR, os.path.basename(VALID_FILE))
+        file_path = os.path.join(self.datadir, os.path.basename(VALID_FILE))
         shutil.copy(VALID_FILE, file_path)
         file_id, file_urn = store.await_resource_inserted(
             VALID_FILE_CLASS, title=VALID_FILE_TITLE)
@@ -92,7 +96,7 @@ class ExtractorDecoratorTest(ut.TestCase):
 
         log("Sending re-index request")
         # Request re-indexing (same as `tracker index --file ...`)
-        miner_fs.index_file(uri(file_path))
+        miner_fs.index_file('file://' + os.path.join (self.datadir, file_path))
 
         # The extractor should reindex the file and re-add the metadata that we
         # deleted, so we should see the nie:title property change.

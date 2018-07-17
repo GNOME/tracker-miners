@@ -23,26 +23,12 @@ especially in the case where nie:InformationElement != nie:DataObject
 """
 
 from common.utils import configuration as cfg
-from common.utils.minertest import CommonTrackerMinerTest, path, uri
+from common.utils.minertest import CommonTrackerMinerTest
 
 from gi.repository import GLib
 
 import os
 import unittest2 as ut
-
-MINER_TMP_DIR = cfg.TEST_MONITORED_TMP_DIR
-
-
-CONF_OPTIONS = {
-    cfg.DCONF_MINER_SCHEMA: {
-        'enable-writeback': GLib.Variant.new_boolean(False),
-        'index-recursive-directories': GLib.Variant.new_strv([MINER_TMP_DIR]),
-        'index-single-directories': GLib.Variant.new_strv([]),
-        'index-optical-discs': GLib.Variant.new_boolean(False),
-        'index-removable-devices': GLib.Variant.new_boolean(False),
-        'throttle': GLib.Variant.new_int32(5),
-    }
-}
 
 
 class MinerResourceRemovalTest (CommonTrackerMinerTest):
@@ -64,14 +50,14 @@ class MinerResourceRemovalTest (CommonTrackerMinerTest):
                                                      title = title)
 
     def create_test_file (self, file_name):
-        file_path = path(file_name)
+        file_path = self.path(file_name)
 
         file = open (file_path, 'w')
         file.write ("Test")
         file.close ()
 
         return self.tracker.await_resource_inserted (rdf_class = 'nfo:Document',
-                                                     url = uri(file_name))
+                                                     url = self.uri(file_name))
 
     def test_01_file_deletion (self):
         """
@@ -84,7 +70,7 @@ class MinerResourceRemovalTest (CommonTrackerMinerTest):
         (ie_1_id, ie_1_urn) = self.create_test_content (file_1_urn, "Test resource 1")
         (ie_2_id, ie_2_urn) = self.create_test_content (file_2_urn, "Test resource 2")
 
-        os.unlink (path ("test-monitored/test_1.txt"))
+        os.unlink (self.path ("test-monitored/test_1.txt"))
 
         self.tracker.await_resource_deleted (file_1_id)
         self.tracker.await_resource_deleted (ie_1_id,
@@ -122,4 +108,4 @@ class MinerResourceRemovalTest (CommonTrackerMinerTest):
 
 
 if __name__ == "__main__":
-    ut.main()
+    ut.main(failfast=True)

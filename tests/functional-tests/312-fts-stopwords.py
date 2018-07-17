@@ -33,7 +33,7 @@ import time
 
 import unittest2 as ut
 from common.utils.helpers import log
-from common.utils.minertest import CommonTrackerMinerFTSTest, MINER_TMP_DIR, uri, path, DEFAULT_TEXT
+from common.utils.minertest import CommonTrackerMinerFTSTest, DEFAULT_TEXT
 from common.utils import configuration as cfg
 
 class MinerFTSStopwordsTest (CommonTrackerMinerFTSTest):
@@ -82,4 +82,4 @@ class MinerFTSStopwordsTest (CommonTrackerMinerFTSTest):
     
 
 if __name__ == "__main__":
-    ut.main ()
+    ut.main (failfast=True)

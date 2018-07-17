@@ -107,7 +107,7 @@ class Helper:
         self.loop.quit()
 
     def _process_watch_cb (self):
-        if self.process_watch_timeout == 0:
+        if self.process_watch_timeout == 0 or self.process is None:
             # The GLib seems to call the timeout after we've removed it
             # sometimes, which causes errors unless we detect it.
             return False

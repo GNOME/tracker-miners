@@ -89,12 +89,16 @@ TEST_TMP_DIR = os.path.join (os.environ["HOME"], "tracker-tests")
 TEST_MONITORED_TMP_DIR = TEST_TMP_DIR
 
 if TEST_TMP_DIR.startswith('/tmp'):
-	if os.environ.has_key('REAL_HOME'):
-		TEST_MONITORED_TMP_DIR = os.path.join (os.environ["REAL_HOME"], "tracker-tests")
-	else:
-		print ("HOME is in the /tmp prefix - this will cause tests that rely " +
-		       "on filesystem monitoring to fail as changes in that prefix are " +
-		       "ignored.")
+    if os.environ.has_key('REAL_HOME'):
+        # Note that this MUST NOT be a hidden directory, as Tracker is
+        # hardcoded to ignore those. The 'ignore-files' configuration option
+        # can be changed, but the 'filter-hidden' property of
+        # TrackerIndexingTree is hardwired to be True at present :/
+        TEST_MONITORED_TMP_DIR = os.path.join (os.environ["REAL_HOME"], "tracker-tests")
+    else:
+        print ("HOME is in the /tmp prefix - this will cause tests that rely " +
+                "on filesystem monitoring to fail as changes in that prefix are " +
+                "ignored.")
 
 
 BUILD_DIR = os.environ.get('TRACKER_FUNCTIONAL_TEST_BUILD_DIR')

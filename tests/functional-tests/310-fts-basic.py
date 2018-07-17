@@ -33,7 +33,7 @@ import time
 
 import unittest2 as ut
 from common.utils.helpers import log
-from common.utils.minertest import CommonTrackerMinerFTSTest, MINER_TMP_DIR, uri, path, DEFAULT_TEXT
+from common.utils.minertest import CommonTrackerMinerFTSTest, DEFAULT_TEXT
 from common.utils import configuration as cfg
 
 
@@ -52,11 +52,11 @@ class MinerFTSBasicTest (CommonTrackerMinerFTSTest):
         
         results = self.search_word ("automobile")
         self.assertEquals (len (results), 1)
-        self.assertIn (uri (self.testfile), results)
+        self.assertIn (self.uri (self.testfile), results)
 
         results = self.search_word ("unlimited")
         self.assertEquals (len (results), 1)
-        self.assertIn (uri (self.testfile), results)
+        self.assertIn (self.uri (self.testfile), results)
 
 
     def test_03_long_word (self):
@@ -105,4 +105,4 @@ class MinerFTSBasicTest (CommonTrackerMinerFTSTest):
 
 
 if __name__ == "__main__":
-    ut.main ()
+    ut.main (failfast=True)

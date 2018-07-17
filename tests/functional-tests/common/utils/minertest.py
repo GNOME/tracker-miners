@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
 # Copyright (C) 2010, Nokia <ivan.frade@nokia.com>
+# Copyright (C) 2018, Sam Thursfield <sam@afuera.me.uk>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -24,50 +25,75 @@ import unittest2 as ut
 
 from gi.repository import GLib
 
-import shutil
 import os
-import warnings
+import shutil
+import tempfile
 from itertools import chain
-
-MINER_TMP_DIR = cfg.TEST_MONITORED_TMP_DIR
-
-def path (filename):
-    return os.path.join (MINER_TMP_DIR, filename)
-
-def uri (filename):
-    return "file://" + os.path.join (MINER_TMP_DIR, filename)
-
 
 DEFAULT_TEXT = "Some stupid content, to have a test file"
 
-index_dirs = [os.path.join (MINER_TMP_DIR, "test-monitored")]
-CONF_OPTIONS = {
-    cfg.DCONF_MINER_SCHEMA: {
-        'index-recursive-directories': GLib.Variant.new_strv(index_dirs),
-        'index-single-directories': GLib.Variant.new_strv([]),
-        'index-optical-discs': GLib.Variant.new_boolean(False),
-        'index-removable-devices': GLib.Variant.new_boolean(False),
-        'throttle': GLib.Variant.new_int32(5),
-    }
-}
+
+def ensure_dir_exists(dirname):
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
 
 
 class CommonTrackerMinerTest (ut.TestCase):
+    def setUp (self):
+        ensure_dir_exists(cfg.TEST_MONITORED_TMP_DIR)
 
-    def prepare_directories (self):
-        #
-        #     ~/test-monitored/
-        #                     /file1.txt
-        #                     /dir1/
-        #                          /file2.txt
-        #                          /dir2/
-        #                               /file3.txt
-        #
-        #
-        #     ~/test-no-monitored/
-        #                        /file0.txt
-        #
+        # It's important that this directory is NOT inside /tmp, because
+        # monitoring files in /tmp usually doesn't work.
+        self.datadir = tempfile.mkdtemp(dir=cfg.TEST_MONITORED_TMP_DIR)
 
+        self.indexed_dir = os.path.join(self.datadir, 'test-monitored')
+
+        # It's important that this directory exists BEFORE we start Tracker:
+        # it won't monitor an indexing root for changes if it doesn't exist,
+        # it'll silently ignore it instead. See the tracker_crawler_start()
+        # function.
+        ensure_dir_exists(self.indexed_dir)
+
+        self.system = TrackerSystemAbstraction (
+            settings={
+                'org.freedesktop.Tracker.Store': {
+                    'graphupdated-delay': GLib.Variant('i', 100)
+                }
+            }
+        )
+
+        config = {
+            cfg.DCONF_MINER_SCHEMA: {
+                'index-recursive-directories': GLib.Variant.new_strv([self.indexed_dir]),
+                'index-single-directories': GLib.Variant.new_strv([]),
+                'index-optical-discs': GLib.Variant.new_boolean(False),
+                'index-removable-devices': GLib.Variant.new_boolean(False),
+                'throttle': GLib.Variant.new_int32(5),
+            }
+        }
+
+        self.system.tracker_miner_fs_testing_start (config)
+
+        self.tracker = self.system.store
+
+        try:
+            self.create_test_data ()
+            self.tracker.reset_graph_updates_tracking ()
+        except Exception as e:
+            self.tearDown ()
+            raise
+
+    def tearDown (self):
+        self.remove_test_data ()
+        self.system.tracker_miner_fs_testing_stop ()
+
+    def path (self, filename):
+        return os.path.join (self.datadir, filename)
+
+    def uri (self, filename):
+        return "file://" + os.path.join (self.datadir, filename)
+
+    def create_test_data (self):
         monitored_files = [
             'test-monitored/file1.txt',
             'test-monitored/dir1/file2.txt',
@@ -78,47 +104,21 @@ class CommonTrackerMinerTest (ut.TestCase):
             'test-no-monitored/file0.txt'
         ]
 
-        def ensure_dir_exists(dirname):
-            if not os.path.exists(dirname):
-                os.makedirs(dirname)
-
         for tf in chain(monitored_files, unmonitored_files):
-            testfile = path(tf)
-            ensure_dir_exists(os.path.dirname(testfile))
+            testfile = self.path(tf)
+            ensure_dir_exists (os.path.dirname(testfile))
             with open (testfile, 'w') as f:
                 f.write (DEFAULT_TEXT)
 
         for tf in monitored_files:
             self.tracker.await_resource_inserted(
-                'nfo:TextDocument', url=uri(tf))
+                'nfo:TextDocument', url=self.uri(tf))
 
-    def setUp (self):
-        for d in ['test-monitored', 'test-no-monitored']:
-            dirname = path(d)
-            if os.path.exists (dirname):
-                shutil.rmtree(dirname)
-            os.makedirs(dirname)
-
-        self.system = TrackerSystemAbstraction (
-            settings={
-                'org.freedesktop.Tracker.Store': {
-                    'graphupdated-delay': GLib.Variant('i', 100)
-                }
-            }
-        )
-
-        self.system.tracker_miner_fs_testing_start (CONF_OPTIONS)
-        self.tracker = self.system.store
-
+    def remove_test_data(self):
         try:
-            self.prepare_directories ()
-            self.tracker.reset_graph_updates_tracking ()
+            shutil.rmtree(self.datadir)
         except Exception as e:
-            self.tearDown ()
-            raise
-
-    def tearDown (self):
-        self.system.tracker_miner_fs_testing_stop ()
+            log("Failed to remove temporary data dir: %s" % e)
 
     def assertResourceExists (self, urn):
         if self.tracker.ask ("ASK { <%s> a rdfs:Resource }" % urn) == False:
@@ -138,26 +138,24 @@ class CommonTrackerMinerFTSTest (CommonTrackerMinerTest):
         pass
 
     def setUp (self):
-        self.testfile = "test-monitored/miner-fts-test.txt"
-        if os.path.exists (path (self.testfile)):
-            os.remove (path (self.testfile))
-
         super(CommonTrackerMinerFTSTest, self).setUp()
 
-    def set_text (self, text):
-        exists = os.path.exists(path(self.testfile))
+        self.testfile = "test-monitored/miner-fts-test.txt"
 
-        f = open (path (self.testfile), "w")
+    def set_text (self, text):
+        exists = os.path.exists(self.path(self.testfile))
+
+        f = open (self.path (self.testfile), "w")
         f.write (text)
         f.close ()
 
         if exists:
-            subject_id = self.tracker.get_resource_id(uri(self.testfile))
+            subject_id = self.tracker.get_resource_id(self.uri(self.testfile))
             self.tracker.await_property_changed(
                 subject_id=subject_id, property_uri='nie:plainTextContent')
         else:
             self.tracker.await_resource_inserted(
-                rdf_class='nfo:Document', url=uri(self.testfile),
+                rdf_class='nfo:Document', url=self.uri(self.testfile),
                 required_property='nie:plainTextContent')
 
         self.tracker.reset_graph_updates_tracking()
@@ -187,7 +185,7 @@ class CommonTrackerMinerFTSTest (CommonTrackerMinerTest):
         self.set_text (text)
         results = self.search_word (word)
         self.assertEquals (len (results), 1)
-        self.assertIn ( uri (self.testfile), results)
+        self.assertIn ( self.uri (self.testfile), results)
 
     def _query_id (self, uri):
         query = "SELECT tracker:id(?urn) WHERE { ?urn nie:url \"%s\". }" % uri

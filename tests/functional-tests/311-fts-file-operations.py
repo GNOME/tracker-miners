@@ -33,7 +33,7 @@ import time
 
 import unittest2 as ut
 from common.utils.helpers import log
-from common.utils.minertest import CommonTrackerMinerFTSTest, MINER_TMP_DIR, uri, path, DEFAULT_TEXT
+from common.utils.minertest import CommonTrackerMinerFTSTest, DEFAULT_TEXT
 from common.utils import configuration as cfg
 
 
@@ -49,8 +49,8 @@ class MinerFTSFileOperationsTest (CommonTrackerMinerFTSTest):
         TEXT = "automobile is red and big and whatnot"
         self.basic_test (TEXT, "automobile")
 
-        id = self._query_id (uri (self.testfile))
-        os.remove ( path (self.testfile))
+        id = self._query_id (self.uri (self.testfile))
+        os.remove (self.path (self.testfile))
         self.tracker.await_resource_deleted (id)
 
         results = self.search_word ("automobile")
@@ -101,12 +101,12 @@ class MinerFTSFileOperationsTest (CommonTrackerMinerFTSTest):
         TEXT = "automobile is red"
 
         TEST_15_FILE = "test-no-monitored/fts-indexing-test-15.txt"
-        self.__recreate_file (path (TEST_15_FILE), TEXT)
+        self.__recreate_file (self.path (TEST_15_FILE), TEXT)
 
         results = self.search_word ("automobile")
         self.assertEquals (len (results), 0)
 
-        os.remove (path (TEST_15_FILE))
+        os.remove (self.path (TEST_15_FILE))
 
     def test_05_move_file_unmonitored_monitored (self):
         """
@@ -117,23 +117,23 @@ class MinerFTSFileOperationsTest (CommonTrackerMinerFTSTest):
         TEST_16_SOURCE = "test-no-monitored/fts-indexing-text-16.txt"
         TEST_16_DEST = "test-monitored/fts-indexing-text-16.txt"
         
-        self.__recreate_file (path (TEST_16_SOURCE), TEXT)
+        self.__recreate_file (self.path (TEST_16_SOURCE), TEXT)
         # the file is supposed to be ignored by tracker, so there is no notification..
         time.sleep (2)
 
         results = self.search_word ("airplane")
         self.assertEquals (len (results), 0)
 
-        shutil.copyfile ( path (TEST_16_SOURCE), path (TEST_16_DEST))
+        shutil.copyfile (self.path (TEST_16_SOURCE), self.path (TEST_16_DEST))
         self.tracker.await_resource_inserted (rdf_class = 'nfo:Document',
-                                              url = uri(TEST_16_DEST),
+                                              url = self.uri(TEST_16_DEST),
                                               required_property = 'nie:plainTextContent')
 
         results = self.search_word ("airplane")
         self.assertEquals (len (results), 1)
 
-        os.remove ( path (TEST_16_SOURCE))
-        os.remove ( path (TEST_16_DEST))
+        os.remove (self.path (TEST_16_SOURCE))
+        os.remove (self.path (TEST_16_DEST))
 
     # skip test for a file in a hidden directory
 
