@@ -48,16 +48,16 @@ def get_tracker_extract_jsonld_output(filename, mime_type=None):
     if p.returncode != 0:
         raise RuntimeError(
             "tracker-extract returned non-zero exit code: %s\n"
-            "Error output:\n%s\n" % (p.returncode. stderr.decode('unicode-escape').strip()))
+            "Error output:\n%s\n" % (p.returncode, stderr.decode('unicode-escape').strip()))
 
     if len(stderr) > 0:
         log ("Error output from tracker-extract:\n%s" % stderr.decode('unicode-escape').strip())
 
-    output = stdout.decode('unicode-escape')
     try:
+        output = stdout.decode('utf-8')
         data = json.loads(output)
     except ValueError as e:
-        raise RuntimeError("tracker-extract did not return valid JSON data."
-                        "%s.\nOutput was: %s" % (e, output))
+        raise RuntimeError("tracker-extract did not return valid JSON data: %s\n"
+                           "Output was: %s" % (e, output))
 
     return data
