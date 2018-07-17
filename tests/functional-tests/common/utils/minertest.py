@@ -40,6 +40,8 @@ def ensure_dir_exists(dirname):
 
 class CommonTrackerMinerTest (ut.TestCase):
     def setUp (self):
+        ensure_dir_exists(cfg.TEST_MONITORED_TMP_DIR)
+
         # It's important that this directory is NOT inside /tmp, because
         # monitoring files in /tmp usually doesn't work.
         self.datadir = tempfile.mkdtemp(dir=cfg.TEST_MONITORED_TMP_DIR)
