@@ -94,8 +94,6 @@ class MinerCrawlTest (CommonTrackerMinerTest):
         Copy an file from unmonitored directory to monitored directory
         and verify if data base is updated accordingly
         """
-        import pdb
-        pdb.set_trace()
         source = os.path.join (self.datadir, "test-no-monitored", "file0.txt")
         dest = os.path.join (self.datadir, "test-monitored", "file0.txt")
         shutil.copyfile (source, dest)
