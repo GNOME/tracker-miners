@@ -26,6 +26,8 @@ if not tracker_sparql.found() or not tracker_miner.found()
 
   tracker_store = tracker_subproject.get_variable('tracker_store')
   tracker_store_path = tracker_store.full_path()
+
+  tracker_test_domain_ontology = tracker_subproject.get_variable('tracker_test_domain_ontology')
 else
   # The tracker-miners will not work unless installed into the same prefix as
   # the base 'tracker' package as it expects to be able to access data files
@@ -35,6 +37,8 @@ else
   # right prefix, among other things.
   tracker_store = find_program(join_paths(get_option('prefix'), get_option('libexecdir'), 'tracker-store'))
   tracker_store_path = tracker_store.path()
+
+  tracker_test_domain_ontology = join_paths(get_option('prefix'), get_option('datadir'), 'tracker', 'domain-ontologies', 'default.rule')
 endif
 
 avcodec = dependency('libavcodec', version: '>= 0.8.4', required: false)

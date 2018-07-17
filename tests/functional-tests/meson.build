@@ -69,6 +69,7 @@ test_env.set('TRACKER_EXTRACTORS_DIR', tracker_extractors_dir)
 test_env.set('TRACKER_EXTRACTOR_RULES_DIR', tracker_extractor_rules_dir)
 test_env.set('TRACKER_FUNCTIONAL_TEST_BUILD_DIR', meson.build_root())
 test_env.set('TRACKER_FUNCTIONAL_TEST_CONFIG', config_json_full_path)
+test_env.set('TRACKER_TEST_DOMAIN_ONTOLOGY_RULE', tracker_test_domain_ontology)
 
 foreach t: functional_tests
   test('functional-' + t, test_runner,
