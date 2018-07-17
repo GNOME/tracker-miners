@@ -25,7 +25,7 @@ test-autotools-fedora-latest:
     - PKG_CONFIG_PATH=/opt/tracker/lib64/pkgconfig/ su tracker -c './autogen.sh --prefix=/opt/tracker'
     - su tracker -c 'make -j'
     - su tracker -c 'LD_LIBRARY_PATH=/opt/tracker/lib64 VERBOSE=1 make check'
-    - su tracker -c 'LD_LIBRARY_PATH=/opt/tracker/lib64 make functional-test'
+    - su tracker -c 'LD_LIBRARY_PATH=/opt/tracker/lib64 dbus-launch make functional-test'
 
 test-meson-fedora-latest:
   stage: test
