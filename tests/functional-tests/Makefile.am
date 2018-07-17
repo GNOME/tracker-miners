@@ -53,8 +53,10 @@ extractor_tests = \
 TEST_RUNNER = $(top_srcdir)/tests/functional-tests/test-runner.sh
 
 functional-test: ${tests}
+	@set -e ; \
 	for test in ${tests} ; do \
 		export DCONF_PROFILE=$(abs_srcdir)/trackertest ; \
+		export LANG=en_US.UTF8 ; \
 		export TRACKER_EXTRACTORS_DIR=$(top_builddir)/src/tracker-extract/.libs; \
 		export TRACKER_EXTRACTOR_RULES_DIR=$(top_srcdir)/src/tracker-extract; \
 		export TRACKER_FUNCTIONAL_TEST_BUILD_DIR=$(top_builddir) ; \
@@ -63,6 +65,7 @@ functional-test: ${tests}
 	done; \
 	for extractor_test in ${extractor_tests} ; do \
 		export DCONF_PROFILE=$(abs_srcdir)/trackertest ; \
+		export LANG=en_US.UTF8 ; \
 		export TRACKER_EXTRACTORS_DIR=$(top_builddir)/src/tracker-extract/.libs; \
 		export TRACKER_EXTRACTOR_RULES_DIR=$(top_srcdir)/src/tracker-extract; \
 		export TRACKER_FUNCTIONAL_TEST_BUILD_DIR=$(top_builddir) ; \
