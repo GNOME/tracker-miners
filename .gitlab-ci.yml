@@ -21,6 +21,8 @@ test-autotools-fedora-latest:
     # raise a spurious error later during `make check`.
     - su tracker -c 'rm -Rf tracker'
 
+    - dnf install -y gstreamer1-plugins-good
+
     # Now build tracker-miners using Autotools, linking against new Tracker.
     - PKG_CONFIG_PATH=/opt/tracker/lib64/pkgconfig/ su tracker -c './autogen.sh --prefix=/opt/tracker'
     - su tracker -c 'make -j'
@@ -44,6 +46,7 @@ test-meson-fedora-latest:
     - su tracker -c 'mkdir build'
     - su tracker -c 'cd build; meson .. --prefix=/usr'
     - su tracker -c 'cd build; ninja'
+    - dnf install -y gstreamer1-plugins-good
     - |
       # Remove the many "CI_" variables from the environment. Meson dumps the
       # whole environment for every failed test, and that gives a whole
