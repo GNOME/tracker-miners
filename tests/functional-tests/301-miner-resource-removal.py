@@ -108,4 +108,4 @@ class MinerResourceRemovalTest (CommonTrackerMinerTest):
 
 
 if __name__ == "__main__":
-    ut.main(failfast=true)
+    ut.main(failfast=True)
