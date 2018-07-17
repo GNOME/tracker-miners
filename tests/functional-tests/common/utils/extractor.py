@@ -41,12 +41,19 @@ def get_tracker_extract_jsonld_output(filename, mime_type=None):
     env = os.environ.copy()
     env['TRACKER_VERBOSITY'] = '0'
 
-    try:
-        log ('Running: %s' % ' '.join(command))
-        output = subprocess.check_output (command, env=env, stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError as e:
-        raise Exception("Error %i from %s, output, see stderr for details" %
-                        (e.returncode, tracker_extract))
+    log ('Running: %s' % ' '.join(command))
+    p = subprocess.Popen (command, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = p.communicate()
+
+    if p.returncode != 0:
+        raise RuntimeError(
+            "tracker-extract returned non-zero exit code: %s\n"
+            "Error output:\n%s\n" % (p.returncode. stderr.decode('unicode-escape').strip()))
+
+    if len(stderr) > 0:
+        log ("Error output from tracker-extract:\n%s" % stderr.decode('unicode-escape').strip())
+
+    output = stdout.decode('unicode-escape')
     try:
         data = json.loads(output)
     except ValueError as e:
