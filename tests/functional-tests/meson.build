@@ -55,6 +55,7 @@ test_env.set('DCONF_PROFILE', dconf_profile_full_path)
 
 test_env.set('TRACKER_EXTRACTORS_DIR', tracker_extractors_dir)
 test_env.set('TRACKER_EXTRACTOR_RULES_DIR', tracker_extractor_rules_dir)
+test_env.set('TRACKER_FUNCTIONAL_TEST_BUILD_DIR', meson.build_root())
 test_env.set('TRACKER_FUNCTIONAL_TEST_CONFIG', config_json_full_path)
 
 foreach t: functional_tests
