@@ -65,10 +65,13 @@ tracker_extractor_rules_dir = join_paths(meson.current_source_dir(), '..', '..',
 test_env = environment()
 test_env.set('DCONF_PROFILE', dconf_profile_full_path)
 
+test_env.set('TRACKER_DB_ONTOLOGIES_DIR', tracker_uninstalled_nepomuk_ontologies_dir)
 test_env.set('TRACKER_EXTRACTORS_DIR', tracker_extractors_dir)
 test_env.set('TRACKER_EXTRACTOR_RULES_DIR', tracker_extractor_rules_dir)
+test_env.set('TRACKER_LANGUAGE_STOP_WORDS_DIR', tracker_uninstalled_stop_words_dir)
 test_env.set('TRACKER_FUNCTIONAL_TEST_BUILD_DIR', meson.build_root())
 test_env.set('TRACKER_FUNCTIONAL_TEST_CONFIG', config_json_full_path)
+test_env.set('TRACKER_TEST_DOMAIN_ONTOLOGY_RULE', tracker_uninstalled_domain_rule)
 
 foreach t: functional_tests
   test('functional-' + t, test_runner,
