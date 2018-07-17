@@ -450,7 +450,7 @@ static void
 on_extractor_lost (TrackerExtractWatchdog *watchdog,
                    TrackerMinerFiles      *mf)
 {
-	g_debug ("tracker-extract vanished, maybe restarting.");
+	g_info ("tracker-extract vanished, maybe restarting.");
 
 	/* Give a period of grace before restarting, so we allow replacing
 	 * from eg. a terminal.
