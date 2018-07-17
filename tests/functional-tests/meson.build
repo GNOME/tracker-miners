@@ -23,23 +23,23 @@ functional_tests = [
 # '601-applications-sync',
 
 extractor_tests = [
-  'audio/audio-test-1.expected.json',
-  'audio/empty_albumi_song3.expected.json',
-  'audio/audio-test-2.expected.json',
-  'images/test-image-1.expected.json',
-  'images/xmp-loaded-1.expected.json',
-  'images/test-image-3.expected.json',
-  'images/corrupted-image.expected.json',
-  'images/test-iptcdata-records.expected.json',
-  'images/roi2.expected.json',
-  'images/test-image-4.expected.json',
-  'images/test-image-2.expected.json',
-  'images/comment-extension-block.expected.json',
-  'images/roi.expected.json',
-  'playlists/playlist-test-1.expected.json',
-  'office/office-doc.expected.json',
-  'office/powerpoint.expected.json',
-  'office/pdf-doc.expected.json',
+  'audio/audio-test-1',
+  'audio/empty_albumi_song3',
+  'audio/audio-test-2',
+  'images/test-image-1',
+  'images/xmp-loaded-1',
+  'images/test-image-3',
+  'images/corrupted-image',
+  'images/test-iptcdata-records',
+  'images/roi2',
+  'images/test-image-4',
+  'images/test-image-2',
+  'images/comment-extension-block',
+  'images/roi',
+  'playlists/playlist-test-1',
+  'office/office-doc',
+  'office/powerpoint',
+  'office/pdf-doc',
 ]
 
 detect_h264_codec = join_paths(meson.current_source_dir(), 'detect-h264-codec.sh')
@@ -47,9 +47,9 @@ detect_h264_codec_result = run_command(detect_h264_codec)
 
 if detect_h264_codec_result.returncode() == 0
   extractor_tests += [
-    'video/184505.expected.json',
-    'video/video-1.expected.json',
-    'video/video-2.expected.json',
+    'video/184505',
+    'video/video-1',
+    'video/video-2',
   ]
 else
   # FIXME: it would be nicer to visibly mark the tests as 'skipped', but the Meson
@@ -83,8 +83,9 @@ foreach t: functional_tests
 endforeach
 
 foreach t: extractor_tests
+  data = join_paths('test-extraction-data', t) + '.expected.json'
   test('functional/extract/' + t, test_runner,
-    args: ['./400-extractor-metadata.py', join_paths('test-extraction-data', t)],
+    args: ['./400-extractor-metadata.py', data],
     env: test_env,
     workdir: meson.current_source_dir())
 endforeach
