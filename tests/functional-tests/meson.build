@@ -1,27 +1,3 @@
-test_runner = find_program('test-runner.sh')
-
-config_json = configure_file(
-  input: 'configuration.json.in',
-  output: 'configuration.json',
-  configuration: conf
-)
-
-functional_tests = [
-  '300-miner-basic-ops',
-  '301-miner-resource-removal',
-  '310-fts-basic',
-  '311-fts-file-operations',
-  '312-fts-stopwords',
-  '410-extractor-decorator',
-]
-
-# FIXME: these are currently skipped as they don't work.
-
-# '500-writeback',
-# '501-writeback-details',
-# '600-applications-camera',
-# '601-applications-sync',
-
 extractor_tests = [
   'audio/audio-test-1',
   'audio/empty_albumi_song3',
@@ -41,6 +17,30 @@ extractor_tests = [
   'office/powerpoint',
   'office/pdf-doc',
 ]
+
+functional_tests = [
+  '300-miner-basic-ops',
+  '301-miner-resource-removal',
+  '310-fts-basic',
+  '311-fts-file-operations',
+  '312-fts-stopwords',
+  '410-extractor-decorator',
+]
+
+# FIXME: these are currently skipped as they don't work.
+
+# '500-writeback',
+# '501-writeback-details',
+# '600-applications-camera',
+# '601-applications-sync',
+
+test_runner = find_program('test-runner.sh')
+
+config_json = configure_file(
+  input: 'configuration.json.in',
+  output: 'configuration.json',
+  configuration: conf
+)
 
 detect_h264_codec = join_paths(meson.current_source_dir(), 'detect-h264-codec.sh')
 detect_h264_codec_result = run_command(detect_h264_codec)
@@ -73,6 +73,14 @@ test_env.set('TRACKER_FUNCTIONAL_TEST_BUILD_DIR', meson.build_root())
 test_env.set('TRACKER_FUNCTIONAL_TEST_CONFIG', config_json_full_path)
 test_env.set('TRACKER_TEST_DOMAIN_ONTOLOGY_RULE', tracker_uninstalled_domain_rule)
 
+foreach t: extractor_tests
+  data = join_paths('test-extraction-data', t) + '.expected.json'
+  test('functional/extract/' + t, test_runner,
+    args: ['./400-extractor-metadata.py', data],
+    env: test_env,
+    workdir: meson.current_source_dir())
+endforeach
+
 foreach t: functional_tests
   test('functional-' + t, test_runner,
     args: './' + t + '.py',
@@ -80,12 +88,4 @@ foreach t: functional_tests
     workdir: meson.current_source_dir(),
     # FIXME: these tests are all too slow
     timeout: 180)
-endforeach
-
-foreach t: extractor_tests
-  data = join_paths('test-extraction-data', t) + '.expected.json'
-  test('functional/extract/' + t, test_runner,
-    args: ['./400-extractor-metadata.py', data],
-    env: test_env,
-    workdir: meson.current_source_dir())
 endforeach
