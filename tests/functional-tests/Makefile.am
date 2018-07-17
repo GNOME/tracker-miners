@@ -20,14 +20,6 @@ config_SCRIPTS = \
 	600-applications-camera.py \
 	601-applications-sync.py
 
-tests = \
-	300-miner-basic-ops.py \
-	301-miner-resource-removal.py \
-	310-fts-basic.py \
-	311-fts-file-operations.py \
-	312-fts-stopwords.py \
-	410-extractor-decorator.py
-
 extractor_tests = \
   $(srcdir)/test-extraction-data/audio/audio-test-1.expected.json \
   $(srcdir)/test-extraction-data/audio/empty_albumi_song3.expected.json \
@@ -65,15 +57,6 @@ TEST_RUNNER = $(top_srcdir)/tests/functional-tests/test-runner.sh
 
 functional-test: ${tests}
 	@set -e ; \
-	for test in ${tests} ; do \
-		export DCONF_PROFILE=$(abs_srcdir)/trackertest ; \
-		export LANG=en_US.UTF8 ; \
-		export TRACKER_EXTRACTORS_DIR=$(top_builddir)/src/tracker-extract/.libs; \
-		export TRACKER_EXTRACTOR_RULES_DIR=$(top_srcdir)/src/tracker-extract; \
-		export TRACKER_FUNCTIONAL_TEST_BUILD_DIR=$(top_builddir) ; \
-		export TRACKER_FUNCTIONAL_TEST_CONFIG=$(top_builddir)/tests/functional-tests/configuration.json ; \
-		$(TEST_RUNNER) python $(top_srcdir)/tests/functional-tests/$$test; \
-	done; \
 	for extractor_test in ${extractor_tests} ; do \
 		export DCONF_PROFILE=$(abs_srcdir)/trackertest ; \
 		export LANG=en_US.UTF8 ; \
@@ -82,6 +65,15 @@ functional-test: ${tests}
 		export TRACKER_FUNCTIONAL_TEST_BUILD_DIR=$(top_builddir) ; \
 		export TRACKER_FUNCTIONAL_TEST_CONFIG=$(top_builddir)/tests/functional-tests/configuration.json ; \
 		$(TEST_RUNNER) python $(top_srcdir)/tests/functional-tests/400-extractor-metadata.py $$extractor_test; \
+	done ; \
+	for test in ${tests} ; do \
+		export DCONF_PROFILE=$(abs_srcdir)/trackertest ; \
+		export LANG=en_US.UTF8 ; \
+		export TRACKER_EXTRACTORS_DIR=$(top_builddir)/src/tracker-extract/.libs; \
+		export TRACKER_EXTRACTOR_RULES_DIR=$(top_srcdir)/src/tracker-extract; \
+		export TRACKER_FUNCTIONAL_TEST_BUILD_DIR=$(top_builddir) ; \
+		export TRACKER_FUNCTIONAL_TEST_CONFIG=$(top_builddir)/tests/functional-tests/configuration.json ; \
+		$(TEST_RUNNER) python $(top_srcdir)/tests/functional-tests/$$test; \
 	done
 
 EXTRA_DIST = \
