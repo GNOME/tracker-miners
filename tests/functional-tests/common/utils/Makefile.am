@@ -11,6 +11,7 @@ utils_SCRIPTS =                                        \
 	applicationstest.py			       \
 	writebacktest.py			       \
 	options.py				       \
-	system.py
+	system.py                                      \
+	mainloop.py
 
 EXTRA_DIST = $(utils_SCRIPTS)

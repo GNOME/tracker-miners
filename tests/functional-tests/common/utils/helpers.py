@@ -27,6 +27,7 @@ import time
 import re
 
 import configuration as cfg
+import mainloop
 import options
 
 class NoMetadataException (Exception):
@@ -61,21 +62,9 @@ class Helper:
         self.process = None
         self.available = False
 
-        self.loop = GObject.MainLoop ()
-        self.install_glib_excepthook(self.loop)
+        self.loop = mainloop.MainLoop()
 
         self.bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
-
-    def install_glib_excepthook(self, loop):
-        """
-        Handler to abort test if an exception occurs inside the GLib main loop.
-        """
-        old_hook = sys.excepthook
-        def new_hook(etype, evalue, etb):
-            old_hook(etype, evalue, etb)
-            GLib.MainLoop.quit(loop)
-            sys.exit(1)
-        sys.excepthook = new_hook
 
     def _start_process (self):
         path = self.PROCESS_PATH
@@ -143,7 +132,7 @@ class Helper:
         self._bus_name_watch_id = Gio.bus_watch_name_on_connection(
             self.bus, self.BUS_NAME, Gio.BusNameWatcherFlags.NONE,
             self._bus_name_appeared, self._bus_name_vanished)
-        self.loop.run()
+        self.loop.run_checked()
 
         if options.is_manual_start():
             print ("Start %s manually" % self.PROCESS_NAME)
@@ -160,7 +149,7 @@ class Helper:
         self.abort_if_process_exits_with_status_0 = True
 
         # Run the loop until the bus name appears, or the process dies.
-        self.loop.run ()
+        self.loop.run_checked ()
 
         self.abort_if_process_exits_with_status_0 = False
 
@@ -187,7 +176,7 @@ class Helper:
         log ("[%s] stopped." % self.PROCESS_NAME)
 
         # Run the loop until the bus name appears, or the process dies.
-        self.loop.run ()
+        self.loop.run_checked ()
         Gio.bus_unwatch_name(self._bus_name_watch_id)
 
         self.process = None
@@ -200,7 +189,7 @@ class Helper:
         self.process.kill ()
 
         # Name owner changed callback should take us out from this loop
-        self.loop.run ()
+        self.loop.run_checked ()
         Gio.bus_unwatch_name(self._bus_name_watch_id)
 
         self.process = None
@@ -377,7 +366,7 @@ class StoreHelper (Helper):
             self._enable_await_timeout ()
             self.inserts_match_function = match_cb
             # Run the event loop until the correct notification arrives
-            self.loop.run ()
+            self.loop.run_checked ()
             self.inserts_match_function = None
 
         if self.graph_updated_timed_out:
@@ -418,7 +407,7 @@ class StoreHelper (Helper):
             self._enable_await_timeout ()
             self.deletes_match_function = match_cb
             # Run the event loop until the correct notification arrives
-            self.loop.run ()
+            self.loop.run_checked ()
             self.deletes_match_function = None
 
         if self.graph_updated_timed_out:
@@ -469,7 +458,7 @@ class StoreHelper (Helper):
             self.inserts_match_function = match_inserts_cb
             self.deletes_match_function = match_deletes_cb
             # Run the event loop until the correct notification arrives
-            self.loop.run ()
+            self.loop.run_checked ()
             self.inserts_match_function = None
             self.deletes_match_function = None
 
