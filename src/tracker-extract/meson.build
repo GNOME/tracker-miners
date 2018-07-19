@@ -5,35 +5,35 @@
 # This might be nicer if Meson supported dictionary types.
 
 modules = [
-  ['extract-bmp', 'tracker-extract-bmp.c', '10-bmp.rule', [tracker_miners_common_dep]],
+  ['extract-bmp', 'tracker-extract-bmp.c', ['10-bmp.rule'], [tracker_miners_common_dep]],
   ['extract-dummy', 'tracker-extract-dummy.c', ['10-comics.rule', '10-ebooks.rule'], [tracker_miners_common_dep]]
 ]
 
 if get_option('abiword')
-  modules += [['extract-abw', 'tracker-extract-abw.c', '10-abw.rule', [tracker_miners_common_dep]]]
+  modules += [['extract-abw', 'tracker-extract-abw.c', ['10-abw.rule'], [tracker_miners_common_dep]]]
 endif
 
 if get_option('dvi')
-  modules += [['extract-dvi', 'tracker-extract-dvi.c', '10-dvi.rule', [tracker_miners_common_dep]]]
+  modules += [['extract-dvi', 'tracker-extract-dvi.c', ['10-dvi.rule'], [tracker_miners_common_dep]]]
 endif
 
 if libgsf.found()
-  modules += [['extract-epub', 'tracker-extract-epub.c', '10-epub.rule', [libgsf, tracker_miners_common_dep]]]
-  modules += [['extract-msoffice', 'tracker-extract-msoffice.c', '10-msoffice.rule', [libgsf, tracker_miners_common_dep]]]
-  modules += [['extract-msoffice-xml', 'tracker-extract-msoffice-xml.c', '11-msoffice-xml.rule', [libgsf, tracker_miners_common_dep]]]
-  modules += [['extract-oasis', 'tracker-extract-oasis.c', '10-oasis.rule', [libgsf, tracker_miners_common_dep]]]
+  modules += [['extract-epub', 'tracker-extract-epub.c', ['10-epub.rule'], [libgsf, tracker_miners_common_dep]]]
+  modules += [['extract-msoffice', 'tracker-extract-msoffice.c', ['10-msoffice.rule'], [libgsf, tracker_miners_common_dep]]]
+  modules += [['extract-msoffice-xml', 'tracker-extract-msoffice-xml.c', ['11-msoffice-xml.rule'], [libgsf, tracker_miners_common_dep]]]
+  modules += [['extract-oasis', 'tracker-extract-oasis.c', ['10-oasis.rule'], [libgsf, tracker_miners_common_dep]]]
 endif
 
 if flac.found()
-  modules += [['extract-flac', 'tracker-extract-flac.c', '10-flac.rule', [flac, tracker_miners_common_dep]]]
+  modules += [['extract-flac', 'tracker-extract-flac.c', ['10-flac.rule'], [flac, tracker_miners_common_dep]]]
 endif
 
 if gexiv2.found()
-  modules += [['extract-raw', 'tracker-extract-raw.c', '10-raw.rule', [gexiv2, tracker_miners_common_dep]]]
+  modules += [['extract-raw', 'tracker-extract-raw.c', ['10-raw.rule'], [gexiv2, tracker_miners_common_dep]]]
 endif
 
 if libgif.found()
-  modules += [['extract-gif', 'tracker-extract-gif.c', '10-gif.rule', [libgif, tracker_miners_common_dep]]]
+  modules += [['extract-gif', 'tracker-extract-gif.c', ['10-gif.rule'], [libgif, tracker_miners_common_dep]]]
 endif
 
 if generic_media_handler_name == 'gstreamer'
@@ -52,45 +52,45 @@ if generic_media_handler_name == 'gstreamer'
 endif
 
 if libxml2.found()
-  modules += [['extract-html', 'tracker-extract-html.c', '10-html.rule', [libxml2]]]
+  modules += [['extract-html', 'tracker-extract-html.c', ['10-html.rule'], [libxml2]]]
 endif
 
 if libjpeg.found()
-  modules += [['extract-jpeg', 'tracker-extract-jpeg.c', '10-jpeg.rule', [libjpeg, tracker_miners_common_dep]]]
+  modules += [['extract-jpeg', 'tracker-extract-jpeg.c', ['10-jpeg.rule'], [libjpeg, tracker_miners_common_dep]]]
 endif
 
 if generic_media_handler_name == 'libav'
-  rules = ['90-libav-audio-generic.rule', '90-libav-video-generic.rule']
+  rules = ['90-libav-audio-generic.rule', ['90-libav-video-generic.rule']]
   dependencies = [avcodec, avformat, avutil, tracker_miners_common_dep]
   modules += [['extract-libav', 'tracker-extract-libav.c', rules, dependencies]]
 endif
 
 if get_option('icon')
-  modules += [['extract-icon', 'tracker-extract-icon.c', '10-ico.rule', []]]
+  modules += [['extract-icon', 'tracker-extract-icon.c', ['10-ico.rule'], []]]
 endif
 
 if libosinfo.found()
-  modules += [['extract-iso', 'tracker-extract-iso.c', '11-iso.rule', [libosinfo]]]
+  modules += [['extract-iso', 'tracker-extract-iso.c', ['11-iso.rule'], [libosinfo]]]
 endif
 
 if get_option('mp3')
-  modules += [['extract-mp3', 'tracker-extract-mp3.c', '10-mp3.rule', [tracker_miners_common_dep]]]
+  modules += [['extract-mp3', 'tracker-extract-mp3.c', ['10-mp3.rule'], [tracker_miners_common_dep]]]
 endif
 
 if poppler.found()
-  modules += [['extract-pdf', 'tracker-extract-pdf.c', '10-pdf.rule', [poppler, tracker_miners_common_dep]]]
+  modules += [['extract-pdf', 'tracker-extract-pdf.c', ['10-pdf.rule'], [poppler, tracker_miners_common_dep]]]
 endif
 
 if totem_plparser.found()
-  modules += [['extract-playlist', 'tracker-extract-playlist.c', '15-playlist.rule', [totem_plparser]]]
+  modules += [['extract-playlist', 'tracker-extract-playlist.c', ['15-playlist.rule'], [totem_plparser]]]
 endif
 
 if libpng.found()
-  modules += [['extract-png', 'tracker-extract-png.c', '10-png.rule', [libpng, tracker_miners_common_dep]]]
+  modules += [['extract-png', 'tracker-extract-png.c', ['10-png.rule'], [libpng, tracker_miners_common_dep]]]
 endif
 
 if get_option('ps')
-  modules += [['extract-ps', 'tracker-extract-ps.c', '10-ps.rule', [tracker_miners_common_dep]]]
+  modules += [['extract-ps', 'tracker-extract-ps.c', ['10-ps.rule'], [tracker_miners_common_dep]]]
 endif
 
 if get_option('text')
@@ -98,26 +98,26 @@ if get_option('text')
 endif
 
 if libtiff.found()
-  modules += [['extract-tiff', 'tracker-extract-tiff.c', '10-tiff.rule', [libtiff, tracker_miners_common_dep]]]
+  modules += [['extract-tiff', 'tracker-extract-tiff.c', ['10-tiff.rule'], [libtiff, tracker_miners_common_dep]]]
 endif
 
 if libvorbis.found()
-  modules += [['extract-vorbis', 'tracker-extract-vorbis.c', '10-vorbis.rule', [libvorbis, tracker_miners_common_dep]]]
+  modules += [['extract-vorbis', 'tracker-extract-vorbis.c', ['10-vorbis.rule'], [libvorbis, tracker_miners_common_dep]]]
 endif
 
 if exempi.found()
-  modules += [['extract-xmp', 'tracker-extract-xmp.c', '10-xmp.rule', []]]
+  modules += [['extract-xmp', 'tracker-extract-xmp.c', ['10-xmp.rule'], []]]
 endif
 
 if libgxps.found()
-  modules += [['extract-xps', 'tracker-extract-xps.c', '10-xps.rule', [libgxps, tracker_miners_common_dep]]]
+  modules += [['extract-xps', 'tracker-extract-xps.c', ['10-xps.rule'], [libgxps, tracker_miners_common_dep]]]
 endif
 
 
 foreach module : modules
   name = module[0]
   sources = module[1]
-  rule = module[2]
+  rules = module[2]
   dependencies = module[3]
 
   shared_module(name, sources,
@@ -127,7 +127,16 @@ foreach module : modules
     install: true,
     install_dir: tracker_extract_modules_dir)
 
-  install_data(rule, install_dir: tracker_extract_rules_dir)
+  install_data(rules, install_dir: tracker_extract_rules_dir)
+
+  # Populate tracker_uninstalled_extract_rules_dir with the enabled .rule files.
+  foreach rule: rules
+    empty_conf = configuration_data()
+    configure_file(
+      input: rule,
+      output: rule,
+      configuration: empty_conf)
+  endforeach
 endforeach
 
 tracker_extract_priority_dbus = gnome.gdbus_codegen(
