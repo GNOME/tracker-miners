@@ -304,9 +304,4 @@ class MinerCrawlTest (CommonTrackerMinerTest):
         self.assertEquals (len (result), 3)
 
 if __name__ == "__main__":
-    print """
-     Tests for Copy/move/delete operations of FILES between monitored/unmonitored locations.
-
-     We need to do the same for DIRECTORIES!
-    """
     ut.main(failfast=True)
