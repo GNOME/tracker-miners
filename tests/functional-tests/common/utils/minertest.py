@@ -72,7 +72,10 @@ class CommonTrackerMinerTest (ut.TestCase):
             }
         }
 
-        self.system.tracker_miner_fs_testing_start (config)
+        try:
+            self.system.tracker_miner_fs_testing_start (config)
+        except RuntimeError as e:
+            self.fail(e)
 
         self.tracker = self.system.store
 

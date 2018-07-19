@@ -20,6 +20,7 @@
 from gi.repository import Gio
 from gi.repository import GLib
 from gi.repository import GObject
+import atexit
 import os
 import sys
 import subprocess
@@ -38,6 +39,15 @@ REASONABLE_TIMEOUT = 30
 def log (message):
     if options.is_verbose ():
         print (message)
+
+
+_process_list = []
+
+def _cleanup_processes():
+    for process in _process_list:
+        process.stop()
+atexit.register(_cleanup_processes)
+
 
 class Helper:
     """
@@ -67,6 +77,9 @@ class Helper:
         self.bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
 
     def _start_process (self):
+        global _process_list
+        _process_list.append(self)
+
         path = self.PROCESS_PATH
         flags = getattr (self,
                          "FLAGS",
@@ -154,6 +167,8 @@ class Helper:
         self.abort_if_process_exits_with_status_0 = False
 
     def stop (self):
+        global _process_list
+
         if self.process is None:
             # Seems that it didn't even start...
             return
@@ -180,8 +195,12 @@ class Helper:
         Gio.bus_unwatch_name(self._bus_name_watch_id)
 
         self.process = None
+        _process_list.remove(self)
+
 
     def kill (self):
+        global _process_list
+
         if options.is_manual_start():
             log ("kill(): ignoring, because process was started manually.")
             return
@@ -193,6 +212,7 @@ class Helper:
         Gio.bus_unwatch_name(self._bus_name_watch_id)
 
         self.process = None
+        _process_list.remove(self)
 
         log ("[%s] killed." % self.PROCESS_NAME)
 
