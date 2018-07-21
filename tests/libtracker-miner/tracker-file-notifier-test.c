@@ -667,6 +667,7 @@ test_file_notifier_monitor_updates_non_recursive (TestCommonContext *fixture,
 		{ OPERATION_CREATE, "non-recursive/bbb", NULL }
 	};
 	FilesystemOperation expected_results2[] = {
+		{ OPERATION_CREATE, "non-recursive", NULL },
 		{ OPERATION_UPDATE, "non-recursive/bbb", NULL },
 		{ OPERATION_CREATE, "non-recursive/ccc", NULL },
 		{ OPERATION_UPDATE, "non-recursive/ccc", NULL }
@@ -715,6 +716,7 @@ test_file_notifier_monitor_updates_recursive (TestCommonContext *fixture,
 		{ OPERATION_CREATE, "recursive/bbb", NULL }
 	};
 	FilesystemOperation expected_results2[] = {
+		{ OPERATION_CREATE, "recursive", NULL },
 		{ OPERATION_CREATE, "recursive/folder", NULL },
 		{ OPERATION_CREATE, "recursive/folder/aaa", NULL },
 		{ OPERATION_UPDATE, "recursive/bbb", NULL },
