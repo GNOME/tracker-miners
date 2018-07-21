@@ -25,14 +25,14 @@ functional_tests = [
   '311-fts-file-operations',
   '312-fts-stopwords',
   '410-extractor-decorator',
+  '500-writeback',
+  '501-writeback-details',
+  '601-applications-sync',
 ]
 
-# FIXME: these are currently skipped as they don't work.
+# FIXME: this is currently skipped as it doesn't work.
+'600-applications-camera',
 
-# '500-writeback',
-# '501-writeback-details',
-# '600-applications-camera',
-# '601-applications-sync',
 
 test_runner = find_program('test-runner.sh')
 

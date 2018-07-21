@@ -15,10 +15,7 @@ config_SCRIPTS = \
 	__init__.py \
 	$(tests) \
 	400-extractor-metadata.py \
-	500-writeback.py \
-	501-writeback-details.py \
-	600-applications-camera.py \
-	601-applications-sync.py
+	600-applications-camera.py
 
 extractor_tests = \
   $(srcdir)/test-extraction-data/audio/audio-test-1.expected.json \
@@ -51,7 +48,10 @@ tests = \
 	310-fts-basic.py \
 	311-fts-file-operations.py \
 	312-fts-stopwords.py \
-	410-extractor-decorator.py
+	410-extractor-decorator.py \
+	500-writeback.py \
+	501-writeback-details.py \
+	601-applications-sync.py
 
 TEST_RUNNER = $(top_srcdir)/tests/functional-tests/test-runner.sh
 
