@@ -1,3 +1,6 @@
+option('tracker_core', type: 'combo', choices: ['system', 'subproject'], value: 'system',
+       description: 'Use the system-installed version of Tracker core libraries, or build our own version as a Meson subproject.')
+
 option('docs', type: 'boolean', value: true,
        description: 'Enable the documentation')
 option('extract', type: 'boolean', value: true,

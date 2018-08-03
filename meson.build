@@ -9,11 +9,32 @@ tracker_api_version = '2.0'
 
 glib_required = '2.40.0'
 
-tracker_sparql = dependency('tracker-sparql-2.0', version: '>= 2.1.0', required: false)
-tracker_miner = dependency('tracker-miner-2.0', version: '>= 2.1.0', required: false)
+if get_option('tracker_core') == 'system'
+  tracker_sparql = dependency('tracker-sparql-2.0', version: '>= 2.1.0', required: false)
+  tracker_miner = dependency('tracker-miner-2.0', version: '>= 2.1.0', required: false)
 
-if not tracker_sparql.found() or not tracker_miner.found()
-  message('Tracker libraries were not found or are too old. A local copy will be built if possible.')
+  if not tracker_sparql.found() or not tracker_miner.found()
+    error('''Did not find the required versoins of the Tracker core libraries
+             installed in the system. Please ensure they are installed, or use
+             the -Dtracker_core=subproject option to build from Git.''')
+  endif
+
+  # The tracker-miners will not work unless installed into the same prefix as
+  # the base 'tracker' package as it expects to be able to access data files
+  # in ${prefix}/{datadir}/tracker.
+  #
+  # This check acts as a guard to make sure we are being configured with the
+  # right prefix, among other things.
+  tracker_store = find_program(join_paths(get_option('prefix'), get_option('libexecdir'), 'tracker-store'))
+  tracker_store_path = tracker_store.path()
+
+  # If we are building against an installed version of tracker core rather than
+  # having it as a subproject, these 'uninstalled' locations point to the actual
+  # installed locations.
+  tracker_uninstalled_domain_rule = join_paths(get_option('prefix'), get_option('datadir'), 'tracker', 'domain-ontologies', 'default.rule')
+  tracker_uninstalled_nepomuk_ontologies_dir = join_paths(get_option('prefix'), get_option('datadir'), 'tracker', 'ontologies', 'nepomuk')
+  tracker_uninstalled_stop_words_dir = join_paths(get_option('prefix'), get_option('datadir'), 'tracker', 'stop-words', 'default.rule')
+else
   tracker_subproject = subproject('tracker',
     default_options: [
        'dbus_services=@0@'.format(get_option('dbus_services')),
@@ -30,22 +51,6 @@ if not tracker_sparql.found() or not tracker_miner.found()
   tracker_uninstalled_domain_rule = tracker_subproject.get_variable('tracker_uninstalled_domain_rule')
   tracker_uninstalled_nepomuk_ontologies_dir = tracker_subproject.get_variable('tracker_uninstalled_nepomuk_ontologies_dir')
   tracker_uninstalled_stop_words_dir = tracker_subproject.get_variable('tracker_uninstalled_stop_words_dir')
-else
-  # The tracker-miners will not work unless installed into the same prefix as
-  # the base 'tracker' package as it expects to be able to access data files
-  # in ${prefix}/{datadir}/tracker.
-  #
-  # This check acts as a guard to make sure we are being configured with the
-  # right prefix, among other things.
-  tracker_store = find_program(join_paths(get_option('prefix'), get_option('libexecdir'), 'tracker-store'))
-  tracker_store_path = tracker_store.path()
-
-  # If we are building against an installed version of tracker core rather than
-  # having it as a subproject, these 'uninstalled' locations point to the actual
-  # installed locations.
-  tracker_uninstalled_domain_rule = join_paths(get_option('prefix'), get_option('datadir'), 'tracker', 'domain-ontologies', 'default.rule')
-  tracker_uninstalled_nepomuk_ontologies_dir = join_paths(get_option('prefix'), get_option('datadir'), 'tracker', 'ontologies', 'nepomuk')
-  tracker_uninstalled_stop_words_dir = join_paths(get_option('prefix'), get_option('datadir'), 'tracker', 'stop-words', 'default.rule')
 endif
 
 avcodec = dependency('libavcodec', version: '>= 0.8.4', required: false)
