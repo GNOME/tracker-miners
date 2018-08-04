@@ -29,7 +29,7 @@
             ]
         },
         "nmm:musicAlbum": {
-            "@id": "urn:album:SinCos:2008-01-01T00:00:00Z",
+            "@id": "urn:album:SinCos:2008-01-01",
             "@type": "nmm:MusicAlbum",
             "nie:title": "SinCos",
             "tracker:hasExternalReference": [
@@ -48,7 +48,7 @@
             ]
         },
         "nmm:musicAlbumDisc": {
-            "@id": "urn:album-disc:SinCos:2008-01-01T00:00:00Z:Disc1",
+            "@id": "urn:album-disc:SinCos:2008-01-01:Disc1",
             "@type": "nmm:MusicAlbumDisc",
             "nmm:setNumber": 1
         },

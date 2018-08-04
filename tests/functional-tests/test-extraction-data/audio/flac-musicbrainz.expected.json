@@ -12,12 +12,12 @@
         "nfo:genre": "Rock",
         "nfo:sampleRate": "44100",
         "nie:comment": "no comment",
-        "nie:contentCreated": "2020-01-01T00:00:00+00:00",
+        "nie:contentCreated": "2020-01-01",
         "nie:copyright": "none",
         "nie:title": "track title",
         "nmm:trackNumber": "12",
         "nmm:musicAlbum": {
-            "@id": "urn:album:awesome%20album:my%20album%20artist:2020-01-01T00:00:00+00:00",
+            "@id": "urn:album:awesome%20album:my%20album%20artist:2020-01-01",
             "@type": "nmm:MusicAlbum",
             "nie:title": "awesome album",
             "nmm:albumTrackCount": "28",
@@ -43,7 +43,7 @@
             ]
         },
         "nmm:musicAlbumDisc": {
-            "@id": "urn:album-disc:awesome%20album:my%20album%20artist:2020-01-01T00:00:00+00:00:Disc1",
+            "@id": "urn:album-disc:awesome%20album:my%20album%20artist:2020-01-01",
             "@type": "nmm:MusicAlbumDisc",
             "nmm:setNumber": 1
         },
