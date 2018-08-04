@@ -250,7 +250,7 @@ tracker_extract_new_music_album_disc (const char      *album_title,
                                       int              disc_number,
                                       const char      *date)
 {
-	GString *album_uri, *disc_uri;
+	GString *album_uri, *disc_uri, *shared;
 	const gchar *album_artist_name = NULL;
 	gchar *tmp_album_uri, *tmp_disc_uri;
 
@@ -261,17 +261,18 @@ tracker_extract_new_music_album_disc (const char      *album_title,
 	if (album_artist)
 		album_artist_name = tracker_resource_get_first_string (album_artist,
 		                                                       "nmm:artistName");
+	shared = g_string_new (NULL);
 
-	album_uri = g_string_new ("urn:album:");
-
-	g_string_append (album_uri, album_title);
+	g_string_append (shared, album_title);
 
 	if (album_artist_name)
-		g_string_append_printf (album_uri, ":%s", album_artist_name);
+		g_string_append_printf (shared, ":%s", album_artist_name);
 
 	if (date)
-		g_string_append_printf (album_uri, ":%s", date);
+		g_string_append_printf (shared, ":%s", date);
 
+	album_uri = g_string_new ("urn:album:");
+	g_string_append (album_uri, shared->str);
 	tmp_album_uri = tracker_sparql_escape_uri (album_uri->str);
 	album = tracker_resource_new (tmp_album_uri);
 
@@ -282,16 +283,7 @@ tracker_extract_new_music_album_disc (const char      *album_title,
 		tracker_resource_add_relation (album, "nmm:albumArtist", album_artist);
 
 	disc_uri = g_string_new ("urn:album-disc:");
-
-	g_string_append (disc_uri, album_title);
-
-	if (album_artist_name)
-		g_string_append_printf (disc_uri, ":%s", album_artist_name);
-
-	if (date)
-		g_string_append_printf (disc_uri, ":%s", date);
-
-	g_string_append_printf (disc_uri, ":Disc%d", disc_number);
+	g_string_append_printf (disc_uri, "%s:Disc%d", shared->str, disc_number);
 
 	tmp_disc_uri = tracker_sparql_escape_uri (disc_uri->str);
 	album_disc = tracker_resource_new (tmp_disc_uri);
@@ -304,6 +296,7 @@ tracker_extract_new_music_album_disc (const char      *album_title,
 	g_free (tmp_disc_uri);
 	g_string_free (album_uri, TRUE);
 	g_string_free (disc_uri, TRUE);
+	g_string_free (shared, TRUE);
 
 	g_object_unref (album);
 
