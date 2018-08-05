@@ -250,26 +250,23 @@ get_gst_date_time_to_buf (GstDateTime *date_time,
 	return complete;
 }
 
-static void
-add_date_time_gst_tag_with_mtime_fallback (TrackerResource *resource,
-                                           const gchar     *uri,
-                                           const gchar     *key,
-                                           GstTagList      *tag_list,
-                                           const gchar     *tag_date_time,
-                                           const gchar     *tag_date)
+static gboolean
+extract_gst_date_time (gchar       *buf,
+		       size_t       size,
+		       GstTagList  *tag_list,
+		       const gchar *tag_date_time,
+		       const gchar *tag_date)
 {
-	GstDateTime *date_time;
-	GDate *date;
-	gchar buf[26];
+	GstDateTime *date_time = NULL;
+	GDate *date = NULL;
+	gboolean ret = FALSE;
 
-	date_time = NULL;
-	date = NULL;
 	buf[0] = '\0';
 
 	if (gst_tag_list_get_date_time (tag_list, tag_date_time, &date_time)) {
 		gboolean complete;
 
-		complete = get_gst_date_time_to_buf (date_time, buf, sizeof (buf));
+		complete = get_gst_date_time_to_buf (date_time, buf, size);
 		gst_date_time_unref (date_time);
 
 		if (!complete) {
@@ -287,13 +284,28 @@ add_date_time_gst_tag_with_mtime_fallback (TrackerResource *resource,
 
 		if (ret) {
 			/* GDate does not carry time zone information, assume UTC */
-			g_date_strftime (buf, sizeof (buf), "%Y-%m-%dT%H:%M:%SZ", date);
+			g_date_strftime (buf, size, "%Y-%m-%dT%H:%M:%SZ", date);
 		}
 	}
 
 	if (date) {
 		g_date_free (date);
 	}
+
+	return ret;
+}
+
+static void
+add_date_time_gst_tag_with_mtime_fallback (TrackerResource *resource,
+                                           const gchar     *uri,
+                                           const gchar     *key,
+                                           GstTagList      *tag_list,
+                                           const gchar     *tag_date_time,
+                                           const gchar     *tag_date)
+{
+	gchar buf[26];
+
+	extract_gst_date_time (buf, sizeof (buf), tag_list, tag_date_time, tag_date);
 
 	tracker_guarantee_resource_date_from_file_mtime (resource, key, buf, uri);
 }
