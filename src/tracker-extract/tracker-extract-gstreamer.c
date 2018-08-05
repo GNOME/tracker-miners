@@ -551,14 +551,13 @@ static TrackerResource *
 extractor_maybe_get_album_disc (MetadataExtractor *extractor,
                                 GstTagList        *tag_list)
 {
-	GstDateTime *datetime_temp = NULL;
 	TrackerResource *album = NULL, *album_artist = NULL, *album_disc = NULL;
 	gchar *album_artist_name = NULL;
-	gchar *album_datetime = NULL;
 	gchar *album_title = NULL;
 	gchar *track_artist_temp = NULL;
-	gboolean has_it;
+	gboolean has_it, has_date;
 	guint volume_number;
+	gchar album_datetime[26];
 
 	gst_tag_list_get_string (tag_list, GST_TAG_ALBUM, &album_title);
 
@@ -567,26 +566,24 @@ extractor_maybe_get_album_disc (MetadataExtractor *extractor,
 
 	gst_tag_list_get_string (tag_list, GST_TAG_ALBUM_ARTIST, &album_artist_name);
 	gst_tag_list_get_string (tag_list, GST_TAG_ARTIST, &track_artist_temp);
-	gst_tag_list_get_date_time (tag_list, GST_TAG_DATE_TIME, &datetime_temp);
 
-	if (datetime_temp)
-		album_datetime = gst_date_time_to_iso8601_string (datetime_temp);
+	has_date = extract_gst_date_time (album_datetime, sizeof (album_datetime),
+					  tag_list, GST_TAG_DATE_TIME, GST_TAG_DATE);
+
 	album_artist = intern_artist (extractor, album_artist_name);
 	has_it = gst_tag_list_get_uint (tag_list, GST_TAG_ALBUM_VOLUME_NUMBER, &volume_number);
 
 	album_disc = tracker_extract_new_music_album_disc (album_title,
 	                                                   album_artist,
 	                                                   has_it ? volume_number : 1,
-	                                                   album_datetime);
+	                                                   has_date ? album_datetime : NULL);
 
 	album = tracker_resource_get_first_relation (album_disc, "nmm:albumDiscAlbum");
 	set_property_from_gst_tag (album, "nmm:albumTrackCount", tag_list, GST_TAG_TRACK_COUNT);
 	set_property_from_gst_tag (album, "nmm:albumGain", extractor->tagcache, GST_TAG_ALBUM_GAIN);
 	set_property_from_gst_tag (album, "nmm:albumPeakGain", extractor->tagcache, GST_TAG_ALBUM_PEAK);
 
-	g_clear_pointer (&datetime_temp, (GDestroyNotify) gst_date_time_unref);
 	g_free (album_artist_name);
-	g_free (album_datetime);
 	g_free (track_artist_temp);
 
 	return album_disc;
