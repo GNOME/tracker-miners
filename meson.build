@@ -245,9 +245,9 @@ if generic_media_handler_name == 'gstreamer'
     endif
   elif get_option('gstreamer_backend') == 'gupnp'
     if gupnp_dlna.found() and gupnp_dlna_gst.found()
-      gstreamer_backend_name = 'GUPnP-DNLA'
+      gstreamer_backend_name = 'GUPnP-DLNA'
     else
-      error('GStreamer GUPnP-DNLA backend requires the gupNp and gupnp-gst libraries')
+      error('GStreamer GUPnP-DLNA backend requires the gupNp and gupnp-gst libraries')
     endif
   endif
 endif
@@ -306,7 +306,7 @@ conf.set('HAVE_ENCA', charset_library_name == 'enca')
 conf.set('HAVE_EXEMPI', exempi.found())
 conf.set('HAVE_GSTREAMER', generic_media_handler_name == 'gstreamer')
 conf.set('GSTREAMER_BACKEND_DISCOVERER', gstreamer_backend_name == 'Discoverer')
-conf.set('GSTREAMER_BACKEND_GUPNP_DLNA', gstreamer_backend_name == 'GUPnP-DNLA')
+conf.set('GSTREAMER_BACKEND_GUPNP_DLNA', gstreamer_backend_name == 'GUPnP-DLNA')
 conf.set('HAVE_HAL', battery_detection_library_name == 'hal')
 conf.set('HAVE_LIBCUE', libcue.found())
 conf.set('HAVE_LIBCUE2', libcue.version() >= '2.0.0')
