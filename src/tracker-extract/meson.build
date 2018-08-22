@@ -41,9 +41,9 @@ if generic_media_handler_name == 'gstreamer'
   rules = ['10-svg.rule', '15-gstreamer-guess.rule', '90-gstreamer-image-generic.rule', '90-gstreamer-audio-generic.rule', '90-gstreamer-video-generic.rule']
   dependencies = [gstreamer, gstreamer_pbutils, libcue, tracker_miners_common_dep]
 
-  if gstreamer_backend_name == 'GUPnP-DNLA'
-    rules += '91-gstreamer-generic-dnla.rule'
-    dependencies += gupnp_dnla
+  if gstreamer_backend_name == 'GUPnP-DLNA'
+    rules += '91-gstreamer-generic-dlna.rule'
+    dependencies += gupnp_dlna
   elif gstreamer_backend_name == 'discoverer'
     dependencies += gstreamer_pbutils
   endif
