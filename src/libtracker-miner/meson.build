@@ -93,3 +93,7 @@ configure_file(
     install_dir: join_paths(get_option('prefix'), get_option('libdir'), 'pkgconfig'))
 
 install_headers(miner_headers, subdir: 'tracker-@0@/libtracker-miner'.format(tracker_api_version))
+
+install_data(
+    'tracker-miner.xml',
+    install_dir: join_paths(get_option('prefix'), get_option('datadir'), 'tracker'))
