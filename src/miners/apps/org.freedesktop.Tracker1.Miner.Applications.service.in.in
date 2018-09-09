@@ -6,5 +6,5 @@ SystemdService=tracker-miner-apps.service
 # Miner details needed for tracker-control
 Path=/org/freedesktop/Tracker1/Miner/Applications
 NameSuffix=Miner.Applications
-_DisplayName=Applications
-_Comment=Applications data miner
+DisplayName=Applications
+Comment=Applications data miner

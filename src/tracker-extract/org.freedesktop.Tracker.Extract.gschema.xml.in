@@ -21,37 +21,37 @@ Boston, MA  02110-1301, USA.
   <schema id="org.freedesktop.Tracker.Extract" path="/org/freedesktop/tracker/extract/" gettext-domain="tracker-miners">
     <key name="verbosity" enum="org.freedesktop.TrackerMiners.TrackerVerbosity">
       <default>'errors'</default>
-      <_summary>Log verbosity</_summary>
-      <_description>Log verbosity.</_description>
+      <summary>Log verbosity</summary>
+      <description>Log verbosity.</description>
     </key>
 
     <key name="sched-idle" enum="org.freedesktop.TrackerMiners.TrackerSchedIdle">
       <default>'first-index'</default>
-      <_summary>Scheduler priority when idle</_summary>
-      <_description>
+      <summary>Scheduler priority when idle</summary>
+      <description>
 	The scheduler is the kernel component that decides which
 	runnable application will be executed by the CPU next. Each
 	application has an associated scheduling policy and priority.
-      </_description>
+      </description>
     </key>
 
     <key name="max-bytes" type="i">
-      <_summary>Max bytes to extract</_summary>
-      <_description>Maximum number of UTF-8 bytes to extract.</_description>
+      <summary>Max bytes to extract</summary>
+      <description>Maximum number of UTF-8 bytes to extract.</description>
       <range min="0" max="10485760"/>
       <default>1048576</default>
     </key>
 
     <key name="max-media-art-width" type="i">
-      <_summary>Max media art width</_summary>
-      <_description>Maximum width in pixels for any media art extracted. Anything bigger is resized. Set to -1 to disable saving media art from files. Setting to 0 sets no limit on the media art width.</_description>
+      <summary>Max media art width</summary>
+      <description>Maximum width in pixels for any media art extracted. Anything bigger is resized. Set to -1 to disable saving media art from files. Setting to 0 sets no limit on the media art width.</description>
       <range min="-1" max="2048"/>
       <default>0</default>
     </key>
 
     <key name="wait-for-miner-fs" type="b">
-      <_summary>Wait for FS miner to be done before extracting</_summary>
-      <_description>When true, tracker-extract will wait for tracker-miner-fs to be done crawling before extracting meta-data. This option is useful on constrained environment where it is important to list files as fast as possible and can wait to get meta-data later.</_description>
+      <summary>Wait for FS miner to be done before extracting</summary>
+      <description>When true, tracker-extract will wait for tracker-miner-fs to be done crawling before extracting meta-data. This option is useful on constrained environment where it is important to list files as fast as possible and can wait to get meta-data later.</description>
       <default>false</default>
     </key>
   </schema>

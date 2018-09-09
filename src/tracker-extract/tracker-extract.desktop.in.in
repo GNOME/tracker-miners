@@ -1,7 +1,6 @@
 [Desktop Entry]
-_Name=Tracker Metadata Extractor
-_Comment=Extracts metadata from local files
-Icon=
+Name=Tracker Metadata Extractor
+Comment=Extracts metadata from local files
 Exec=@libexecdir@/tracker-extract
 Terminal=false
 Type=Application

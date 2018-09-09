@@ -1,7 +1,6 @@
 [Desktop Entry]
-_Name=Tracker Application Miner
-_Comment=Indexes information about applications installed
-Icon=
+Name=Tracker Application Miner
+Comment=Indexes information about applications installed
 Exec=@libexecdir@/tracker-miner-apps
 Terminal=false
 Type=Application
