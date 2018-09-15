@@ -20,7 +20,7 @@ HOME=$TEMP_DIR
 
 eval `dbus-launch --sh-syntax`
 
-trap "/bin/kill $DBUS_SESSION_BUS_PID; exit" INT ERR
+trap "/bin/kill $DBUS_SESSION_BUS_PID; exit 1" INT ERR
 
 echo "Running $@"
 $@
