@@ -8,15 +8,10 @@ src/libtracker-miners-common/tracker-dbus.c
 src/libtracker-miners-common/tracker-utils.c
 src/libtracker-miner/tracker-data-provider.c
 src/libtracker-miner/tracker-miner-proxy.c
-src/miners/fs/org.freedesktop.Tracker3.Miner.Files.service.in.in
 src/miners/fs/tracker-main.c
 src/miners/fs/tracker-miner-files.c
-src/miners/fs/tracker-miner-fs.desktop.in.in
-src/miners/rss/org.freedesktop.Tracker3.Miner.RSS.service.in.in
 src/miners/rss/tracker-main.c
 src/miners/rss/tracker-miner-rss.c
-src/miners/rss/tracker-miner-rss.desktop.in.in
-src/tracker-extract/org.freedesktop.Tracker3.Miner.Extract.service.in.in
 src/tracker-extract/tracker-extract.c
 src/tracker-extract/tracker-main.c
 src/tracker/tracker-config.c

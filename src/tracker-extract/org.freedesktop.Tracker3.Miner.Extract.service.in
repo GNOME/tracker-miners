@@ -6,5 +6,5 @@ SystemdService=tracker-extract-3.service
 # Miner details needed for tracker-control
 Path=/org/freedesktop/Tracker3/Miner/Extract
 NameSuffix=Miner.Extract
-_DisplayName=Extractor
-_Comment=Metadata extractor
+DisplayName=Extractor
+Comment=Metadata extractor
