@@ -191,18 +191,15 @@ desktop_file_untranslated = configure_file(
   output: 'tracker-extract.desktop.in',
   configuration: conf)
 
-desktop_file = custom_target('tracker-extract-desktop-file',
+i18n.merge_file('tracker-extract-desktop-file',
+  type: 'desktop',
   input: desktop_file_untranslated,
   output: 'tracker-extract.desktop',
-  command: ['intltool-merge', '--quiet', '--desktop-style', '--utf8', join_paths(meson.source_root(), 'po'), '@INPUT@', '@OUTPUT@'],
+  po_dir: po_dir,
   install: true,
-  install_dir: join_paths(get_option('sysconfdir'), 'xdg/autostart'))
+  install_dir: xdg_autostart_dir)
 
-custom_target('tracker-extract-settings-schema',
-  input: 'org.freedesktop.Tracker.Extract.gschema.xml.in',
-  output: 'org.freedesktop.Tracker.Extract.gschema.xml',
-  command: ['intltool-merge', '--quiet', '--xml-style', '--utf8', join_paths(meson.source_root(), 'po'), '@INPUT@', '@OUTPUT@'],
-  install: true,
+install_data('org.freedesktop.Tracker.Extract.gschema.xml',
   install_dir: gsettings_schema_dir)
 
 if install_systemd_user_services

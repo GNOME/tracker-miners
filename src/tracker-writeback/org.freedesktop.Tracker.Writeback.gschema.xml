@@ -21,8 +21,8 @@ Boston, MA  02110-1301, USA.
   <schema id="org.freedesktop.Tracker.Writeback" path="/org/freedesktop/tracker/writeback/" gettext-domain="tracker-miners">
     <key name="verbosity" enum="org.freedesktop.TrackerMiners.TrackerVerbosity">
       <default>'errors'</default>
-      <_summary>Log verbosity</_summary>
-      <_description>Log verbosity.</_description>
+      <summary>Log verbosity</summary>
+      <description>Log verbosity.</description>
     </key>
   </schema>
 </schemalist>

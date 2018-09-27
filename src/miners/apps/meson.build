@@ -28,12 +28,13 @@ desktop_file_untranslated = configure_file(
     output: 'tracker-miner-apps.desktop.in',
     configuration: conf)
 
-desktop_file = custom_target('tracker-miner-apps-desktop-file',
+i18n.merge_file('tracker-miner-apps-desktop-file',
+    type: 'desktop',
     input: desktop_file_untranslated,
     output: 'tracker-miner-apps.desktop',
-    command: ['intltool-merge', '--quiet', '--desktop-style', '--utf8', join_paths(meson.source_root(), 'po'), '@INPUT@', '@OUTPUT@'],
+    po_dir: po_dir,
     install: true,
-    install_dir: join_paths(get_option('sysconfdir'), 'xdg/autostart'))
+    install_dir: xdg_autostart_dir)
 
 if install_systemd_user_services
   configure_file(
