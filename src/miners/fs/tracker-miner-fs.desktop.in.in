@@ -1,7 +1,6 @@
 [Desktop Entry]
-_Name=Tracker File System Miner
-_Comment=Crawls and processes files on the file system
-Icon=
+Name=Tracker File System Miner
+Comment=Crawls and processes files on the file system
 Exec=@libexecdir@/tracker-miner-fs
 Terminal=false
 Type=Application
