@@ -381,7 +381,9 @@ tracker_writeback_modules_dir = join_paths(get_option('prefix'), get_option('lib
 tracker_uninstalled_extract_rules_dir = join_paths(meson.current_build_dir(), 'src', 'tracker-extract')
 
 gsettings_schema_dir = join_paths(get_option('prefix'), get_option('datadir'), 'glib-2.0', 'schemas')
+po_dir = join_paths(meson.current_source_dir(), 'po')
 vapi_dir = join_paths(get_option('prefix'), get_option('datadir'), 'vala', 'vapi')
+xdg_autostart_dir = join_paths(get_option('sysconfdir'), 'xdg', 'autostart')
 
 glib_mkenums = find_program('glib-mkenums')
 
