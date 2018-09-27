@@ -56,11 +56,7 @@ dbus_service_file = configure_file(
   install: true,
   install_dir: dbus_services_dir)
 
-custom_target('tracker-writeback-settings-schema',
-  input: 'org.freedesktop.Tracker.Writeback.gschema.xml.in',
-  output: 'org.freedesktop.Tracker.Writeback.gschema.xml',
-  command: ['intltool-merge', '--quiet', '--xml-style', '--utf8', join_paths(meson.source_root(), 'po'), '@INPUT@', '@OUTPUT@'],
-  install: true,
+install_data('org.freedesktop.Tracker.Writeback.gschema.xml',
   install_dir: gsettings_schema_dir)
 
 if install_systemd_user_services
