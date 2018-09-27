@@ -1,7 +1,6 @@
 *.gmo
 *.header
 *.pot
-.intltool-merge-cache
 boldquot.sed
 insert-header.sin
 Makefile.in.in
