@@ -1,7 +1,6 @@
 [Desktop Entry]
-_Name=Tracker RSS/ATOM Feeds Miner
-_Comment=Fetch RSS/ATOM feeds
-Icon=
+Name=Tracker RSS/ATOM Feeds Miner
+Comment=Fetch RSS/ATOM feeds
 Exec=@libexecdir@/tracker-miner-rss
 Terminal=false
 Type=Application
