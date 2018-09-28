@@ -386,6 +386,7 @@ vapi_dir = join_paths(get_option('prefix'), get_option('datadir'), 'vala', 'vapi
 xdg_autostart_dir = join_paths(get_option('sysconfdir'), 'xdg', 'autostart')
 
 glib_mkenums = find_program('glib-mkenums')
+msgfmt = find_program('msgfmt')
 
 subdir('src')
 
