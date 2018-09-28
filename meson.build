@@ -406,6 +406,7 @@ xdg_autostart_dir = join_paths(get_option('sysconfdir'), 'xdg', 'autostart')
 
 glib_compile_schemas = find_program('glib-compile-schemas')
 glib_mkenums = find_program('glib-mkenums')
+msgfmt = find_program('msgfmt')
 
 subdir('src')
 subdir('data')
