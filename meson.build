@@ -398,6 +398,7 @@ po_dir = join_paths(meson.current_source_dir(), 'po')
 xdg_autostart_dir = join_paths(get_option('sysconfdir'), 'xdg', 'autostart')
 
 glib_mkenums = find_program('glib-mkenums')
+msgfmt = find_program('msgfmt')
 
 subdir('src')
 subdir('data')
