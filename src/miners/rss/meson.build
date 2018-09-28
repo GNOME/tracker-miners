@@ -12,14 +12,14 @@ executable('tracker-miner-rss', sources,
 )
 
 dbus_service_file_untranslated = configure_file(
-    input: 'org.freedesktop.Tracker1.Miner.RSS.service.in.in',
-    output: 'org.freedesktop.Tracker1.Miner.RSS.service.in',
+    input: 'org.freedesktop.Tracker1.Miner.RSS.service.desktop.in.in',
+    output: 'org.freedesktop.Tracker1.Miner.RSS.service.desktop.in',
     configuration: conf)
 
 dbus_service_file = custom_target('tracker-miner-rss-dbus-service-file',
     input: dbus_service_file_untranslated,
     output: 'org.freedesktop.Tracker1.Miner.RSS.service',
-    command: ['intltool-merge', '--quiet', '--desktop-style', '--utf8', join_paths(meson.source_root(), 'po'), '@INPUT@', '@OUTPUT@'],
+    command: [msgfmt, '--desktop', '--keyword=DisplayName', '--keyword=Comment', '--template', '@INPUT@', '-d', po_dir, '-o', '@OUTPUT@'],
     install: true,
     install_dir: dbus_services_dir)
 
