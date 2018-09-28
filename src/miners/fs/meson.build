@@ -35,16 +35,19 @@ executable('tracker-miner-fs', sources,
 )
 
 dbus_service_file_untranslated = configure_file(
-    input: 'org.freedesktop.Tracker1.Miner.Files.service.in.in',
-    output: 'org.freedesktop.Tracker1.Miner.Files.service.in',
+    input: 'org.freedesktop.Tracker1.Miner.Files.service.desktop.in.in',
+    output: 'org.freedesktop.Tracker1.Miner.Files.service.desktop.in',
     configuration: conf)
 
-dbus_service_file = custom_target('tracker-miner-files-dbus-service-file',
+i18n.merge_file('tracker-miner-files-dbus-service-file',
+    type: 'desktop',
     input: dbus_service_file_untranslated,
     output: 'org.freedesktop.Tracker1.Miner.Files.service',
-    command: ['intltool-merge', '--quiet', '--desktop-style', '--utf8', join_paths(meson.source_root(), 'po'), '@INPUT@', '@OUTPUT@'],
+    po_dir: po_dir,
     install: true,
-    install_dir: dbus_services_dir)
+    install_dir: dbus_services_dir,
+    args: ['--keyword=Comment', '--keyword=DisplayName'],
+)
 
 desktop_file_untranslated = configure_file(
     input: 'tracker-miner-fs.desktop.in.in',

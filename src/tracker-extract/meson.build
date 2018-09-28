@@ -170,16 +170,19 @@ executable('tracker-extract',
   install_rpath: tracker_install_rpath)
 
 dbus_service_file_untranslated = configure_file(
-  input: 'org.freedesktop.Tracker1.Miner.Extract.service.in.in',
-  output: 'org.freedesktop.Tracker1.Miner.Extract.service.in',
+  input: 'org.freedesktop.Tracker1.Miner.Extract.service.desktop.in.in',
+  output: 'org.freedesktop.Tracker1.Miner.Extract.service.desktop.in',
   configuration: conf)
 
-dbus_service_file = custom_target('tracker-extract-dbus-service-file',
-  input: dbus_service_file_untranslated,
-  output: 'org.freedesktop.Tracker1.Miner.Extract.service',
-  command: ['intltool-merge', '--quiet', '--desktop-style', '--utf8', join_paths(meson.source_root(), 'po'), '@INPUT@', '@OUTPUT@'],
-  install: true,
-  install_dir: dbus_services_dir)
+i18n.merge_file('tracker-extract-dbus-service-file',
+    type: 'desktop',
+    input: dbus_service_file_untranslated,
+    output: 'org.freedesktop.Tracker1.Miner.Extract.service',
+    po_dir: po_dir,
+    install: true,
+    install_dir: dbus_services_dir,
+    args: ['--keyword=Comment', '--keyword=DisplayName'],
+)
 
 desktop_file_untranslated = configure_file(
   input: 'tracker-extract.desktop.in.in',
