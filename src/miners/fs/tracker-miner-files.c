@@ -532,6 +532,29 @@ miner_files_initable_iface_init (GInitableIface *iface)
 	iface->init = miner_files_initable_init;
 }
 
+static void
+miner_files_add_application_dir (TrackerMinerFiles *mf,
+                                 const gchar       *dir)
+{
+	TrackerIndexingTree *indexing_tree;
+	GFile *file;
+	gchar *path;
+
+	indexing_tree = tracker_miner_fs_get_indexing_tree (TRACKER_MINER_FS (mf));
+
+	/* Add $dir/applications */
+	path = g_build_filename (dir, "applications", NULL);
+	file = g_file_new_for_path (path);
+	g_message ("  Adding:'%s'", path);
+
+	tracker_indexing_tree_add (indexing_tree, file,
+				   TRACKER_DIRECTORY_FLAG_RECURSE |
+				   TRACKER_DIRECTORY_FLAG_MONITOR |
+				   TRACKER_DIRECTORY_FLAG_CHECK_MTIME);
+	g_object_unref (file);
+	g_free (path);
+}
+
 static gboolean
 miner_files_initable_init (GInitable     *initable,
                            GCancellable  *cancellable,
@@ -541,10 +564,13 @@ miner_files_initable_init (GInitable     *initable,
 	TrackerMinerFS *fs;
 	TrackerIndexingTree *indexing_tree;
 	TrackerDirectoryFlags flags;
+	const gchar *user_data_dir;
+	const gchar * const *xdg_dirs;
 	GError *inner_error = NULL;
 	GSList *mounts = NULL;
 	GSList *dirs;
 	GSList *m;
+	gint i;
 
 	/* Chain up parent's initable callback before calling child's one */
 	if (!miner_files_initable_parent_iface->init (initable, cancellable, &inner_error)) {
@@ -751,6 +777,19 @@ miner_files_initable_init (GInitable     *initable,
 		miner_files_add_removable_or_optical_directory (mf,
 		                                                (gchar *) m->data,
 		                                                NULL);
+	}
+
+	/* Add application directories */
+	g_message ("Setting up applications to iterate from XDG system directories");
+	xdg_dirs = g_get_system_data_dirs ();
+
+	for (i = 0; xdg_dirs[i]; i++) {
+		miner_files_add_application_dir (mf, xdg_dirs[i]);
+	}
+
+	user_data_dir = g_get_user_data_dir ();
+	if (user_data_dir) {
+		miner_files_add_application_dir (mf, user_data_dir);
 	}
 
 	/* We want to get notified when config changes */
