@@ -104,7 +104,6 @@ libmath = cc.find_library('m', required: false)
 uuid = cc.find_library('uuid')
 
 have_tracker_extract = get_option('extract')
-have_tracker_miner_apps = get_option('miner_apps')
 have_tracker_miner_fs = get_option('miner_fs')
 have_tracker_miner_rss = get_option('miner_rss')
 have_tracker_writeback = get_option('writeback')
@@ -409,7 +408,6 @@ summary = [
   '    Build with Journal support:             ' + get_option('journal').to_string(),
   '\nData Miners / Writebacks:',
   '    FS (File System):                       ' + have_tracker_miner_fs.to_string(),
-  '    Applications:                           ' + have_tracker_miner_apps.to_string(),
   '    RSS:                                    ' + have_tracker_miner_rss.to_string(),
   '   Extract (secondary extraction):     ' + have_tracker_extract.to_string(),
   '   Writeback (writing changes back):   ' + have_tracker_writeback.to_string(),

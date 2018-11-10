@@ -11,8 +11,6 @@ option('guarantee_metadata', type: 'boolean', value: true,
        description: 'Set nie:title and nie:contentCreated from filename and mtime if no metadata available')
 option('journal', type: 'boolean', value: true,
        description: 'Enable database journal backup mechanism')
-option('miner_apps', type: 'boolean', value: true,
-       description: 'Enable the Tracker applications miner')
 option('miner_fs', type: 'boolean', value: true,
        description: 'Enable the Tracker filesystem miner')
 option('miner_rss', type: 'boolean', value: true,

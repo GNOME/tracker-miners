@@ -31,4 +31,4 @@ custom_target('tracker-miners-settings-enums',
     install: true,
     install_dir: gsettings_schema_dir)
 
-meson.add_install_script('create-miner-symlinks.sh', dbus_services_dir, tracker_miner_services_dir, have_tracker_miner_apps.to_string(), have_tracker_miner_fs.to_string(), have_tracker_miner_rss.to_string())
+meson.add_install_script('create-miner-symlinks.sh', dbus_services_dir, tracker_miner_services_dir, have_tracker_miner_fs.to_string(), have_tracker_miner_rss.to_string())

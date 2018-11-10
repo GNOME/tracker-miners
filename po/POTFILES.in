@@ -2,9 +2,6 @@
 # Please keep this file sorted alphabetically.
 src/libtracker-miners-common/tracker-dbus.c
 src/libtracker-miners-common/tracker-utils.c
-src/miners/apps/org.freedesktop.Tracker1.Miner.Applications.service.in.in
-src/miners/apps/tracker-main.c
-src/miners/apps/tracker-miner-apps.desktop.in.in
 src/miners/fs/org.freedesktop.Tracker1.Miner.Files.service.in.in
 src/miners/fs/org.freedesktop.Tracker.Miner.Files.gschema.xml.in
 src/miners/fs/tracker-main.c
