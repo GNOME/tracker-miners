@@ -74,6 +74,7 @@ static const gchar *supported_classes[] = {
 	"nfo:Video",
 	"nfo:FilesystemImage",
 	"nmm:Playlist",
+	"nfo:SoftwareApplication",
 	NULL
 };
 

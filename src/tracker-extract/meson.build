@@ -6,6 +6,7 @@
 
 modules = [
   ['extract-bmp', 'tracker-extract-bmp.c', ['10-bmp.rule'], [tracker_miners_common_dep]],
+  ['extract-desktop', 'tracker-extract-desktop.c', ['10-desktop.rule'], [tracker_miners_common_dep]],
   ['extract-dummy', 'tracker-extract-dummy.c', ['10-comics.rule', '10-ebooks.rule'], [tracker_miners_common_dep]]
 ]
 
