@@ -6,13 +6,12 @@
     },
     "metadata": {
         "@type": "nmm:Photo",
-        "nfo:equipment": [
+        "nfo:equipment":
             {
                 "nfo:manufacturer": "Canon",
                 "nfo:model": "Canon EOS 70D",
                 "@type": "nfo:Equipment"
-            }
-        ],
+            },
         "nfo:width": "5472",
         "nfo:height": "3648",
         "nfo:orientation": "nfo:orientation-left",
