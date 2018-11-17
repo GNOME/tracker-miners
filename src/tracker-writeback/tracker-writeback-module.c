@@ -49,11 +49,19 @@ static gboolean
 writeback_module_load (GTypeModule *module)
 {
 	TrackerWritebackModule *writeback_module;
+	const gchar *writeback_modules_dir;
 	gchar *path;
 
 	writeback_module = TRACKER_WRITEBACK_MODULE (module);
 
-	path = g_build_filename (WRITEBACK_MODULES_DIR, writeback_module->name, NULL);
+	writeback_modules_dir = g_getenv("TRACKER_WRITEBACK_MODULES_DIR");
+	if (G_LIKELY (writeback_modules_dir == NULL)) {
+		writeback_modules_dir = WRITEBACK_MODULES_DIR;
+	} else {
+		g_message ("Writeback modules directory is '%s' (set in env)", writeback_modules_dir);
+	}
+
+	path = g_build_filename (writeback_modules_dir, writeback_module->name, NULL);
 	writeback_module->module = g_module_open (path, G_MODULE_BIND_LOCAL);
 	g_free (path);
 
@@ -129,11 +137,18 @@ GList *
 tracker_writeback_modules_list (void)
 {
 	GError *error = NULL;
-	const gchar *name;
+	const gchar *writeback_modules_dir, *name;
 	GList *list = NULL;
 	GDir *dir;
 
-	dir = g_dir_open (WRITEBACK_MODULES_DIR, 0, &error);
+	writeback_modules_dir = g_getenv("TRACKER_WRITEBACK_MODULES_DIR");
+	if (G_LIKELY (writeback_modules_dir == NULL)) {
+		writeback_modules_dir = WRITEBACK_MODULES_DIR;
+	} else {
+		g_message ("Writeback modules directory is '%s' (set in env)", writeback_modules_dir);
+	}
+
+	dir = g_dir_open (writeback_modules_dir, 0, &error);
 
 	if (error) {
 		g_critical ("Could not get writeback modules list: %s", error->message);
