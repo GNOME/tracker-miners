@@ -72,6 +72,7 @@ test_env.set('TRACKER_LANGUAGE_STOP_WORDS_DIR', tracker_uninstalled_stop_words_d
 test_env.set('TRACKER_FUNCTIONAL_TEST_BUILD_DIR', meson.build_root())
 test_env.set('TRACKER_FUNCTIONAL_TEST_CONFIG', config_json_full_path)
 test_env.set('TRACKER_TEST_DOMAIN_ONTOLOGY_RULE', tracker_uninstalled_domain_rule)
+test_env.set('TRACKER_WRITEBACK_MODULES_DIR', tracker_uninstalled_writeback_modules_dir)
 test_env.set('TRACKER_TESTS_VERBOSE', '1')
 
 foreach t: extractor_tests
