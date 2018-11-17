@@ -323,7 +323,7 @@ class StoreHelper (Helper):
         Block until a resource matching the parameters becomes available
         """
         assert (self.inserts_match_function == None)
-        assert (self.class_to_track == None)
+        assert (self.class_to_track == None), "Already waiting for resource of type %s" % self.class_to_track
 
         self.class_to_track = rdf_class
 
@@ -397,10 +397,9 @@ class StoreHelper (Helper):
                 self.loop.run_checked ()
             except GraphUpdateTimeoutException as e:
                 raise GraphUpdateTimeoutException("Timeout waiting for resource: class %s, URL %s, title %s" % (rdf_class, url, title))
-
             self.inserts_match_function = None
-            self.class_to_track = None
 
+        self.class_to_track = None
         return (self.matched_resource_id, self.matched_resource_urn)
 
     def await_resource_deleted (self, rdf_class, id):
