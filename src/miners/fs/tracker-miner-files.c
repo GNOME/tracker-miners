@@ -2354,7 +2354,8 @@ process_file_cb (GObject      *object,
 	TrackerMinerFilesPrivate *priv;
 	TrackerResource *resource;
 	ProcessFileData *data;
-	const gchar *mime_type, *urn, *parent_urn;
+	const gchar *mime_type, *urn;
+	gchar *parent_urn;
 	gchar *delete_properties_sparql = NULL, *mount_point_sparql;
 	GFileInfo *file_info;
 	guint64 time_;
