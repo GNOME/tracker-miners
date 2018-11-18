@@ -86,9 +86,12 @@ class WritebackKeepDateTest (CommonTrackerWritebackTest):
 
         # Check the value is written in the file
         metadata = get_tracker_extract_jsonld_output (filename, "")
-        self.assertIn (self.favorite, metadata ["nao:hasTag"],
+
+        tags = metadata.get('nao:hasTag', [])
+        tag_names = [tag['nao:prefLabel'] for tag in tags]
+        self.assertIn (self.favorite, tag_names,
                        "Tag hasn't been written in the file")
-        
+
         # Now check the modification date of the files and it should be the same :)
         new_results = self.tracker.query (query_images)
         ## for (uri, date) in new_results:
