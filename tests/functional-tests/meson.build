@@ -63,6 +63,7 @@ tracker_extractors_dir = join_paths(meson.current_build_dir(), '..', '..', 'src'
 
 test_env = environment()
 test_env.set('DCONF_PROFILE', dconf_profile_full_path)
+test_env.set('GSETTINGS_SCHEMA_DIR', join_paths(meson.build_root(), 'data'))
 
 test_env.set('TRACKER_DB_ONTOLOGIES_DIR', tracker_uninstalled_nepomuk_ontologies_dir)
 test_env.set('TRACKER_EXTRACTORS_DIR', tracker_extractors_dir)
