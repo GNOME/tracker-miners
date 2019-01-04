@@ -37,7 +37,7 @@ from common.utils.minertest import CommonTrackerMinerFTSTest, DEFAULT_TEXT
 from common.utils import configuration as cfg
 
 
-NFO_TEXT_DOCUMENT = 'http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#TextDocument'
+NFO_DOCUMENT = 'http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#Document'
 
 
 class MinerFTSFileOperationsTest (CommonTrackerMinerFTSTest):
@@ -54,7 +54,7 @@ class MinerFTSFileOperationsTest (CommonTrackerMinerFTSTest):
 
         id = self._query_id (self.uri (self.testfile))
         os.remove (self.path (self.testfile))
-        self.tracker.await_resource_deleted (NFO_TEXT_DOCUMENT, id)
+        self.tracker.await_resource_deleted (NFO_DOCUMENT, id)
 
         results = self.search_word ("automobile")
         self.assertEquals (len (results), 0)
@@ -128,7 +128,7 @@ class MinerFTSFileOperationsTest (CommonTrackerMinerFTSTest):
         self.assertEquals (len (results), 0)
 
         shutil.copyfile (self.path (TEST_16_SOURCE), self.path (TEST_16_DEST))
-        self.tracker.await_resource_inserted (rdf_class = NFO_TEXT_DOCUMENT,
+        self.tracker.await_resource_inserted (rdf_class = NFO_DOCUMENT,
                                               url = self.uri(TEST_16_DEST),
                                               required_property = 'nie:plainTextContent')
 
