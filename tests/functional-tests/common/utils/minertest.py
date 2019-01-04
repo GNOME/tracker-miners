@@ -33,7 +33,7 @@ from itertools import chain
 
 DEFAULT_TEXT = "Some stupid content, to have a test file"
 
-NFO_TEXT_DOCUMENT = 'http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#TextDocument'
+NFO_DOCUMENT = 'http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#Document'
 
 
 def ensure_dir_exists(dirname):
@@ -117,7 +117,7 @@ class CommonTrackerMinerTest (ut.TestCase):
                 f.write (DEFAULT_TEXT)
 
         for tf in monitored_files:
-            self.tracker.await_resource_inserted(NFO_TEXT_DOCUMENT, url=self.uri(tf))
+            self.tracker.await_resource_inserted(NFO_DOCUMENT, url=self.uri(tf))
 
     def remove_test_data(self):
         try:
@@ -156,11 +156,11 @@ class CommonTrackerMinerFTSTest (CommonTrackerMinerTest):
 
         if exists:
             subject_id = self.tracker.get_resource_id(self.uri(self.testfile))
-            self.tracker.await_property_changed(NFO_TEXT_DOCUMENT,
+            self.tracker.await_property_changed(NFO_DOCUMENT,
                 subject_id=subject_id, property_uri='nie:plainTextContent')
         else:
             self.tracker.await_resource_inserted(
-                rdf_class=NFO_TEXT_DOCUMENT, url=self.uri(self.testfile),
+                rdf_class=NFO_DOCUMENT, url=self.uri(self.testfile),
                 required_property='nie:plainTextContent')
 
         self.tracker.reset_graph_updates_tracking()
