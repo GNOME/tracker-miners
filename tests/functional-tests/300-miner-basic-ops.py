@@ -74,8 +74,6 @@ class MinerCrawlTest (CommonTrackerMinerTest):
         """
         The precreated files and folders should be there
         """
-        # Maybe the information hasn't been committed yet
-        time.sleep (1)
         result = self.__get_text_documents ()
         self.assertEquals (len (result), 3)
         unpacked_result = [ r[0] for r in result]
