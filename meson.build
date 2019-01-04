@@ -386,6 +386,7 @@ vapi_dir = join_paths(get_option('prefix'), get_option('datadir'), 'vala', 'vapi
 glib_mkenums = find_program('glib-mkenums')
 
 subdir('src')
+subdir('data')
 
 if get_option('docs')
   subdir('docs')
