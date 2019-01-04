@@ -77,12 +77,12 @@ class MinerResourceRemovalTest (CommonTrackerMinerTest):
         os.unlink (self.path ("test-monitored/test_1.txt"))
 
         self.tracker.await_resource_deleted (NFO_DOCUMENT, file_1_id)
-        self.tracker.await_resource_deleted (NFO_DOCUMENT, ie_1_id,
-                                             "Associated logical resource failed to be deleted " \
-                                             "when its containing file was removed.")
 
         self.assertResourceMissing (file_1_urn)
+        # Ensure the logical resource is deleted when the relevant file is
+        # removed.
         self.assertResourceMissing (ie_1_urn)
+
         self.assertResourceExists (file_2_urn)
         self.assertResourceExists (ie_2_urn)
 
