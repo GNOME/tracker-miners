@@ -58,8 +58,7 @@ class CommonTrackerWritebackTest (ut.TestCase):
     Superclass to share methods. Shouldn't be run by itself.
     Start all processes including writeback, miner pointing to WRITEBACK_TMP_DIR
     """
-	     
-    @classmethod
+
     def __prepare_directories (self):
         if (os.path.exists (os.getcwd() + "/test-writeback-data")):
             # Use local directory if available
@@ -80,8 +79,7 @@ class CommonTrackerWritebackTest (ut.TestCase):
             shutil.copy (origin, WRITEBACK_TMP_DIR)
 
 
-    @classmethod 
-    def setUpClass (self):
+    def setUp(self):
         #print "Starting the daemon in test mode"
         self.__prepare_directories ()
         
@@ -100,15 +98,16 @@ class CommonTrackerWritebackTest (ut.TestCase):
         await_resource_extraction (self.get_test_filename_tiff())
         await_resource_extraction (self.get_test_filename_png())
 
+        self.tracker = self.system.store
+        self.extractor = self.system.extractor
+
         # Returns when ready
         log ("Ready to go!")
-        
-    @classmethod
-    def tearDownClass (self):
+
+    def tearDown (self):
         #print "Stopping the daemon in test mode (Doing nothing now)"
         self.system.tracker_writeback_testing_stop ()
         log ("Test finished")
-    
 
     @staticmethod
     def get_test_filename_jpeg ():
