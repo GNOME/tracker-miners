@@ -108,14 +108,14 @@ class WritebackBasicDataTest (CommonTrackerWritebackTest):
         #FILENAME = "test-writeback-monitored/writeback-test-1.jpeg"
         self.__writeback_test (self.get_test_filename_jpeg (), "image/jpeg", "nie:description")
 
-    def test_003_jpeg_keyword (self):
-        #FILENAME = "test-writeback-monitored/writeback-test-1.jpeg"
-        self.__writeback_test (self.get_test_filename_jpeg (), "image/jpeg",
-                               "nie:keyword", "nao:hasTag")
+    #def test_003_jpeg_keyword (self):
+    #    #FILENAME = "test-writeback-monitored/writeback-test-1.jpeg"
+    #    self.__writeback_test (self.get_test_filename_jpeg (), "image/jpeg",
+    #                           "nie:keyword", "nao:hasTag")
 
-    def test_004_jpeg_hasTag (self):
-        #FILENAME = "test-writeback-monitored/writeback-test-1.jpeg"
-        self.__writeback_hasTag_test (self.get_test_filename_jpeg (), "image/jpeg")
+    #def test_004_jpeg_hasTag (self):
+    #    #FILENAME = "test-writeback-monitored/writeback-test-1.jpeg"
+    #    self.__writeback_hasTag_test (self.get_test_filename_jpeg (), "image/jpeg")
 
         
     # TIFF tests
@@ -127,14 +127,14 @@ class WritebackBasicDataTest (CommonTrackerWritebackTest):
         FILENAME = "test-writeback-monitored/writeback-test-2.tif"
         self.__writeback_test (self.get_test_filename_tiff (), "image/tiff", "nie:description")
         
-    def test_013_tiff_keyword (self):
-        FILENAME = "test-writeback-monitored/writeback-test-2.tif"
-        self.__writeback_test (self.get_test_filename_tiff (), "image/tiff",
-                               "nie:keyword", "nao:hasTag")
+    #def test_013_tiff_keyword (self):
+    #    FILENAME = "test-writeback-monitored/writeback-test-2.tif"
+    #    self.__writeback_test (self.get_test_filename_tiff (), "image/tiff",
+    #                           "nie:keyword", "nao:hasTag")
 
-    def test_014_tiff_hasTag (self):
-        FILENAME = "test-writeback-monitored/writeback-test-2.tif"
-        self.__writeback_hasTag_test (self.get_test_filename_tiff (), "image/tiff")
+    #def test_014_tiff_hasTag (self):
+    #    FILENAME = "test-writeback-monitored/writeback-test-2.tif"
+    #    self.__writeback_hasTag_test (self.get_test_filename_tiff (), "image/tiff")
       
         
 
@@ -149,15 +149,15 @@ class WritebackBasicDataTest (CommonTrackerWritebackTest):
         FILENAME = "test-writeback-monitored/writeback-test-4.png"
         self.__writeback_test (self.get_test_filaname_png (), "image/png", "nie:description")
         
-    @expectedFailureBug ("NB#185070")
-    def test_023_png_keyword (self):
-        FILENAME = "test-writeback-monitored/writeback-test-4.png"
-        self.__writeback_test (self.get_test_filaname_png (), "image/png", "nie:keyword", "nao:hasTag:prefLabel")
+    #@expectedFailureBug ("NB#185070")
+    #def test_023_png_keyword (self):
+    #    FILENAME = "test-writeback-monitored/writeback-test-4.png"
+    #    self.__writeback_test (self.get_test_filaname_png (), "image/png", "nie:keyword", "nao:hasTag:prefLabel")
 
-    @expectedFailureBug("NB#185070")
-    def test_024_png_hasTag (self):
-        FILENAME = "test-writeback-monitored/writeback-test-4.png"
-        self.__writeback_hasTag_test (self.get_test_filaname_png (), "image/png")
+    #@expectedFailureBug("NB#185070")
+    #def test_024_png_hasTag (self):
+    #    FILENAME = "test-writeback-monitored/writeback-test-4.png"
+    #    self.__writeback_hasTag_test (self.get_test_filaname_png (), "image/png")
 
 if __name__ == "__main__":
     ut.main (failfast=True)
