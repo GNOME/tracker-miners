@@ -150,14 +150,19 @@ class CommonTrackerMinerFTSTest (CommonTrackerMinerTest):
     def set_text (self, text):
         exists = os.path.exists(self.path(self.testfile))
 
+        miner_wakeup_count = self.system.miner_fs.wakeup_count()
+
+        # Change the file.
         f = open (self.path (self.testfile), "w")
         f.write (text)
         f.close ()
 
+        # Wait for the miner to notice the change.
         if exists:
-            subject_id = self.tracker.get_resource_id(self.uri(self.testfile))
-            self.tracker.await_property_changed(NFO_DOCUMENT,
-                subject_id=subject_id, property_uri='nie:plainTextContent')
+            # We don't get change notifications on the nie:plainTextContent
+            # property, so the best we can do is wait for the miner to wake up
+            # and go back to sleep...
+            self.system.miner_fs.await_wakeup_count(miner_wakeup_count + 1)
         else:
             self.tracker.await_resource_inserted(
                 rdf_class=NFO_DOCUMENT, url=self.uri(self.testfile),
