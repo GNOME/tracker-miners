@@ -572,6 +572,10 @@ class StoreHelper (Helper):
             raise Exception ("Something fishy is going on")
 
 
+class WakeupCycleTimeoutException(RuntimeError):
+    pass
+
+
 class MinerFsHelper (Helper):
 
     PROCESS_NAME = 'tracker-miner-fs'
@@ -579,6 +583,13 @@ class MinerFsHelper (Helper):
     BUS_NAME = cfg.MINERFS_BUSNAME
 
     FLAGS = ['--initial-sleep=0']
+
+    def __init__ (self):
+        Helper.__init__(self)
+        self._progress_handler_id = 0
+        self._wakeup_count = 0
+        self._previous_status = None
+        self._target_wakeup_count = None
 
     def start (self):
         Helper.start (self)
@@ -590,8 +601,67 @@ class MinerFsHelper (Helper):
             self.bus, Gio.DBusProxyFlags.DO_NOT_AUTO_START, None,
             cfg.MINERFS_BUSNAME, cfg.MINERFS_INDEX_OBJ_PATH, cfg.MINER_INDEX_IFACE)
 
+        def signal_handler(proxy, sender_name, signal_name, parameters):
+            if signal_name == 'Progress':
+                self._progress_cb(*parameters.unpack())
+
+        self._progress_handler_id = self.miner_fs.connect('g-signal', signal_handler)
+
     def stop (self):
         Helper.stop (self)
+
+        if self._progress_handler_id != 0:
+            self.miner_fs.disconnect(self._progress_handler_id)
+
+    def _progress_cb (self, status, progress, remaining_time):
+        if self._previous_status is None:
+            self._previous_status = status
+        if self._previous_status != 'Idle' and status == 'Idle':
+            self._wakeup_count += 1
+
+        if self._target_wakeup_count is not None and self._wakeup_count >= self._target_wakeup_count:
+            self.loop.quit()
+
+    def wakeup_count(self):
+        """Return the number of wakeup-to-idle cycles the miner-fs completed."""
+        return self._wakeup_count
+
+    def await_wakeup_count (self, target_wakeup_count, timeout=REASONABLE_TIMEOUT):
+        """Block until the miner has completed N wakeup-and-idle cycles.
+
+        This function is for use by miner-fs tests that should trigger an
+        operation in the miner, but which do not cause a new resource to be
+        inserted. These tests can instead wait for the status to change from
+        Idle to Processing... and then back to Idle.
+
+        The miner may change its status any number of times, but you can use
+        this function reliably as follows:
+
+            wakeup_count = miner_fs.wakeup_count()
+            # Trigger a miner-fs operation somehow ...
+            miner_fs.await_wakeup_count(wakeup_count + 1)
+            # The miner has probably finished processing the operation now.
+
+        If the timeout is reached before enough wakeup cycles complete, an
+        exception will be raised.
+
+        """
+
+        assert self._target_wakeup_count is None
+
+        if self._wakeup_count >= target_wakeup_count:
+            log ("miner-fs wakeup count is at %s (target is %s). No need to wait" % (self._wakeup_count, target_wakeup_count))
+        else:
+            def _timeout_cb ():
+                raise WakeupCycleTimeoutException()
+            timeout_id = GLib.timeout_add_seconds (timeout, _timeout_cb)
+
+            log ("Waiting for miner-fs wakeup count of %s (currently %s)" % (target_wakeup_count, self._wakeup_count))
+            self._target_wakeup_count = target_wakeup_count
+            self.loop.run_checked()
+
+            self._target_wakeup_count = None
+            GLib.source_remove(timeout_id)
 
     def index_file (self, uri):
         return self.index.IndexFile('(s)', uri)
