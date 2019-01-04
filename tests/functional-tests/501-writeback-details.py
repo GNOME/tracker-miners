@@ -31,8 +31,7 @@ REASONABLE_TIMEOUT = 5 # Seconds we wait for tracker-writeback to do the work
 class WritebackKeepDateTest (CommonTrackerWritebackTest):
 
     def setUp (self):
-        self.tracker = self.system.store
-        self.extractor = self.system.extractor
+        super(WritebackKeepDateTest, self).setUp()
         self.favorite = self.__prepare_favorite_tag ()
 
     def __prepare_favorite_tag (self):

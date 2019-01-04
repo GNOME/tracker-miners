@@ -37,28 +37,6 @@ class WritebackBasicDataTest (CommonTrackerWritebackTest):
     Write in tracker store the properties witih writeback support and check
     that the new values are actually in the file
     """
-    def setUp (self):
-        self.tracker = self.system.store
-        self.extractor = self.system.extractor
-
-    def __clean_property (self, property_name, fileuri, expectFailure=True):
-        """
-        Remove the property for the fileuri (file://...)
-        """
-        CLEAN = """
-           DELETE { ?u %s ?whatever }
-           WHERE  {
-               ?u nie:url '%s' ;
-                  %s ?whatever .
-           
-           }
-        """
-        try:
-            self.tracker.update (CLEAN % (property_name, fileuri, property_name))
-        except Exception, e:
-            print e
-            assert expectFailure
-                                
 
     def __writeback_test (self, filename, mimetype, prop, expectedKey=None):
         """
@@ -77,11 +55,11 @@ class WritebackBasicDataTest (CommonTrackerWritebackTest):
 
         TEST_VALUE = prop.replace (":","") + "test"
         SPARQL_TMPL = """
+           DELETE { ?u %s ?v } WHERE { ?u nie:url '%s' ; %s ?v }
            INSERT { ?u %s '%s' }
            WHERE  { ?u nie:url '%s' }
         """ 
-        self.__clean_property (prop, filename)
-        self.tracker.update (SPARQL_TMPL % (prop, TEST_VALUE, filename))
+        self.tracker.update (SPARQL_TMPL % (prop, filename, prop, prop, TEST_VALUE, filename))
 
         log("Waiting for change on %s" % filename_real)
         self.wait_for_file_change(filename_real, initial_mtime)
@@ -90,8 +68,6 @@ class WritebackBasicDataTest (CommonTrackerWritebackTest):
         results = get_tracker_extract_jsonld_output (filename, mimetype)
         keyDict = expectedKey or prop
         self.assertIn (TEST_VALUE, results[keyDict])
-        self.__clean_property (prop, filename, False)
-
 
     def __writeback_hasTag_test (self, filename, mimetype):
 
