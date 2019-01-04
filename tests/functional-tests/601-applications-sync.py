@@ -37,6 +37,9 @@ from common.utils.applicationstest import CommonTrackerApplicationTest as Common
 from common.utils.helpers import log
 
 
+NMM_MUSICPIECE = 'http://www.tracker-project.org/temp/nmm#MusicPiece'
+
+
 class TrackerSyncApplicationTests (CommonTrackerApplicationTest):
 
     def test_01_sync_audio_nb219946 (self):
@@ -61,6 +64,8 @@ class TrackerSyncApplicationTests (CommonTrackerApplicationTest):
 
         This is because the test already inserted the resource in the store.
         """
+
+        self.system.miner_fs.await_wakeup_count(1)
 
         origin_filepath = os.path.join (self.get_data_dir (), self.get_test_music ())
         dest_filepath = os.path.join (self.get_dest_dir (), self.get_test_music ())
@@ -103,17 +108,20 @@ class TrackerSyncApplicationTests (CommonTrackerApplicationTest):
 
         resource_id = self.tracker.get_resource_id(dest_fileuri)
 
+        miner_wakeup_count = self.system.miner_fs.wakeup_count()
+
         # Copy the image to the dest path
         self.slowcopy_file (origin_filepath, dest_filepath)
         assert os.path.exists (dest_filepath)
-        self.tracker.await_resource_inserted ('nmm:MusicPiece', url=dest_fileuri)
+
+        self.system.miner_fs.await_wakeup_count (miner_wakeup_count + 1)
 
         self.assertEquals (self.get_urn_count_by_url (dest_fileuri), 1)
 
         # Clean the new file so the test directory is as before
         log ("Remove and wait")
         os.remove (dest_filepath)
-        self.tracker.await_resource_deleted (resource_id)
+        self.tracker.await_resource_deleted (NMM_MUSICPIECE, resource_id)
         self.assertEquals (self.get_urn_count_by_url (dest_fileuri), 0)
 
 if __name__ == "__main__":
