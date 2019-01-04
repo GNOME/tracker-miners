@@ -58,9 +58,6 @@ desktop_file = custom_target('tracker-miner-fs-desktop-file',
     install: true,
     install_dir: join_paths(get_option('sysconfdir'), 'xdg/autostart'))
 
-install_data('org.freedesktop.Tracker.Miner.Files.gschema.xml',
-    install_dir: gsettings_schema_dir)
-
 if install_systemd_user_services
   configure_file(
       input: 'tracker-miner-fs.service.in',

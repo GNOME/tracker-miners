@@ -198,9 +198,6 @@ desktop_file = custom_target('tracker-extract-desktop-file',
   install: true,
   install_dir: join_paths(get_option('sysconfdir'), 'xdg/autostart'))
 
-install_data('org.freedesktop.Tracker.Extract.gschema.xml',
-  install_dir: gsettings_schema_dir)
-
 if install_systemd_user_services
   configure_file(
     input: 'tracker-extract.service.in',
