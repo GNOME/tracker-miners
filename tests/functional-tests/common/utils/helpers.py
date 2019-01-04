@@ -434,6 +434,7 @@ class StoreHelper (Helper):
 
         if not existing_match:
             self._enable_await_timeout ()
+            self.class_to_track = rdf_class
             self.deletes_match_function = match_cb
             # Run the event loop until the correct notification arrives
             try:
