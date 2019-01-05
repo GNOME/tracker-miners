@@ -94,8 +94,8 @@ class MinerCrawlTest (CommonTrackerMinerTest):
         Copy an file from unmonitored directory to monitored directory
         and verify if data base is updated accordingly
         """
-        source = os.path.join (self.datadir, "test-no-monitored", "file0.txt")
-        dest = os.path.join (self.datadir, "test-monitored", "file0.txt")
+        source = os.path.join (self.workdir, "test-no-monitored", "file0.txt")
+        dest = os.path.join (self.workdir, "test-monitored", "file0.txt")
         shutil.copyfile (source, dest)
 
         dest_id, dest_urn = self.system.store.await_resource_inserted (NFO_DOCUMENT, self.uri(dest))
@@ -121,8 +121,8 @@ class MinerCrawlTest (CommonTrackerMinerTest):
         """
 
         # Copy from monitored to unmonitored
-        source = os.path.join (self.datadir, "test-monitored", "file1.txt")
-        dest = os.path.join (self.datadir, "test-no-monitored", "file1.txt")
+        source = os.path.join (self.workdir, "test-monitored", "file1.txt")
+        dest = os.path.join (self.workdir, "test-no-monitored", "file1.txt")
         shutil.copyfile (source, dest)
 
         time.sleep (1)
@@ -141,8 +141,8 @@ class MinerCrawlTest (CommonTrackerMinerTest):
         """
         Copy a file between monitored directories
         """
-        source = os.path.join (self.datadir, "test-monitored", "file1.txt")
-        dest = os.path.join (self.datadir, "test-monitored", "dir1", "dir2", "file-test04.txt")
+        source = os.path.join (self.workdir, "test-monitored", "file1.txt")
+        dest = os.path.join (self.workdir, "test-monitored", "dir1", "dir2", "file-test04.txt")
         shutil.copyfile (source, dest)
 
         dest_id, dest_urn = self.system.store.await_resource_inserted (NFO_DOCUMENT, self.uri(dest))
@@ -165,8 +165,8 @@ class MinerCrawlTest (CommonTrackerMinerTest):
         """
         Move a file from unmonitored to monitored directory
         """
-        source = os.path.join (self.datadir, "test-no-monitored", "file0.txt")
-        dest = os.path.join (self.datadir, "test-monitored", "dir1", "file-test05.txt")
+        source = os.path.join (self.workdir, "test-no-monitored", "file0.txt")
+        dest = os.path.join (self.workdir, "test-monitored", "dir1", "file-test05.txt")
         shutil.move (source, dest)
         dest_id, dest_urn = self.system.store.await_resource_inserted (NFO_DOCUMENT, self.uri(dest))
 
