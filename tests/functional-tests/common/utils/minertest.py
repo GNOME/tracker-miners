@@ -43,13 +43,9 @@ def ensure_dir_exists(dirname):
 
 class CommonTrackerMinerTest (ut.TestCase):
     def setUp (self):
-        ensure_dir_exists(cfg.TEST_MONITORED_TMP_DIR)
+        self.workdir = cfg.create_monitored_test_dir()
 
-        # It's important that this directory is NOT inside /tmp, because
-        # monitoring files in /tmp usually doesn't work.
-        self.datadir = tempfile.mkdtemp(dir=cfg.TEST_MONITORED_TMP_DIR)
-
-        self.indexed_dir = os.path.join(self.datadir, 'test-monitored')
+        self.indexed_dir = os.path.join(self.workdir, 'test-monitored')
 
         # It's important that this directory exists BEFORE we start Tracker:
         # it won't monitor an indexing root for changes if it doesn't exist,
@@ -90,14 +86,15 @@ class CommonTrackerMinerTest (ut.TestCase):
             raise
 
     def tearDown (self):
+        self.system.finish ()
         self.remove_test_data ()
-        self.system.tracker_miner_fs_testing_stop ()
+        cfg.remove_monitored_test_dir(self.workdir)
 
     def path (self, filename):
-        return os.path.join (self.datadir, filename)
+        return os.path.join (self.workdir, filename)
 
     def uri (self, filename):
-        return "file://" + os.path.join (self.datadir, filename)
+        return "file://" + os.path.join (self.workdir, filename)
 
     def create_test_data (self):
         monitored_files = [
@@ -121,7 +118,8 @@ class CommonTrackerMinerTest (ut.TestCase):
 
     def remove_test_data(self):
         try:
-            shutil.rmtree(self.datadir)
+            shutil.rmtree(os.path.join(self.workdir, 'test-monitored'))
+            shutil.rmtree(os.path.join(self.workdir, 'test-no-monitored'))
         except Exception as e:
             log("Failed to remove temporary data dir: %s" % e)
 

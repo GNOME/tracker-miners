@@ -47,18 +47,9 @@ VALID_FILE_TITLE = 'Simply Juvenile'
 
 TRACKER_EXTRACT_FAILURE_DATA_SOURCE = 'tracker:extractor-failure-data-source'
 
-def ensure_dir_exists(dirname):
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
-
-
 class ExtractorDecoratorTest(ut.TestCase):
     def setUp(self):
-        ensure_dir_exists(cfg.TEST_MONITORED_TMP_DIR)
-
-        # It's important that this directory is NOT inside /tmp, because
-        # monitoring files in /tmp usually doesn't work.
-        self.datadir = tempfile.mkdtemp(dir=cfg.TEST_MONITORED_TMP_DIR)
+        self.datadir = cfg.create_monitored_test_dir()
 
         config = {
             cfg.DCONF_MINER_SCHEMA: {
@@ -76,9 +67,9 @@ class ExtractorDecoratorTest(ut.TestCase):
         self.system.tracker_miner_fs_testing_start()
 
     def tearDown(self):
-        self.system.tracker_miner_fs_testing_stop()
+        self.system.finish()
 
-        shutil.rmtree(self.datadir)
+        cfg.remove_monitored_test_dir(self.datadir)
 
     def test_reextraction(self):
         """Tests whether known files are still re-extracted on user request."""
@@ -109,6 +100,8 @@ class ExtractorDecoratorTest(ut.TestCase):
         title_result = store.query('SELECT ?title { <%s> nie:title ?title }' % file_urn)
         assert len(title_result) == 1
         self.assertEqual(title_result[0][0], VALID_FILE_TITLE)
+
+        os.remove(file_path)
 
 
 if __name__ == '__main__':

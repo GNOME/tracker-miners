@@ -34,24 +34,6 @@ TEST_FILE_PNG = "writeback-test-4.png"
 
 NFO_IMAGE = 'http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#Image'
 
-WRITEBACK_TMP_DIR = os.path.join (cfg.TEST_MONITORED_TMP_DIR, "writeback")
-
-index_dirs = [WRITEBACK_TMP_DIR]
-CONF_OPTIONS = {
-    cfg.DCONF_MINER_SCHEMA: {
-        'index-recursive-directories': GLib.Variant.new_strv(index_dirs),
-        'index-single-directories': GLib.Variant.new_strv([]),
-        'index-optical-discs': GLib.Variant.new_boolean(False),
-        'index-removable-devices': GLib.Variant.new_boolean(False),
-    },
-    'org.freedesktop.Tracker.Store': {
-        'graphupdated-delay': GLib.Variant.new_int32(100)
-    }
-}
-
-
-def uri (filename):
-    return "file://" + os.path.join (WRITEBACK_TMP_DIR, filename)
 
 class CommonTrackerWritebackTest (ut.TestCase):
     """
@@ -67,24 +49,32 @@ class CommonTrackerWritebackTest (ut.TestCase):
             datadir = os.path.join (cfg.DATADIR, "tracker-tests",
                                     "test-writeback-data")
 
-        if not os.path.exists(WRITEBACK_TMP_DIR):
-            os.makedirs(WRITEBACK_TMP_DIR)
-        else:
-            if not os.path.isdir(WRITEBACK_TMP_DIR):
-                raise Exception("%s exists already and is not a directory" % WRITEBACK_TMP_DIR)
-
         for testfile in [TEST_FILE_JPEG, TEST_FILE_PNG,TEST_FILE_TIFF]:
             origin = os.path.join (datadir, testfile)
-            log ("Copying %s -> %s" % (origin, WRITEBACK_TMP_DIR))
-            shutil.copy (origin, WRITEBACK_TMP_DIR)
+            log ("Copying %s -> %s" % (origin, self.workdir))
+            shutil.copy (origin, self.workdir)
 
 
     def setUp(self):
-        #print "Starting the daemon in test mode"
-        self.__prepare_directories ()
-        
-        self.system = TrackerSystemAbstraction ()
+        self.workdir = cfg.create_monitored_test_dir()
 
+        index_dirs = [self.workdir]
+
+        CONF_OPTIONS = {
+            cfg.DCONF_MINER_SCHEMA: {
+                'index-recursive-directories': GLib.Variant.new_strv(index_dirs),
+                'index-single-directories': GLib.Variant.new_strv([]),
+                'index-optical-discs': GLib.Variant.new_boolean(False),
+                'index-removable-devices': GLib.Variant.new_boolean(False),
+            },
+            'org.freedesktop.Tracker.Store': {
+                'graphupdated-delay': GLib.Variant.new_int32(100)
+            }
+        }
+
+        self.__prepare_directories ()
+
+        self.system = TrackerSystemAbstraction ()
         self.system.tracker_writeback_testing_start (CONF_OPTIONS)
 
         def await_resource_extraction(url):
@@ -101,25 +91,25 @@ class CommonTrackerWritebackTest (ut.TestCase):
         self.tracker = self.system.store
         self.extractor = self.system.extractor
 
-        # Returns when ready
-        log ("Ready to go!")
-
     def tearDown (self):
-        #print "Stopping the daemon in test mode (Doing nothing now)"
-        self.system.tracker_writeback_testing_stop ()
-        log ("Test finished")
+        self.system.finish ()
 
-    @staticmethod
-    def get_test_filename_jpeg ():
-        return uri (TEST_FILE_JPEG)
+        for testfile in [TEST_FILE_JPEG, TEST_FILE_PNG,TEST_FILE_TIFF]:
+            os.remove(os.path.join(self.workdir, testfile))
 
-    @staticmethod
-    def get_test_filename_tiff ():
-        return uri (TEST_FILE_TIFF)
+        cfg.remove_monitored_test_dir(self.workdir)
 
-    @staticmethod
-    def get_test_filename_png ():
-        return uri (TEST_FILE_PNG)
+    def uri (self, filename):
+        return "file://" + os.path.join (self.workdir, filename)
+
+    def get_test_filename_jpeg (self):
+        return self.uri (TEST_FILE_JPEG)
+
+    def get_test_filename_tiff (self):
+        return self.uri (TEST_FILE_TIFF)
+
+    def get_test_filename_png (self):
+        return self.uri (TEST_FILE_PNG)
 
     def get_mtime (self, filename):
         return os.stat(filename).st_mtime
