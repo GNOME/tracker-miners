@@ -92,12 +92,6 @@ class TrackerSystemAbstraction (object):
     def tracker_store_start (self):
         self.store.start ()
 
-    def tracker_store_stop_nicely (self):
-        self.store.stop ()
-
-    def tracker_store_stop_brutally (self):
-        self.store.kill ()
-
     def tracker_store_restart_with_new_ontologies (self, ontodir):
         self.store.stop ()
         if ontodir:
@@ -135,14 +129,6 @@ class TrackerSystemAbstraction (object):
         shutil.rmtree (db_location)
         os.mkdir (db_location)
 
-    def tracker_store_testing_stop (self):
-        """
-        Stops a running tracker-store
-        """
-        assert self.store
-        self.store.stop ()
-
-
     def tracker_miner_fs_testing_start (self, confdir=None):
         """
         Stops any previous instance of the store and miner, calls set_up_environment,
@@ -160,32 +146,15 @@ class TrackerSystemAbstraction (object):
         self.miner_fs = helpers.MinerFsHelper ()
         self.miner_fs.start ()
 
-    def tracker_miner_fs_testing_stop (self):
-        """
-        Stops the extractor, miner-fs and store running
-        """
-        self.extractor.stop ()
-        self.miner_fs.stop ()
-        self.store.stop ()
-
     def tracker_writeback_testing_start (self, confdir=None):
         # Start the miner-fs (and store) and then the writeback process
         self.tracker_miner_fs_testing_start (confdir)
         self.writeback = helpers.WritebackHelper ()
         self.writeback.start ()
 
-    def tracker_writeback_testing_stop (self):
-        # Tracker write must have been started before
-        self.writeback.stop ()
-        self.tracker_miner_fs_testing_stop ()
-
     def tracker_all_testing_start (self, confdir=None):
         # This will start all miner-fs, store and writeback
         self.tracker_writeback_testing_start (confdir)
-
-    def tracker_all_testing_stop (self):
-        # This will stop all miner-fs, store and writeback
-        self.tracker_writeback_testing_stop ()
 
     def finish (self):
         """
