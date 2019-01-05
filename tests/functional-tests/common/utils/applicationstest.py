@@ -28,18 +28,6 @@ import shutil
 import os
 import time
 
-APPLICATIONS_TMP_DIR = os.path.join (cfg.TEST_MONITORED_TMP_DIR, "test-applications-monitored")
-
-index_dirs = [APPLICATIONS_TMP_DIR]
-CONF_OPTIONS = {
-    cfg.DCONF_MINER_SCHEMA: {
-        'index-recursive-directories': GLib.Variant.new_strv(index_dirs),
-        'index-single-directories': GLib.Variant.new_strv([]),
-        'index-optical-discs': GLib.Variant.new_boolean(False),
-        'index-removable-devices': GLib.Variant.new_boolean(False),
-    }
-}
-
 # Copy rate, 10KBps (1024b/100ms)
 SLOWCOPY_RATE = 1024
 
@@ -68,7 +56,7 @@ class CommonTrackerApplicationTest (ut.TestCase):
         return self.datadir
 
     def get_dest_dir (self):
-        return APPLICATIONS_TMP_DIR
+        return self.workdir
 
     def slowcopy_file_fd (self, src, fdest, rate=SLOWCOPY_RATE):
         """
@@ -94,10 +82,18 @@ class CommonTrackerApplicationTest (ut.TestCase):
 
     @classmethod
     def setUp (self):
-        # Create temp directory to monitor
-        if (os.path.exists (APPLICATIONS_TMP_DIR)):
-            shutil.rmtree (APPLICATIONS_TMP_DIR)
-        os.makedirs (APPLICATIONS_TMP_DIR)
+        self.workdir = cfg.create_monitored_test_dir()
+
+        index_dirs = [self.workdir]
+
+        CONF_OPTIONS = {
+            cfg.DCONF_MINER_SCHEMA: {
+                'index-recursive-directories': GLib.Variant.new_strv(index_dirs),
+                'index-single-directories': GLib.Variant.new_strv([]),
+                'index-optical-discs': GLib.Variant.new_boolean(False),
+                'index-removable-devices': GLib.Variant.new_boolean(False),
+            }
+        }
 
         # Use local directory if available. Installation otherwise.
         if os.path.exists (os.path.join (os.getcwd (),
@@ -109,20 +105,12 @@ class CommonTrackerApplicationTest (ut.TestCase):
                                          "tracker-tests",
                                          "test-apps-data")
 
-
         self.system = TrackerSystemAbstraction ()
         self.system.tracker_all_testing_start (CONF_OPTIONS)
-
-        # Returns when ready
         self.tracker = self.system.store
-
-        log ("Ready to go!")
 
     @classmethod
     def tearDown (self):
-        #print "Stopping the daemon in test mode (Doing nothing now)"
-        self.system.tracker_all_testing_stop ()
+        self.system.finish ()
 
-        # Remove monitored directory
-        if (os.path.exists (APPLICATIONS_TMP_DIR)):
-            shutil.rmtree (APPLICATIONS_TMP_DIR)
+        cfg.remove_monitored_test_dir(self.workdir)

@@ -2,6 +2,7 @@
 import os
 import subprocess
 import shutil
+import tempfile
 import configuration as cfg
 
 from gi.repository import GObject
@@ -13,16 +14,7 @@ from dconf import DConfClient
 
 import helpers
 
-# Add this after fixing the backup/restore and ontology changes tests
-#"G_DEBUG" : "fatal_criticals",
-
-TEST_ENV_DIRS =  { "XDG_DATA_HOME" : os.path.join (cfg.TEST_TMP_DIR, "data"),
-                   "XDG_CACHE_HOME": os.path.join (cfg.TEST_TMP_DIR, "cache")}
-
 TEST_ENV_VARS = {  "LC_COLLATE": "en_GB.utf8" }
-
-EXTRA_DIRS = [os.path.join (cfg.TEST_TMP_DIR, "data", "tracker"),
-              os.path.join (cfg.TEST_TMP_DIR, "cache", "tracker")]
 
 REASONABLE_TIMEOUT = 5
 
@@ -32,8 +24,21 @@ class UnableToBootException (Exception):
 
 class TrackerSystemAbstraction (object):
     def __init__(self, settings=None, ontodir=None):
+        self._basedir = None
+
+        self.extractor = None
+        self.miner_fs = None
+        self.store = None
+        self.writeback = None
+
         self.set_up_environment (settings=settings, ontodir=ontodir)
         self.store = None
+
+    def xdg_data_home(self):
+        return os.path.join(self._basedir, 'data')
+
+    def xdg_cache_home(self):
+        return os.path.join(self._basedir, 'cache')
 
     def set_up_environment (self, settings=None, ontodir=None):
         """
@@ -45,29 +50,27 @@ class TrackerSystemAbstraction (object):
         GLib.Variant instance.
         """
 
-        helpers.log ("[Conf] Setting test environment...")
+        self._basedir = tempfile.mkdtemp()
 
-        for var, directory in TEST_ENV_DIRS.iteritems ():
-            helpers.log ("export %s=%s" %(var, directory))
-            self.__recreate_directory (directory)
+        self._dirs = {
+            "XDG_DATA_HOME" : self.xdg_data_home(),
+            "XDG_CACHE_HOME": self.xdg_cache_home()
+        }
+
+        for var, directory in self._dirs.items():
+            os.makedirs (directory)
+            os.makedirs (os.path.join(directory, 'tracker'))
             os.environ [var] = directory
 
-        for directory in EXTRA_DIRS:
-            self.__recreate_directory (directory)
-
         if ontodir:
-            helpers.log ("export %s=%s" % ("TRACKER_DB_ONTOLOGIES_DIR", ontodir))
             os.environ ["TRACKER_DB_ONTOLOGIES_DIR"] = ontodir
 
         for var, value in TEST_ENV_VARS.iteritems ():
-            helpers.log ("export %s=%s" %(var, value))
             os.environ [var] = value
 
         # Previous loop should have set DCONF_PROFILE to the test location
         if settings is not None:
             self._apply_settings(settings)
-
-        helpers.log ("[Conf] environment ready")
 
     def _apply_settings(self, settings):
         for schema_name, contents in settings.iteritems():
@@ -106,29 +109,29 @@ class TrackerSystemAbstraction (object):
             raise UnableToBootException ("Unable to boot the store \n(" + str(e) + ")")
 
     def tracker_store_prepare_journal_replay (self):
-        db_location = os.path.join (TEST_ENV_DIRS ['XDG_CACHE_HOME'], "tracker", "meta.db")
+        db_location = os.path.join (self.xdg_cache_home(), "tracker", "meta.db")
         os.unlink (db_location)
 
-        lockfile = os.path.join (TEST_ENV_DIRS ['XDG_DATA_HOME'], "tracker", "data", ".ismeta.running")
+        lockfile = os.path.join (self.xdg_data_home(), "tracker", "data", ".ismeta.running")
         f = open (lockfile, 'w')
         f.write (" ")
         f.close ()
 
     def tracker_store_corrupt_dbs (self):
         for filename in ["meta.db", "meta.db-wal"]:
-            db_path = os.path.join (TEST_ENV_DIRS ['XDG_CACHE_HOME'], "tracker", filename)
+            db_path = os.path.join (self.xdg_cache_home(), "tracker", filename)
             f = open (db_path, "w")
             for i in range (0, 100):
                 f.write ("Some stupid content... hohohoho, not a sqlite file anymore!\n")
             f.close ()
 
     def tracker_store_remove_journal (self):
-        db_location = os.path.join (TEST_ENV_DIRS ['XDG_DATA_HOME'], "tracker", "data")
+        db_location = os.path.join (self.xdg_data_home(), "tracker", "data")
         shutil.rmtree (db_location)
         os.mkdir (db_location)
 
     def tracker_store_remove_dbs (self):
-        db_location = os.path.join (TEST_ENV_DIRS ['XDG_CACHE_HOME'], "tracker")
+        db_location = os.path.join (self.xdg_cache_home(), "tracker")
         shutil.rmtree (db_location)
         os.mkdir (db_location)
 
@@ -184,7 +187,23 @@ class TrackerSystemAbstraction (object):
         # This will stop all miner-fs, store and writeback
         self.tracker_writeback_testing_stop ()
 
-    def __recreate_directory (self, directory):
-        if (os.path.exists (directory)):
-            shutil.rmtree (directory)
-        os.makedirs (directory)
+    def finish (self):
+        """
+        Stop all running processes and remove all test data.
+        """
+
+        if self.writeback:
+            self.writeback.stop ()
+
+        if self.extractor:
+            self.extractor.stop ()
+
+        if self.miner_fs:
+            self.miner_fs.stop ()
+
+        if self.store:
+            self.store.stop ()
+
+        for path in self._dirs.values():
+            shutil.rmtree(path)
+        os.rmdir(self._basedir)

@@ -20,8 +20,11 @@
 
 "Constants describing Tracker D-Bus services"
 
+import errno
 import json
 import os
+import tempfile
+
 
 if 'TRACKER_FUNCTIONAL_TEST_CONFIG' not in os.environ:
     raise RuntimeError("The TRACKER_FUNCTIONAL_TEST_CONFIG environment "
@@ -86,22 +89,42 @@ TRACKER_WRITEBACK_PATH = os.path.normpath(expandvars(config['TRACKER_WRITEBACK_P
 
 DATADIR = os.path.normpath(expandvars(config['RAW_DATAROOT_DIR']))
 
-TEST_TMP_DIR = os.path.join (os.environ["HOME"], "tracker-tests")
+def generated_ttl_dir():
+    return os.path.join(TOP_BUILD_DIR, 'tests', 'functional-tests', 'ttl')
 
-TEST_MONITORED_TMP_DIR = TEST_TMP_DIR
 
-if TEST_TMP_DIR.startswith('/tmp'):
+# This path is used for test data for tests which expect filesystem monitoring
+# to work. For this reason we must avoid it being on a tmpfs filesystem. Note
+# that this MUST NOT be a hidden directory, as Tracker is hardcoded to ignore
+# those. The 'ignore-files' configuration option can be changed, but the
+# 'filter-hidden' property of TrackerIndexingTree is hardwired to be True at
+# present :/
+_TEST_MONITORED_TMP_DIR = os.path.join (os.environ["HOME"], "tracker-tests")
+if _TEST_MONITORED_TMP_DIR.startswith('/tmp'):
     if os.environ.has_key('REAL_HOME'):
-        # Note that this MUST NOT be a hidden directory, as Tracker is
-        # hardcoded to ignore those. The 'ignore-files' configuration option
-        # can be changed, but the 'filter-hidden' property of
-        # TrackerIndexingTree is hardwired to be True at present :/
-        TEST_MONITORED_TMP_DIR = os.path.join (os.environ["REAL_HOME"], "tracker-tests")
+        _TEST_MONITORED_TMP_DIR = os.path.join (os.environ["REAL_HOME"], "tracker-tests")
     else:
         print ("HOME is in the /tmp prefix - this will cause tests that rely " +
                 "on filesystem monitoring to fail as changes in that prefix are " +
                 "ignored.")
 
 
-def generated_ttl_dir():
-    return os.path.join(TOP_BUILD_DIR, 'tests', 'functional-tests', 'ttl')
+def create_monitored_test_dir():
+    '''Returns a unique tmpdir which supports filesystem monitor events.'''
+    if not os.path.exists(_TEST_MONITORED_TMP_DIR):
+        os.makedirs(_TEST_MONITORED_TMP_DIR)
+    return tempfile.mkdtemp(dir=_TEST_MONITORED_TMP_DIR)
+
+
+def remove_monitored_test_dir(path):
+    # This will fail if the directory is not empty.
+    os.rmdir(path)
+
+    # We delete the parent directory if possible, to avoid cluttering the user's
+    # home dir, but there may be other tests running in parallel so we ignore
+    # an error if there are still files present in it.
+    try:
+        os.rmdir(_TEST_MONITORED_TMP_DIR)
+    except OSError as e:
+        if e.errno == errno.ENOTEMPTY:
+            pass
