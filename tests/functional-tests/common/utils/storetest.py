@@ -34,12 +34,10 @@ class CommonTrackerStoreTest (ut.TestCase):
         """
         @classmethod 
 	def setUpClass (self):
-            #print "Starting the daemon in test mode"
             self.system = TrackerSystemAbstraction ()
             self.system.tracker_store_testing_start ()
             self.tracker = self.system.store
 
         @classmethod
         def tearDownClass (self):
-            #print "Stopping the daemon in test mode (Doing nothing now)"
-            self.system.tracker_store_testing_stop ()
+            self.system.finish ()
