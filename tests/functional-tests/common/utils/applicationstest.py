@@ -20,7 +20,7 @@
 from common.utils import configuration as cfg
 from common.utils.system import TrackerSystemAbstraction
 from common.utils.helpers import log
-import unittest2 as ut
+import unittest as ut
 
 from gi.repository import GLib
 
