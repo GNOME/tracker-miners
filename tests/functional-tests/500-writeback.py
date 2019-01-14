@@ -28,7 +28,6 @@ from common.utils.extractor import get_tracker_extract_jsonld_output
 from common.utils.helpers import log
 from common.utils.writebacktest import CommonTrackerWritebackTest as CommonTrackerWritebackTest
 import unittest as ut
-from common.utils.expectedFailure import expectedFailureBug
 
 REASONABLE_TIMEOUT = 5 # Seconds we wait for tracker-writeback to do the work
 
@@ -139,25 +138,21 @@ class WritebackBasicDataTest (CommonTrackerWritebackTest):
         
 
     # PNG tests
-    @expectedFailureBug ("NB#185070")
     def test_021_png_title (self):
         FILENAME = "test-writeback-monitored/writeback-test-4.png"
-        self.__writeback_test (self.get_test_filaname_png (), "image/png", "nie:title")
+        self.__writeback_test (self.get_test_filename_png (), "image/png", "nie:title")
 
-    @expectedFailureBug ("NB#185070")
     def test_022_png_description (self):
         FILENAME = "test-writeback-monitored/writeback-test-4.png"
-        self.__writeback_test (self.get_test_filaname_png (), "image/png", "nie:description")
-        
-    #@expectedFailureBug ("NB#185070")
+        self.__writeback_test (self.get_test_filename_png (), "image/png", "nie:description")
+
     #def test_023_png_keyword (self):
     #    FILENAME = "test-writeback-monitored/writeback-test-4.png"
-    #    self.__writeback_test (self.get_test_filaname_png (), "image/png", "nie:keyword", "nao:hasTag:prefLabel")
+    #    self.__writeback_test (self.get_test_filename_png (), "image/png", "nie:keyword", "nao:hasTag:prefLabel")
 
-    #@expectedFailureBug("NB#185070")
     #def test_024_png_hasTag (self):
     #    FILENAME = "test-writeback-monitored/writeback-test-4.png"
-    #    self.__writeback_hasTag_test (self.get_test_filaname_png (), "image/png")
+    #    self.__writeback_hasTag_test (self.get_test_filename_png (), "image/png")
 
 if __name__ == "__main__":
     ut.main (failfast=True)

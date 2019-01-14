@@ -21,7 +21,6 @@ from common.utils.writebacktest import CommonTrackerWritebackTest as CommonTrack
 from common.utils.extractor import get_tracker_extract_jsonld_output
 from common.utils.helpers import log
 import unittest as ut
-from common.utils.expectedFailure import expectedFailureBug
 import os
 import time
 
