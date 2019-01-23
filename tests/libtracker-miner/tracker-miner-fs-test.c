@@ -45,11 +45,12 @@ test_miner_process_file (TrackerMinerFS *miner,
 	info = g_file_query_info (file, "standard::*,time::*", 0, NULL, &error);
 	g_assert_no_error (error);
 
-	if (g_strcmp0 (tracker_miner_fs_get_urn (miner, file),
-	               tracker_miner_fs_query_urn (miner, file)) != 0) {
+	urn = tracker_miner_fs_query_urn (miner, file);
+	if (g_strcmp0 (tracker_miner_fs_get_urn (miner, file), urn) != 0) {
 		g_critical ("File %s did not get up to date URN",
 		            g_file_get_uri (file));
 	}
+	g_free (urn);
 
 	resource = tracker_resource_new (tracker_miner_fs_get_urn (miner, file));
 
@@ -81,6 +82,7 @@ test_miner_process_file (TrackerMinerFS *miner,
 	tracker_miner_fs_notify_finish (miner, task, sparql, NULL);
 	g_object_unref (resource);
 	g_free (sparql);
+	g_object_unref (info);
 
 	return TRUE;
 }
@@ -410,6 +412,8 @@ static void
 test_recursive_indexing (TrackerMinerFSTestFixture *fixture,
                          gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_FOLDER (fixture, "recursive/1");
 	CREATE_FOLDER (fixture, "recursive/1/2");
@@ -425,7 +429,8 @@ test_recursive_indexing (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/1,"
 	                 "recursive/1/2,"
@@ -433,12 +438,15 @@ test_recursive_indexing (TrackerMinerFSTestFixture *fixture,
 	                 "recursive/1/a,"
 	                 "recursive/1/b,"
 	                 "recursive/1/empty");
+	g_free (content);
 }
 
 static void
 test_non_recursive_indexing (TrackerMinerFSTestFixture *fixture,
                              gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "non-recursive");
 	CREATE_FOLDER (fixture, "non-recursive/1");
 	CREATE_FOLDER (fixture, "non-recursive/1/2");
@@ -453,17 +461,21 @@ test_non_recursive_indexing (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "non-recursive,"
 	                 "non-recursive/1,"
 	                 "non-recursive/a,"
 	                 "non-recursive/empty");
+	g_free (content);
 }
 
 static void
 test_separate_recursive_and_non_recursive (TrackerMinerFSTestFixture *fixture,
                                            gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_FOLDER (fixture, "recursive/1");
 	CREATE_FOLDER (fixture, "recursive/1/2");
@@ -485,7 +497,8 @@ test_separate_recursive_and_non_recursive (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "non-recursive,"
 	                 "non-recursive/1,"
 	                 "non-recursive/a,"
@@ -494,12 +507,15 @@ test_separate_recursive_and_non_recursive (TrackerMinerFSTestFixture *fixture,
 	                 "recursive/1/2,"
 	                 "recursive/1/b,"
 	                 "recursive/a");
+	g_free (content);
 }
 
 static void
 test_recursive_in_non_recursive (TrackerMinerFSTestFixture *fixture,
                                  gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "non-recursive");
 	CREATE_FOLDER (fixture, "non-recursive/1");
 	CREATE_FOLDER (fixture, "non-recursive/1/recursive");
@@ -519,7 +535,8 @@ test_recursive_in_non_recursive (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "non-recursive,"
 	                 "non-recursive/1,"
 	                 "non-recursive/1/recursive,"
@@ -527,12 +544,15 @@ test_recursive_in_non_recursive (TrackerMinerFSTestFixture *fixture,
 	                 "non-recursive/1/recursive/2/d,"
 	                 "non-recursive/1/recursive/c,"
 	                 "non-recursive/a");
+	g_free (content);
 }
 
 static void
 test_non_recursive_in_recursive (TrackerMinerFSTestFixture *fixture,
                                  gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_FOLDER (fixture, "recursive/1");
 	CREATE_FOLDER (fixture, "recursive/1/non-recursive");
@@ -552,7 +572,8 @@ test_non_recursive_in_recursive (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/1,"
 	                 "recursive/1/b,"
@@ -560,12 +581,15 @@ test_non_recursive_in_recursive (TrackerMinerFSTestFixture *fixture,
 	                 "recursive/1/non-recursive/2,"
 	                 "recursive/1/non-recursive/c,"
 	                 "recursive/a");
+	g_free (content);
 }
 
 static void
 test_empty_root (TrackerMinerFSTestFixture *fixture,
                  gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "empty");
 
 	fixture_add_indexed_folder (fixture, "empty",
@@ -576,13 +600,17 @@ test_empty_root (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==, "empty");
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==, "empty");
+	g_free (content);
 }
 
 static void
 test_missing_root (TrackerMinerFSTestFixture *fixture,
                    gconstpointer              data)
 {
+	gchar *content;
+
 	fixture_add_indexed_folder (fixture, "missing",
 	                            TRACKER_DIRECTORY_FLAG_CHECK_MTIME |
 	                            TRACKER_DIRECTORY_FLAG_RECURSE);
@@ -591,7 +619,9 @@ test_missing_root (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==, "");
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==, "");
+	g_free (content);
 }
 
 static void
@@ -599,6 +629,7 @@ test_skip_hidden_files (TrackerMinerFSTestFixture *fixture,
                         gconstpointer              data)
 {
 	TrackerIndexingTree *indexing_tree;
+	gchar *content;
 
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_FOLDER (fixture, "recursive/1");
@@ -618,15 +649,19 @@ test_skip_hidden_files (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/1");
+	g_free (content);
 }
 
 static void
 test_index_hidden_files (TrackerMinerFSTestFixture *fixture,
                          gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_FOLDER (fixture, "recursive/1");
 	CREATE_FOLDER (fixture, "recursive/1/.hidden");
@@ -642,13 +677,15 @@ test_index_hidden_files (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/.hidden-file,"
 	                 "recursive/1,"
 	                 "recursive/1/.hidden,"
 	                 "recursive/1/.hidden/2,"
 	                 "recursive/1/.hidden/2/a");
+	g_free (content);
 }
 
 static void
@@ -656,6 +693,7 @@ test_file_filter_default_accept (TrackerMinerFSTestFixture *fixture,
                                  gconstpointer              data)
 {
 	TrackerIndexingTree *indexing_tree;
+	gchar *content;
 
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_FOLDER (fixture, "recursive/aa");
@@ -679,12 +717,14 @@ test_file_filter_default_accept (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/aa,"
 	                 "recursive/aa/b2,"
 	                 "recursive/bb,"
 	                 "recursive/bb/bb");
+	g_free (content);
 }
 
 static void
@@ -692,6 +732,7 @@ test_file_filter_default_deny (TrackerMinerFSTestFixture *fixture,
                                gconstpointer              data)
 {
 	TrackerIndexingTree *indexing_tree;
+	gchar *content;
 
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_FOLDER (fixture, "recursive/aa");
@@ -715,12 +756,14 @@ test_file_filter_default_deny (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/aa,"
 	                 "recursive/aa/a1,"
 	                 "recursive/bb,"
 	                 "recursive/bb/ab");
+	g_free (content);
 }
 
 static void
@@ -728,6 +771,7 @@ test_directory_filter_default_accept (TrackerMinerFSTestFixture *fixture,
                                       gconstpointer              data)
 {
 	TrackerIndexingTree *indexing_tree;
+	gchar *content;
 
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_FOLDER (fixture, "recursive/aa");
@@ -751,11 +795,13 @@ test_directory_filter_default_accept (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/bb,"
 	                 "recursive/bb/ab,"
 	                 "recursive/bb/bb");
+	g_free (content);
 }
 
 static void
@@ -763,6 +809,7 @@ test_directory_filter_default_deny (TrackerMinerFSTestFixture *fixture,
                                       gconstpointer              data)
 {
 	TrackerIndexingTree *indexing_tree;
+	gchar *content;
 
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_FOLDER (fixture, "recursive/aa");
@@ -789,11 +836,13 @@ test_directory_filter_default_deny (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/aa,"
 	                 "recursive/aa/a1,"
 	                 "recursive/aa/b2");
+	g_free (content);
 }
 
 static void
@@ -801,6 +850,7 @@ test_content_filter_default_accept (TrackerMinerFSTestFixture *fixture,
                                     gconstpointer              data)
 {
 	TrackerIndexingTree *indexing_tree;
+	gchar *content;
 
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_FOLDER (fixture, "recursive/aa");
@@ -826,12 +876,14 @@ test_content_filter_default_accept (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/aa,"
 	                 "recursive/bb,"
 	                 "recursive/bb/ab,"
 	                 "recursive/bb/bb");
+	g_free (content);
 }
 
 static void
@@ -839,6 +891,7 @@ test_content_filter_default_deny (TrackerMinerFSTestFixture *fixture,
                                   gconstpointer              data)
 {
 	TrackerIndexingTree *indexing_tree;
+	gchar *content;
 
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_FOLDER (fixture, "recursive/aa");
@@ -865,7 +918,8 @@ test_content_filter_default_deny (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/aa,"
 	                 "recursive/aa/a1,"
@@ -873,6 +927,7 @@ test_content_filter_default_deny (TrackerMinerFSTestFixture *fixture,
 	                 "recursive/aa/b2,"
 	                 "recursive/allow,"
 	                 "recursive/bb");
+	g_free (content);
 }
 
 static void
@@ -880,6 +935,7 @@ test_content_filter_on_parent_root (TrackerMinerFSTestFixture *fixture,
 				    gconstpointer              data)
 {
 	TrackerIndexingTree *indexing_tree;
+	gchar *content;
 
 	CREATE_FOLDER (fixture, "non-recursive");
 	CREATE_FOLDER (fixture, "non-recursive/recursive");
@@ -907,12 +963,14 @@ test_content_filter_on_parent_root (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "non-recursive,"
 	                 "non-recursive/recursive,"
 			 "non-recursive/recursive/a,"
 			 "non-recursive/recursive/a/d,"
 			 "non-recursive/recursive/c");
+	g_free (content);
 
 	/* Check it is ok after the content is already indexed. All
 	 * files should stay and no events should be generated as
@@ -934,12 +992,14 @@ test_content_filter_on_parent_root (TrackerMinerFSTestFixture *fixture,
 	test_miner_reset_counters ((TestMiner *) fixture->miner);
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "non-recursive,"
 	                 "non-recursive/recursive,"
 			 "non-recursive/recursive/a,"
 			 "non-recursive/recursive/a/d,"
 			 "non-recursive/recursive/c");
+	g_free (content);
 
 	g_assert_cmpint (((TestMiner *) fixture->miner)->n_events, ==, 0);
 }
@@ -948,6 +1008,8 @@ static void
 test_non_monitored_create (TrackerMinerFSTestFixture *fixture,
                            gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_UPDATE_FILE (fixture, "recursive/a");
 
@@ -960,9 +1022,11 @@ test_non_monitored_create (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	fixture_remove_indexed_folder (fixture, "recursive");
 
@@ -976,18 +1040,22 @@ test_non_monitored_create (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a,"
 	                 "recursive/b,"
 	                 "recursive/new,"
 	                 "recursive/new/c");
+	g_free (content);
 }
 
 static void
 test_non_monitored_update (TrackerMinerFSTestFixture *fixture,
                            gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_UPDATE_FILE (fixture, "recursive/a");
 
@@ -1000,9 +1068,11 @@ test_non_monitored_update (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	fixture_remove_indexed_folder (fixture, "recursive");
 	test_miner_reset_counters ((TestMiner *) fixture->miner);
@@ -1020,15 +1090,19 @@ test_non_monitored_update (TrackerMinerFSTestFixture *fixture,
 
 	g_assert_cmpint (((TestMiner *) fixture->miner)->n_process_file, >=, 1);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 }
 
 static void
 test_non_monitored_delete (TrackerMinerFSTestFixture *fixture,
                            gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_FOLDER (fixture, "recursive/1");
 	CREATE_FOLDER (fixture, "recursive/1/2");
@@ -1047,7 +1121,8 @@ test_non_monitored_delete (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/1,"
 	                 "recursive/1/2,"
@@ -1055,6 +1130,7 @@ test_non_monitored_delete (TrackerMinerFSTestFixture *fixture,
 	                 "recursive/1/2/3/c,"
 	                 "recursive/1/2/b,"
 	                 "recursive/a");
+	g_free (content);
 
 	fixture_remove_indexed_folder (fixture, "recursive");
 
@@ -1068,15 +1144,19 @@ test_non_monitored_delete (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/1");
+	g_free (content);
 }
 
 static void
 test_non_monitored_move (TrackerMinerFSTestFixture *fixture,
                          gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_FOLDER (fixture, "recursive/1");
 	CREATE_FOLDER (fixture, "non-recursive");
@@ -1101,7 +1181,8 @@ test_non_monitored_move (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "non-recursive,"
 	                 "non-recursive/2,"
 	                 "recursive,"
@@ -1109,6 +1190,7 @@ test_non_monitored_move (TrackerMinerFSTestFixture *fixture,
 	                 "recursive/1/b,"
 	                 "recursive/a,"
 	                 "recursive/d");
+	g_free (content);
 
 	fixture_remove_indexed_folder (fixture, "recursive");
 	fixture_remove_indexed_folder (fixture, "non-recursive");
@@ -1128,19 +1210,23 @@ test_non_monitored_move (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "non-recursive,"
 	                 "non-recursive/3,"
 	                 "non-recursive/e,"
 	                 "recursive,"
 	                 "recursive/4,"
 	                 "recursive/4/c");
+	g_free (content);
 }
 
 static void
 test_monitored_create (TrackerMinerFSTestFixture *fixture,
                        gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_UPDATE_FILE (fixture, "recursive/a");
 
@@ -1153,9 +1239,11 @@ test_monitored_create (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	CREATE_FOLDER (fixture, "recursive/new");
 	CREATE_UPDATE_FILE (fixture, "recursive/b");
@@ -1163,18 +1251,22 @@ test_monitored_create (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a,"
 	                 "recursive/b,"
 	                 "recursive/new,"
 	                 "recursive/new/c");
+	g_free (content);
 }
 
 static void
 test_monitored_update (TrackerMinerFSTestFixture *fixture,
                        gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_UPDATE_FILE (fixture, "recursive/a");
 
@@ -1187,9 +1279,11 @@ test_monitored_update (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	test_miner_reset_counters ((TestMiner *) fixture->miner);
 
@@ -1199,15 +1293,18 @@ test_monitored_update (TrackerMinerFSTestFixture *fixture,
 
 	g_assert_cmpint (((TestMiner *) fixture->miner)->n_process_file, ==, 1);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 }
 
 static void
 test_monitored_delete (TrackerMinerFSTestFixture *fixture,
                        gconstpointer              data)
 {
+	gchar *content;
 	gint n_tries = 0;
 
 	CREATE_FOLDER (fixture, "recursive");
@@ -1228,7 +1325,8 @@ test_monitored_delete (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/1,"
 	                 "recursive/1/2,"
@@ -1236,6 +1334,7 @@ test_monitored_delete (TrackerMinerFSTestFixture *fixture,
 	                 "recursive/1/2/3/c,"
 	                 "recursive/1/2/b,"
 	                 "recursive/a");
+	g_free (content);
 
 	DELETE_FOLDER (fixture, "recursive/1/2");
 
@@ -1249,24 +1348,29 @@ test_monitored_delete (TrackerMinerFSTestFixture *fixture,
 		n_tries++;
 	}
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/1,"
 	                 "recursive/a");
+	g_free (content);
 
 	DELETE_FILE (fixture, "recursive/a");
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/1");
+	g_free (content);
 }
 
 static void
 test_monitored_move (TrackerMinerFSTestFixture *fixture,
                      gconstpointer              data)
 {
+	gchar *content;
 	gint n_tries = 0;
 
 	CREATE_FOLDER (fixture, "recursive");
@@ -1293,7 +1397,8 @@ test_monitored_move (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "non-recursive,"
 	                 "non-recursive/2,"
 	                 "recursive,"
@@ -1301,6 +1406,7 @@ test_monitored_move (TrackerMinerFSTestFixture *fixture,
 	                 "recursive/1/b,"
 	                 "recursive/a,"
 	                 "recursive/d");
+	g_free (content);
 
 	MOVE_FILE (fixture, "recursive/a", "non-recursive/e");
 	MOVE_FILE (fixture, "recursive/1", "non-recursive/3");
@@ -1313,19 +1419,23 @@ test_monitored_move (TrackerMinerFSTestFixture *fixture,
 		n_tries++;
 	}
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "non-recursive,"
 	                 "non-recursive/3,"
 	                 "non-recursive/e,"
 	                 "recursive,"
 	                 "recursive/4,"
 	                 "recursive/4/c");
+	g_free (content);
 }
 
 static void
 test_monitored_atomic_replace (TrackerMinerFSTestFixture *fixture,
                                gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_UPDATE_FILE (fixture, "recursive/a");
 
@@ -1339,23 +1449,29 @@ test_monitored_atomic_replace (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	UPDATE_FILE_ATOMIC (fixture, "recursive/a", "recursive/b");
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 }
 
 static void
 test_changes_after_no_mtime_check (TrackerMinerFSTestFixture *fixture,
                                    gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_FOLDER (fixture, "recursive/1");
 	CREATE_FOLDER (fixture, "recursive/1/2");
@@ -1372,12 +1488,14 @@ test_changes_after_no_mtime_check (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/1,"
 	                 "recursive/1/2,"
 	                 "recursive/1/2/b,"
 	                 "recursive/a");
+	g_free (content);
 
 	fixture_remove_indexed_folder (fixture, "recursive");
 
@@ -1390,12 +1508,14 @@ test_changes_after_no_mtime_check (TrackerMinerFSTestFixture *fixture,
 	                            TRACKER_DIRECTORY_FLAG_RECURSE);
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/1,"
 	                 "recursive/1/2,"
 	                 "recursive/1/2/b,"
 	                 "recursive/a");
+	g_free (content);
 
 	CREATE_UPDATE_FILE (fixture, "recursive/1/3/c");
 	CREATE_UPDATE_FILE (fixture, "recursive/1/2");
@@ -1404,7 +1524,8 @@ test_changes_after_no_mtime_check (TrackerMinerFSTestFixture *fixture,
 	while (!fixture_query_exists (fixture, "recursive/c"))
 		fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/1,"
 	                 "recursive/1/2,"
@@ -1413,12 +1534,15 @@ test_changes_after_no_mtime_check (TrackerMinerFSTestFixture *fixture,
 	                 "recursive/1/3/c,"
 	                 "recursive/a,"
 	                 "recursive/c");
+	g_free (content);
 }
 
 static void
 test_event_queue_create_and_update (TrackerMinerFSTestFixture *fixture,
                                     gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 
 	fixture_add_indexed_folder (fixture, "recursive",
@@ -1430,7 +1554,9 @@ test_event_queue_create_and_update (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==, "recursive");
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==, "recursive");
+	g_free (content);
 
 	tracker_miner_pause (TRACKER_MINER (fixture->miner));
 
@@ -1439,23 +1565,28 @@ test_event_queue_create_and_update (TrackerMinerFSTestFixture *fixture,
 	UPDATE_FILE_ATOMIC (fixture, "recursive/a", "recursive/b");
 	fixture_iterate_filter (fixture, 1);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
-	                 "recursive");
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==, "recursive");
+	g_free (content);
 
 	tracker_miner_resume (TRACKER_MINER (fixture->miner));
 
 	g_assert_cmpint (((TestMiner *) fixture->miner)->n_process_file, ==, 1);
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 }
 
 static void
 test_event_queue_create_and_delete (TrackerMinerFSTestFixture *fixture,
                                     gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 
 	fixture_add_indexed_folder (fixture, "recursive",
@@ -1467,7 +1598,9 @@ test_event_queue_create_and_delete (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==, "recursive");
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==, "recursive");
+	g_free (content);
 
 	tracker_miner_pause (TRACKER_MINER (fixture->miner));
 
@@ -1487,6 +1620,8 @@ static void
 test_event_queue_create_and_move (TrackerMinerFSTestFixture *fixture,
                                   gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 
 	fixture_add_indexed_folder (fixture, "recursive",
@@ -1498,7 +1633,9 @@ test_event_queue_create_and_move (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==, "recursive");
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==, "recursive");
+	g_free (content);
 
 	tracker_miner_pause (TRACKER_MINER (fixture->miner));
 
@@ -1507,22 +1644,27 @@ test_event_queue_create_and_move (TrackerMinerFSTestFixture *fixture,
 	MOVE_FILE (fixture, "recursive/a", "recursive/b");
 	fixture_iterate_filter (fixture, 1);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
-	                 "recursive");
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==, "recursive");
+	g_free (content);
 
 	tracker_miner_resume (TRACKER_MINER (fixture->miner));
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/b");
+	g_free (content);
 }
 
 static void
 test_event_queue_update_and_update (TrackerMinerFSTestFixture *fixture,
                                     gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_UPDATE_FILE (fixture, "recursive/a");
 
@@ -1535,9 +1677,11 @@ test_event_queue_update_and_update (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	tracker_miner_pause (TRACKER_MINER (fixture->miner));
 	test_miner_reset_counters ((TestMiner *) fixture->miner);
@@ -1548,9 +1692,11 @@ test_event_queue_update_and_update (TrackerMinerFSTestFixture *fixture,
 	MOVE_FILE (fixture, "b", "recursive/a");
 	fixture_iterate_filter (fixture, 1);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	tracker_miner_resume (TRACKER_MINER (fixture->miner));
 
@@ -1558,15 +1704,19 @@ test_event_queue_update_and_update (TrackerMinerFSTestFixture *fixture,
 	/* Coalescing desirable, but not mandatory */
 	g_assert_cmpint (((TestMiner *) fixture->miner)->n_process_file, >=, 1);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 }
 
 static void
 test_event_queue_update_and_delete (TrackerMinerFSTestFixture *fixture,
                                     gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_UPDATE_FILE (fixture, "recursive/a");
 
@@ -1579,9 +1729,11 @@ test_event_queue_update_and_delete (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	tracker_miner_pause (TRACKER_MINER (fixture->miner));
 
@@ -1590,22 +1742,27 @@ test_event_queue_update_and_delete (TrackerMinerFSTestFixture *fixture,
 	DELETE_FILE (fixture, "recursive/a");
 	fixture_iterate_filter (fixture, 1);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	tracker_miner_resume (TRACKER_MINER (fixture->miner));
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
-	                 "recursive");
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==, "recursive");
+	g_free (content);
 }
 
 static void
 test_event_queue_update_and_move (TrackerMinerFSTestFixture *fixture,
                                   gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_UPDATE_FILE (fixture, "recursive/a");
 
@@ -1618,9 +1775,11 @@ test_event_queue_update_and_move (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	tracker_miner_pause (TRACKER_MINER (fixture->miner));
 
@@ -1630,23 +1789,29 @@ test_event_queue_update_and_move (TrackerMinerFSTestFixture *fixture,
 	MOVE_FILE (fixture, "recursive/a", "recursive/b");
 	fixture_iterate_filter (fixture, 1);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	tracker_miner_resume (TRACKER_MINER (fixture->miner));
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/b");
+	g_free (content);
 }
 
 static void
 test_event_queue_delete_and_create (TrackerMinerFSTestFixture *fixture,
                                     gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_UPDATE_FILE (fixture, "recursive/a");
 
@@ -1659,9 +1824,11 @@ test_event_queue_delete_and_create (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	tracker_miner_pause (TRACKER_MINER (fixture->miner));
 
@@ -1670,23 +1837,29 @@ test_event_queue_delete_and_create (TrackerMinerFSTestFixture *fixture,
 	CREATE_UPDATE_FILE (fixture, "recursive/a");
 	fixture_iterate_filter (fixture, 1);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	tracker_miner_resume (TRACKER_MINER (fixture->miner));
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 }
 
 static void
 test_event_queue_move_and_update (TrackerMinerFSTestFixture *fixture,
                                   gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_UPDATE_FILE (fixture, "recursive/a");
 
@@ -1699,9 +1872,11 @@ test_event_queue_move_and_update (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	tracker_miner_pause (TRACKER_MINER (fixture->miner));
 
@@ -1712,24 +1887,30 @@ test_event_queue_move_and_update (TrackerMinerFSTestFixture *fixture,
 	UPDATE_FILE_ATOMIC (fixture, "recursive/b", "c");
 	fixture_iterate_filter (fixture, 1);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	tracker_miner_resume (TRACKER_MINER (fixture->miner));
 
 	fixture_iterate (fixture);
 	g_assert_cmpint (((TestMiner *) fixture->miner)->n_process_file, ==, 1);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/b");
+	g_free (content);
 }
 
 static void
 test_event_queue_move_and_create_origin (TrackerMinerFSTestFixture *fixture,
                                          gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_UPDATE_FILE (fixture, "recursive/a");
 
@@ -1742,9 +1923,11 @@ test_event_queue_move_and_create_origin (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	tracker_miner_pause (TRACKER_MINER (fixture->miner));
 
@@ -1753,24 +1936,30 @@ test_event_queue_move_and_create_origin (TrackerMinerFSTestFixture *fixture,
 	CREATE_UPDATE_FILE (fixture, "recursive/a");
 	fixture_iterate_filter (fixture, 1);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	tracker_miner_resume (TRACKER_MINER (fixture->miner));
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a,"
 	                 "recursive/b");
+	g_free (content);
 }
 
 static void
 test_event_queue_move_and_delete (TrackerMinerFSTestFixture *fixture,
                                   gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_UPDATE_FILE (fixture, "recursive/a");
 
@@ -1783,9 +1972,11 @@ test_event_queue_move_and_delete (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	tracker_miner_pause (TRACKER_MINER (fixture->miner));
 
@@ -1794,22 +1985,28 @@ test_event_queue_move_and_delete (TrackerMinerFSTestFixture *fixture,
 	DELETE_FILE (fixture, "recursive/b");
 	fixture_iterate_filter (fixture, 1);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	tracker_miner_resume (TRACKER_MINER (fixture->miner));
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive");
+	g_free (content);
 }
 
 static void
 test_event_queue_move_and_move (TrackerMinerFSTestFixture *fixture,
                                 gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_UPDATE_FILE (fixture, "recursive/a");
 
@@ -1822,9 +2019,11 @@ test_event_queue_move_and_move (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	tracker_miner_pause (TRACKER_MINER (fixture->miner));
 
@@ -1833,23 +2032,29 @@ test_event_queue_move_and_move (TrackerMinerFSTestFixture *fixture,
 	MOVE_FILE (fixture, "recursive/b", "recursive/c");
 	fixture_iterate_filter (fixture, 1);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	tracker_miner_resume (TRACKER_MINER (fixture->miner));
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/c");
+	g_free (content);
 }
 
 static void
 test_event_queue_move_and_move_back (TrackerMinerFSTestFixture *fixture,
                                      gconstpointer              data)
 {
+	gchar *content;
+
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_UPDATE_FILE (fixture, "recursive/a");
 
@@ -1862,9 +2067,11 @@ test_event_queue_move_and_move_back (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	tracker_miner_pause (TRACKER_MINER (fixture->miner));
 
@@ -1873,17 +2080,21 @@ test_event_queue_move_and_move_back (TrackerMinerFSTestFixture *fixture,
 	MOVE_FILE (fixture, "recursive/b", "recursive/a");
 	fixture_iterate_filter (fixture, 1);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	tracker_miner_resume (TRACKER_MINER (fixture->miner));
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 }
 
 static void
@@ -1891,6 +2102,7 @@ test_api_check_file (TrackerMinerFSTestFixture *fixture,
                      gconstpointer              data)
 {
 	GFile *file;
+	gchar *content;
 
 	CREATE_FOLDER (fixture, "recursive");
 	CREATE_FOLDER (fixture, "not-indexed");
@@ -1907,9 +2119,11 @@ test_api_check_file (TrackerMinerFSTestFixture *fixture,
 
 	fixture_iterate (fixture);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 
 	test_miner_reset_counters ((TestMiner *) fixture->miner);
 
@@ -1929,10 +2143,12 @@ test_api_check_file (TrackerMinerFSTestFixture *fixture,
 
 	g_assert_cmpint (((TestMiner *) fixture->miner)->n_process_file, ==, 2);
 
-	g_assert_cmpstr (fixture_get_content (fixture), ==,
+	content = fixture_get_content (fixture);
+	g_assert_cmpstr (content, ==,
 	                 "not-indexed/b,"
 	                 "recursive,"
 	                 "recursive/a");
+	g_free (content);
 }
 
 gint
