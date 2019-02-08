@@ -198,11 +198,7 @@ desktop_file = custom_target('tracker-extract-desktop-file',
   install: true,
   install_dir: join_paths(get_option('sysconfdir'), 'xdg/autostart'))
 
-custom_target('tracker-extract-settings-schema',
-  input: 'org.freedesktop.Tracker.Extract.gschema.xml.in',
-  output: 'org.freedesktop.Tracker.Extract.gschema.xml',
-  command: ['intltool-merge', '--quiet', '--xml-style', '--utf8', join_paths(meson.source_root(), 'po'), '@INPUT@', '@OUTPUT@'],
-  install: true,
+install_data('org.freedesktop.Tracker.Extract.gschema.xml',
   install_dir: gsettings_schema_dir)
 
 if install_systemd_user_services
