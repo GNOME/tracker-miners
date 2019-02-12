@@ -10,6 +10,10 @@ if taglib.found()
   modules += [['writeback-taglib', 'tracker-writeback-taglib.c', [tracker_miner, tracker_sparql, tracker_miners_common_dep, taglib]]]
 endif
 
+if gstreamer.found() and gstreamer_tag.found() and gstreamer_audio.found()
+  modules += [['writeback-gstreamer', 'tracker-writeback-gstreamer.c', [tracker_miner, tracker_sparql, tracker_miners_common_dep, gstreamer, gstreamer_tag]]]
+endif
+
 if exempi.found()
   modules += [['writeback-xmp', 'tracker-writeback-xmp.c', [tracker_miner, tracker_sparql, tracker_miners_common_dep, exempi]]]
 endif
