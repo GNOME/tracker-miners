@@ -134,13 +134,13 @@ test_path_list_filter_duplicates_with_exceptions ()
 static void
 test_path_evaluate_name (void)
 {
-	gchar *result, *expected;
-
-	const gchar *home = g_getenv ("HOME");
-	const gchar *pwd = g_getenv ("PWD");
+	gchar *result, *expected, *home, *pwd;
 
 	const gchar *test = "/one/two";
 	gchar *parent_dir;
+
+	home = g_strdup (g_getenv ("HOME"));
+	pwd = g_get_current_dir ();
 
 	g_setenv ("TEST_TRACKER_DIR", test, TRUE);
 
@@ -219,6 +219,8 @@ test_path_evaluate_name (void)
 	result = tracker_path_evaluate_name (tracker_test_helpers_get_nonutf8 ());
 	g_assert_cmpstr (result, ==, tracker_test_helpers_get_nonutf8 ());
 
+	g_free (home);
+	g_free (pwd);
 	g_unsetenv ("TEST_TRACKER_DIR");
 }
 
