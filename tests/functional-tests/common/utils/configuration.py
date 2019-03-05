@@ -111,8 +111,12 @@ if _TEST_MONITORED_TMP_DIR.startswith('/tmp'):
 
 def create_monitored_test_dir():
     '''Returns a unique tmpdir which supports filesystem monitor events.'''
-    if not os.path.exists(_TEST_MONITORED_TMP_DIR):
+    try:
         os.makedirs(_TEST_MONITORED_TMP_DIR)
+    except OSError as e:
+        if e.errno == errno.EEXIST:
+            pass
+        raise
     return tempfile.mkdtemp(dir=_TEST_MONITORED_TMP_DIR)
 
 
