@@ -23,10 +23,15 @@ from common.utils import configuration as cfg
 from common.utils.helpers import log
 import errno
 import json
+import math
 import os
 import re
 import subprocess
 import unittest as ut
+
+import gi
+gi.require_version('Gst', '1.0')
+from gi.repository import GLib, Gst
 
 
 def get_tracker_extract_jsonld_output(filename, mime_type=None):
@@ -139,7 +144,11 @@ class TrackerExtractTestCase(ut.TestCase):
                                         error_wrong_length % (prop, filename, spec_filename))
 
                     for i in range(0, len(expected_value)):
-                        self.assert_extract_result_matches_spec(spec[prop][i], result[prop][i], filename, spec_filename)
+                        if isinstance(expected_value[i], dict):
+                            self.assert_extract_result_matches_spec(expected_value[i], result[prop][i], filename, spec_filename)
+                        else:
+                            self.assertEqual(str(expected_value[i]), str(result[prop][i]),
+                                             error_wrong_value % (prop, filename, spec_filename))
                 elif isinstance(expected_value, dict):
                     self.assert_extract_result_matches_spec(expected_value, result[prop], filename, spec_filename)
                 else:
@@ -162,3 +171,45 @@ class TrackerExtractTestCase(ut.TestCase):
         for prop in expected_keys:
             self.assertDictHasKey(result, prop,
                                   error_missing_prop % (prop, filename, spec_filename))
+
+
+def create_test_flac(path, duration, timeout=10):
+    """
+    Create a .flac audio file for testing purposes.
+
+    FLAC audio doesn't compress test data particularly efficiently, so
+    committing an audio file more than a few seconds long to Git is not
+    practical. This function creates a .flac file containing a test tone.
+    The 'duration' parameter sets the length in seconds of the time.
+
+    The function is guaranteed to return or raise an exception within the
+    number of seconds given in the 'timeout' parameter.
+    """
+
+    Gst.init([])
+
+    num_buffers = math.ceil(duration * 44100 / 1024.0)
+
+    pipeline_src = ' ! '.join([
+        'audiotestsrc num-buffers=%s samplesperbuffer=1024' % num_buffers,
+        'capsfilter caps="audio/x-raw,rate=44100"',
+        'flacenc',
+        'filesink location=%s' % path,
+    ])
+
+    log("Running pipeline: %s" % pipeline_src)
+    pipeline = Gst.parse_launch(pipeline_src)
+    ret = pipeline.set_state(Gst.State.PLAYING)
+
+    msg = pipeline.get_bus().poll(Gst.MessageType.ERROR | Gst.MessageType.EOS,
+                                timeout * Gst.SECOND)
+    if msg and msg.type == Gst.MessageType.EOS:
+        pass
+    elif msg and msg.type == Gst.MessageType.ERROR:
+        raise RuntimeError(msg.parse_error())
+    elif msg:
+        raise RuntimeError("Got unexpected GStreamer message %s" % msg.type)
+    else:
+        raise RuntimeError("Timeout generating test audio file after %i seconds" % timeout)
+
+    pipeline.set_state(Gst.State.NULL)
