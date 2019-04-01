@@ -30,6 +30,7 @@ functional_tests = [
   '310-fts-basic',
   '311-fts-file-operations',
   '312-fts-stopwords',
+  '401-extractor-flac-cuesheet',
   '410-extractor-decorator',
   '500-writeback',
   '501-writeback-details',
