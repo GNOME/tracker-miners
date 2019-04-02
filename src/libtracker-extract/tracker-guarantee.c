@@ -213,10 +213,6 @@ tracker_guarantee_resource_utf8_string (TrackerResource *resource,
 {
 	gchar *str;
 
-	if (strlen(value) == 0){
-		return FALSE;
-	}
-
 	if (!g_utf8_validate (value, -1, NULL)) {
 		str = g_utf8_make_valid(value, -1);
 		tracker_resource_set_string (resource, key, str);
