@@ -213,14 +213,17 @@ tracker_guarantee_resource_utf8_string (TrackerResource *resource,
 {
 	gchar *str;
 
+	if (strlen(value) == 0){
+		return FALSE;
+	}
+
 	if (!g_utf8_validate (value, -1, NULL)) {
 		str = g_utf8_make_valid(value, -1);
-		printf("Naagy:  %s\n", str);
 		tracker_resource_set_string (resource, key, str);
 		g_free (str);
 	} else {
 		tracker_resource_set_string (resource, key, value);
 	}
 
-	return TRUE; //it always return true
+	return TRUE;
 }
