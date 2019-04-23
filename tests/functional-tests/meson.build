@@ -16,7 +16,12 @@ extractor_tests = [
   'office/office-doc',
   'office/powerpoint',
   'office/pdf-doc',
+  'office/ps-doc'
 ]
+
+if get_option('unzip_ps_gz_files')
+  extractor_tests += 'office/psgz-doc'
+endif
 
 functional_tests = [
   '300-miner-basic-ops',

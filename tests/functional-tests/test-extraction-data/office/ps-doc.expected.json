@@ -1,0 +1,15 @@
+{
+    "test": {
+        "Filename": "ps-doc.ps",
+        "Comment": "PS document from the office tools"
+    },
+    "metadata": {
+        "nfo:pageCount": 22,
+        "nco:creator": {
+            "@id": "urn:contact:GPL%20Ghostscript%20926%20(ps2write)",
+            "nco:fullname": "GPL Ghostscript 926 (ps2write)",
+            "@type": "nco:Contact"
+        },
+        "@type": "nfo:PaginatedTextDocument"
+    }
+}
