@@ -18,13 +18,7 @@
  * Boston, MA  02110-1301, USA.
  */
 
-#include "config.h"
-
-#include <fcntl.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
+#include <config.h>
 
 #include <glib.h>
 #include <glib/gstdio.h>
@@ -101,43 +95,30 @@ date_to_iso8601 (const gchar *date)
 }
 
 static TrackerResource *
-extract_ps_from_filestream (FILE *f)
+extract_ps_from_inputstream (GInputStream *stream)
 {
 	TrackerResource *metadata;
-	gchar *line;
-	gsize length;
-	gssize read_char;
-	gsize accum;
-	gsize max_bytes;
-
-	line = NULL;
-	length = 0;
+	g_autoptr(GDataInputStream) data_stream = NULL;
+	g_autofree gchar *line = NULL;
+	gsize length, accum, max_bytes;
+	g_autoptr(GError) error = NULL;
 
 	metadata = tracker_resource_new (NULL);
 	tracker_resource_add_uri (metadata, "rdf:type", "nfo:PaginatedTextDocument");
+
+	data_stream = g_data_input_stream_new (stream);
 
 	/* 20 MiB should be enough! (original safe limit) */
 	accum = 0;
 	max_bytes = 20u << 20;
 
-	/* Reuse the same buffer for all lines. Must be dynamically allocated with
-	 * malloc family methods as getline() may re-size it with realloc() */
-	length = 1024;
-	line = g_malloc (length);
-
-	/* Halt the whole when one of these conditions is met:
-	 *  a) Reached max bytes to read
-	 *  b) No more lines to read
-	 */
 	while ((accum < max_bytes) &&
-	       (read_char = tracker_getline (&line, &length, f)) != -1) {
+	       (line = g_data_input_stream_read_line (data_stream, &length, NULL, &error)) != NULL) {
 		gboolean pageno_atend = FALSE;
 		gboolean header_finished = FALSE;
 
 		/* Update accumulated bytes read */
-		accum += read_char;
-
-		line[read_char - 1] = '\0';  /* overwrite '\n' char */
+		accum += length;
 
 		if (!header_finished && strncmp (line, "%%Copyright:", 12) == 0) {
 			tracker_resource_set_string (metadata, "nie:copyright", line + 13);
@@ -148,13 +129,11 @@ extract_ps_from_filestream (FILE *f)
 			tracker_resource_set_relation (metadata, "nco:creator", creator);
 			g_object_unref (creator);
 		} else if (!header_finished && strncmp (line, "%%CreationDate:", 15) == 0) {
-			gchar *date;
+			g_autofree gchar *date = NULL;
 
 			date = date_to_iso8601 (line + 16);
-			if (date) {
+			if (date)
 				tracker_resource_set_string (metadata, "nie:contentCreated", date);
-				g_free (date);
-			}
 		} else if (strncmp (line, "%%Pages:", 8) == 0) {
 			if (strcmp (line + 9, "(atend)") == 0) {
 				pageno_atend = TRUE;
@@ -173,136 +152,58 @@ extract_ps_from_filestream (FILE *f)
 		}
 	}
 
-	/* Deallocate the buffer */
-	if (line) {
-		g_free (line);
-	}
+	if (error != NULL)
+		g_warning ("Unexpected lack of content trying to read a line: %s", error->message);
 
 	return metadata;
 }
 
-
-
 static TrackerResource *
-extract_ps (const gchar          *uri)
+extract_ps (const gchar *uri)
 {
-	TrackerResource *metadata;
-	FILE *f;
-	gchar *filename;
+	g_autoptr(GFile) file = NULL;
+	g_autoptr(GInputStream) stream = NULL;
+	g_autoptr(GError) error = NULL;
 
-	filename = g_filename_from_uri (uri, NULL, NULL);
-	f = tracker_file_open (filename);
-	g_free (filename);
+	g_debug ("Extracting PS '%s'...", uri);
 
-	if (!f) {
+	file = g_file_new_for_uri (uri);
+
+	stream = G_INPUT_STREAM (g_file_read (file, NULL, &error));
+	if (stream == NULL) {
+		g_warning ("Could't not read file %s: %s", uri, error->message);
 		return NULL;
 	}
 
-	/* Extract from filestream! */
-	g_debug ("Extracting PS '%s'...", uri);
-	metadata = extract_ps_from_filestream (f);
-
-	tracker_file_close (f, FALSE);
-
-	return metadata;
+	return extract_ps_from_inputstream (stream);
 }
 
 #ifdef USING_UNZIPPSFILES
 
-#include <errno.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-
-static void
-spawn_child_func (gpointer user_data)
-{
-	struct rlimit cpu_limit;
-	gint timeout = GPOINTER_TO_INT (user_data);
-
-	if (timeout > 0) {
-		/* set cpu limit */
-		getrlimit (RLIMIT_CPU, &cpu_limit);
-		cpu_limit.rlim_cur = timeout;
-		cpu_limit.rlim_max = timeout + 1;
-
-		if (setrlimit (RLIMIT_CPU, &cpu_limit) != 0) {
-			g_critical ("Failed to set resource limit for CPU");
-		}
-
-		/* Have this as a precaution in cases where cpu limit has not
-		 * been reached due to spawned app sleeping.
-		 */
-		alarm (timeout + 2);
-	}
-
-	/* Set child's niceness to 19 */
-	errno = 0;
-
-	/* nice() uses attribute "warn_unused_result" and so complains
-	 * if we do not check its returned value. But it seems that
-	 * since glibc 2.2.4, nice() can return -1 on a successful call
-	 * so we have to check value of errno too. Stupid...
-	 */
-	if (nice (19) == -1 && errno) {
-		g_warning ("Failed to set nice value");
-	}
-}
+#include <zlib.h>
 
 static TrackerResource *
-extract_ps_gz (const gchar          *uri)
+extract_ps_gz (const gchar *uri)
 {
-	TrackerResource *metadata = NULL;
-	FILE *fz;
-	gint fdz;
-	const gchar *argv[4];
-	gchar *filename;
-	GError *error = NULL;
+	g_autoptr(GFile) file = NULL;
+	g_autoptr(GInputStream) stream, cstream = NULL;
+	g_autoptr(GConverter) converter = NULL;
+	g_autoptr(GError) error = NULL;
 
-	filename = g_filename_from_uri (uri, NULL, NULL);
+	g_debug ("Extracting PS '%s'...", uri);
 
-	/* TODO: we should be using libz for this instead */
+	file = g_file_new_for_uri (uri);
 
-	argv[0] = "gunzip";
-	argv[1] = "-c";
-	argv[2] = filename;
-	argv[3] = NULL;
-
-	/* Fork & spawn to gunzip the file */
-	if (!g_spawn_async_with_pipes (g_get_tmp_dir (),
-	                               (gchar **) argv,
-	                               NULL,
-	                               G_SPAWN_SEARCH_PATH | G_SPAWN_STDERR_TO_DEV_NULL,
-	                               spawn_child_func,
-	                               GINT_TO_POINTER (10),
-	                               NULL,
-	                               NULL,
-	                               &fdz,
-	                               NULL,
-	                               &error)) {
-		g_warning ("Couldn't fork & spawn to gunzip '%s': %s",
-		           uri, error ? error->message : NULL);
-		g_clear_error (&error);
-	}
-	/* Get FILE from FD */
-	else if ((fz = fdopen (fdz, "r")) == NULL) {
-		g_warning ("Couldn't open FILE from FD (%s)...", uri);
-		close (fdz);
-	}
-	/* Extract from filestream! */
-	else
-	{
-		g_debug ("Extracting compressed PS '%s'...", uri);
-		metadata = extract_ps_from_filestream (fz);
-#ifdef HAVE_POSIX_FADVISE
-		if (posix_fadvise (fdz, 0, 0, POSIX_FADV_DONTNEED) != 0)
-			g_warning ("posix_fadvise() call failed: %m");
-#endif /* HAVE_POSIX_FADVISE */
-		fclose (fz);
+	stream = G_INPUT_STREAM (g_file_read (file, NULL, &error));
+	if (stream == NULL) {
+		g_warning ("Could't not read file %s: %s", uri, error->message);
+		return NULL;
 	}
 
-	g_free (filename);
+	converter = G_CONVERTER (g_zlib_decompressor_new (G_ZLIB_COMPRESSOR_FORMAT_GZIP));
+	cstream = g_converter_input_stream_new (stream, converter);
 
-	return metadata;
+	return extract_ps_from_inputstream (cstream);
 }
 
 #endif /* USING_UNZIPPSFILES */
@@ -312,27 +213,22 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 {
 	TrackerResource *metadata;
 	GFile *file;
-	gchar *uri;
+	g_autofree gchar *uri = NULL;
+	const char *mimetype;
 
 	file = tracker_extract_info_get_file (info);
 	uri = g_file_get_uri (file);
+	mimetype = tracker_extract_info_get_mimetype (info);
 
-	{
+	if (strcmp (mimetype, "application/x-gzpostscript") == 0) {
 #ifdef USING_UNZIPPSFILES
-		const char *mimetype;
-
-		mimetype = tracker_extract_info_get_mimetype (info);
-
-		if (strcmp (mimetype, "application/x-gzpostscript") == 0) {
-			metadata = extract_ps_gz (uri);
-		} else
+		metadata = extract_ps_gz (uri);
+#else
+		metadata = NULL;
 #endif /* USING_UNZIPPSFILES */
-		{
-			metadata = extract_ps (uri);
-		}
+	} else {
+		metadata = extract_ps (uri);
 	}
-
-	g_free (uri);
 
 	if (metadata) {
 		tracker_extract_info_set_resource (info, metadata);
