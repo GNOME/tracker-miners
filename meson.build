@@ -55,6 +55,9 @@ else
   tracker_uninstalled_domain_rule = tracker_subproject.get_variable('tracker_uninstalled_domain_rule')
   tracker_uninstalled_nepomuk_ontologies_dir = tracker_subproject.get_variable('tracker_uninstalled_nepomuk_ontologies_dir')
   tracker_uninstalled_stop_words_dir = tracker_subproject.get_variable('tracker_uninstalled_stop_words_dir')
+
+  tracker_common_enums_header = tracker_subproject.get_variable('tracker_common_enums_header')
+  tracker_gsettings_schemas = tracker_subproject.get_variable('tracker_gsettings_schemas')
 endif
 
 avcodec = dependency('libavcodec', version: '>= 0.8.4', required: false)
