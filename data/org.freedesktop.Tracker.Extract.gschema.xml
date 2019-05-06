@@ -42,13 +42,6 @@ Boston, MA  02110-1301, USA.
       <default>1048576</default>
     </key>
 
-    <key name="max-media-art-width" type="i">
-      <summary>Max media art width</summary>
-      <description>Maximum width in pixels for any media art extracted. Anything bigger is resized. Set to -1 to disable saving media art from files. Setting to 0 sets no limit on the media art width.</description>
-      <range min="-1" max="2048"/>
-      <default>0</default>
-    </key>
-
     <key name="wait-for-miner-fs" type="b">
       <summary>Wait for FS miner to be done before extracting</summary>
       <description>When true, tracker-extract will wait for tracker-miner-fs to be done crawling before extracting meta-data. This option is useful on constrained environment where it is important to list files as fast as possible and can wait to get meta-data later.</description>
