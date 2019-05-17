@@ -57,10 +57,11 @@ typedef struct {
 	gchar *codec_version;
 	gchar *sample_rate;
 	gchar *channels; 
-	gchar *mb_album_id; 
-	gchar *mb_artist_id; 
-	gchar *mb_album_artist_id;
-	gchar *mb_track_id; 
+	gchar *mbreleaseid; 
+	gchar *mbreleasegroupid; 
+	gchar *mbtrackid;
+	gchar *mbartistid; 
+	gchar *mbrecordingid; 
 	gchar *lyrics; 
 	gchar *copyright; 
 	gchar *license; 
@@ -147,10 +148,11 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 		vd.codec_version = ogg_get_comment (comment, "CodecVersion");
 		vd.sample_rate = ogg_get_comment (comment, "SampleRate");
 		vd.channels = ogg_get_comment (comment, "Channels");
-		vd.mb_album_id = ogg_get_comment (comment, "MBAlbumID");
-		vd.mb_artist_id = ogg_get_comment (comment, "MBArtistID");
-		vd.mb_album_artist_id = ogg_get_comment (comment, "MBAlbumArtistID");
-		vd.mb_track_id = ogg_get_comment (comment, "MBTrackID");
+		vd.mbreleaseid = ogg_get_comment (comment, "MUSICBRAINZ_ALBUMID");
+		vd.mbreleasegroupid = ogg_get_comment (comment, "MUSICBRAINZ_RELEASEGROUPID");
+		vd.mbartistid = ogg_get_comment (comment, "MUSICBRAINZ_ARTISTID");
+		vd.mbtrackid = ogg_get_comment (comment, "MUSICBRAINZ_RELEASETRACKID");
+		vd.mbrecordingid = ogg_get_comment (comment, "MUSICBRAINZ_TRACKID");
 		vd.lyrics = ogg_get_comment (comment, "Lyrics");
 		vd.copyright = ogg_get_comment (comment, "Copyright");
 		vd.license = ogg_get_comment (comment, "License");
@@ -266,24 +268,29 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 		g_free (vd.channels);
 	}
 
-	if (vd.mb_album_id) {
-		/* TODO */
-		g_free (vd.mb_album_id);
+	if (vd.mbreleaseid) {
+		tracker_resource_set_string (metadata, "nmm:mbreleaseid", vd.mbreleaseid);
+		g_free (vd.mbreleaseid);
 	}
 
-	if (vd.mb_artist_id) {
-		/* TODO */
-		g_free (vd.mb_artist_id);
+	if (vd.mbreleasegroupid) {
+		tracker_resource_set_string (metadata, "nmm:mbreleasegroupid", vd.mbreleasegroupid);
+		g_free (vd.mbreleasegroupid);
 	}
 
-	if (vd.mb_album_artist_id) {
-		/* TODO */
-		g_free (vd.mb_album_artist_id);
+	if (vd.mbrecordingid) {
+		tracker_resource_set_string (metadata, "nmm:mbrecordingid", vd.mbrecordingid);
+		g_free (vd.mbrecordingid);
 	}
 
-	if (vd.mb_track_id) {
-		/* TODO */
-		g_free (vd.mb_track_id);
+	if (vd.mbtrackid) {
+		tracker_resource_set_string (metadata, "nmm:mbtrackid", vd.mbtrackid);
+		g_free (vd.mbtrackid);
+	}
+
+	if (vd.mbartistid) {
+		tracker_resource_set_string (metadata, "nmm:mbartistid", vd.mbartistid);
+		g_free (vd.mbartistid);
 	}
 
 	if (vd.lyrics) {
