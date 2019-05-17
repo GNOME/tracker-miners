@@ -267,22 +267,22 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 	}
 
 	if (vd.mb_album_id) {
-		/* TODO */
+		tracker_resource_set_string (metadata, "nmm:mbalbumid", vd.mb_album_id);
 		g_free (vd.mb_album_id);
 	}
 
 	if (vd.mb_artist_id) {
-		/* TODO */
+		tracker_resource_set_string (metadata, "nmm:mbartistid", vd.mb_artist_id);
 		g_free (vd.mb_artist_id);
 	}
 
 	if (vd.mb_album_artist_id) {
-		/* TODO */
+		tracker_resource_set_string (metadata, "nmm:mbalbumartistid", vd.mb_album_artist_id);
 		g_free (vd.mb_album_artist_id);
 	}
 
 	if (vd.mb_track_id) {
-		/* TODO */
+		tracker_resource_set_string (metadata, "nmm:mbtrackid", vd.mb_track_id);
 		g_free (vd.mb_track_id);
 	}
 
