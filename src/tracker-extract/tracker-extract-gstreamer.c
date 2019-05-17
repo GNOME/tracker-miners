@@ -538,6 +538,11 @@ extractor_apply_general_metadata (MetadataExtractor     *extractor,
 	set_property_from_gst_tag (resource, "nie:license", tag_list, GST_TAG_LICENSE);
 	set_property_from_gst_tag (resource, "dc:coverage", tag_list, GST_TAG_LOCATION);
 	set_property_from_gst_tag (resource, "nie:comment", tag_list, GST_TAG_COMMENT);
+	set_property_from_gst_tag (resource, "nmm:mbtrackid", tag_list, GST_TAG_MUSICBRAINZ_TRACKID);
+	set_property_from_gst_tag (resource, "nmm:mbartistid", tag_list, GST_TAG_MUSICBRAINZ_ARTISTID);
+	set_property_from_gst_tag (resource, "nmm:mbalbumid", tag_list, GST_TAG_MUSICBRAINZ_ALBUMID);
+	set_property_from_gst_tag (resource, "nmm:mbalbumartistid", tag_list, GST_TAG_MUSICBRAINZ_ALBUMARTISTID);
+	set_property_from_gst_tag (resource, "nmm:mbtrmid", tag_list, GST_TAG_MUSICBRAINZ_TRMID);
 
 	g_free (title_guaranteed);
 	g_free (performer_temp);
