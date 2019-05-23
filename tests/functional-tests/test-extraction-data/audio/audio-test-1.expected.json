@@ -15,6 +15,11 @@
         "nfo:channels": "1",
         "nfo:duration": "15",
         "nfo:sampleRate": "22050",
-        "nfo:averageBitrate": "32000"
+        "nfo:averageBitrate": "32000",
+        "nmm:mbTrackID": "123456",
+        "nmm:mbArtistID": "234561",
+        "nmm:mbReleaseID": "345612",
+        "nmm:mbRecordingID": "456123",
+        "nmm:mbReleaseGroupID": "561234"
     }
 }
