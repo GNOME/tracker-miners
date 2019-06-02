@@ -46,25 +46,26 @@ typedef struct {
 	gchar *track_number;
 	gchar *disc_number;
 	gchar *performer;
-	gchar *track_gain; 
+	gchar *track_gain;
 	gchar *track_peak_gain;
 	gchar *album_gain;
 	gchar *album_peak_gain;
-	gchar *date; 
+	gchar *date;
 	gchar *comment;
-	gchar *genre; 
+	gchar *genre;
 	gchar *codec;
 	gchar *codec_version;
 	gchar *sample_rate;
-	gchar *channels; 
-	gchar *mb_album_id; 
-	gchar *mb_artist_id; 
-	gchar *mb_album_artist_id;
-	gchar *mb_track_id; 
-	gchar *lyrics; 
-	gchar *copyright; 
-	gchar *license; 
-	gchar *organization; 
+	gchar *channels;
+	gchar *mb_release_id;
+	gchar *mb_release_group_id;
+	gchar *mb_track_id;
+	gchar *mb_artist_id;
+	gchar *mb_recording_id;
+	gchar *lyrics;
+	gchar *copyright;
+	gchar *license;
+	gchar *organization;
 	gchar *location;
 	gchar *publisher;
 } VorbisData;
@@ -147,10 +148,11 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 		vd.codec_version = ogg_get_comment (comment, "CodecVersion");
 		vd.sample_rate = ogg_get_comment (comment, "SampleRate");
 		vd.channels = ogg_get_comment (comment, "Channels");
-		vd.mb_album_id = ogg_get_comment (comment, "MBAlbumID");
-		vd.mb_artist_id = ogg_get_comment (comment, "MBArtistID");
-		vd.mb_album_artist_id = ogg_get_comment (comment, "MBAlbumArtistID");
-		vd.mb_track_id = ogg_get_comment (comment, "MBTrackID");
+		vd.mb_release_id = ogg_get_comment (comment, "MUSICBRAINZ_ALBUMID");
+		vd.mb_release_group_id = ogg_get_comment (comment, "MUSICBRAINZ_RELEASEGROUPID");
+		vd.mb_artist_id = ogg_get_comment (comment, "MUSICBRAINZ_ARTISTID");
+		vd.mb_track_id = ogg_get_comment (comment, "MUSICBRAINZ_RELEASETRACKID");
+		vd.mb_recording_id = ogg_get_comment (comment, "MUSICBRAINZ_TRACKID");
 		vd.lyrics = ogg_get_comment (comment, "Lyrics");
 		vd.copyright = ogg_get_comment (comment, "Copyright");
 		vd.license = ogg_get_comment (comment, "License");
@@ -165,6 +167,11 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 
 	if (md.creator_name) {
 		md.creator = tracker_extract_new_artist (md.creator_name);
+
+		if (vd.mb_artist_id) {
+			tracker_resource_set_string (md.creator, "nmm:mbArtistID", vd.mb_artist_id);
+			g_free (vd.mb_artist_id);
+		}
 
 		tracker_resource_set_relation (metadata, "nmm:performer", md.creator);
 	}
@@ -198,6 +205,16 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 
 		if (vd.album_peak_gain) {
 			tracker_resource_set_double (album, "nmm:albumPeakGain", atof (vd.album_peak_gain));
+		}
+
+		if (vd.mb_release_id) {
+			tracker_resource_set_string (album, "nmm:mbReleaseID", vd.mb_release_id);
+			g_free (vd.mb_release_id);
+		}
+
+		if (vd.mb_release_group_id) {
+			tracker_resource_set_string (album, "nmm:mbReleaseGroupID", vd.mb_release_group_id);
+			g_free (vd.mb_release_group_id);
 		}
 
 		tracker_resource_set_relation (metadata, "nmm:musicAlbum", album);
@@ -266,23 +283,13 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 		g_free (vd.channels);
 	}
 
-	if (vd.mb_album_id) {
-		/* TODO */
-		g_free (vd.mb_album_id);
-	}
-
-	if (vd.mb_artist_id) {
-		/* TODO */
-		g_free (vd.mb_artist_id);
-	}
-
-	if (vd.mb_album_artist_id) {
-		/* TODO */
-		g_free (vd.mb_album_artist_id);
+	if (vd.mb_recording_id) {
+		tracker_resource_set_string (metadata, "nmm:mbRecordingID", vd.mb_recording_id);
+		g_free (vd.mb_recording_id);
 	}
 
 	if (vd.mb_track_id) {
-		/* TODO */
+		tracker_resource_set_string (metadata, "nmm:mbTrackID", vd.mb_track_id);
 		g_free (vd.mb_track_id);
 	}
 

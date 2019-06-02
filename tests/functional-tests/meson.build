@@ -2,6 +2,7 @@ extractor_tests = [
   'audio/audio-test-1',
   'audio/empty_albumi_song3',
   'audio/audio-test-2',
+  'audio/audio-test-3',
   'images/test-image-1',
   'images/xmp-loaded-1',
   'images/test-image-3',
