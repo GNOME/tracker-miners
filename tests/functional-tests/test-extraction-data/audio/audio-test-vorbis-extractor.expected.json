@@ -1,0 +1,23 @@
+{
+    "test": {
+        "Filename": "audio-test-vorbis-extractor.ogg",
+        "Bugzilla": "",
+        "Comment": "Basic OGG example"
+    },
+    "metadata": {
+        "@type": "nmm:MusicPiece",
+        "nie:title": "Simply Juvenile",
+        "nfo:genre": "Pop",
+        "nie:copyright": "none",
+        "nie:comment": "I am for simple OGG testing",
+        "nmm:trackNumber": "18",
+        "nfo:duration": "15",
+        "nmm:mbTrackID": "123456",
+        "nmm:mbRecordingID": "456123",
+    "artist": {
+        "@type": "nmm:Artist",
+        "nmm:artistName": "AbBaby",
+        "nmm:mbArtistID": "234561"
+    }
+    }
+}
