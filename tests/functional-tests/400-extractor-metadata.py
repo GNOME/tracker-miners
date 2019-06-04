@@ -99,6 +99,7 @@ class GenericExtractionTestCase(TrackerExtractTestCase):
             self.assert_extract_result_matches_spec(self.spec['metadata'], result, self.file_to_extract, self.descfile)
         except AssertionError as e:
             print("\ntracker-extract returned: %s" % json.dumps(result, indent=4))
+            raise
 
 
 def run_all():
