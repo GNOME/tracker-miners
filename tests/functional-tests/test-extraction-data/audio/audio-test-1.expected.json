@@ -15,6 +15,19 @@
         "nfo:channels": "1",
         "nfo:duration": "15",
         "nfo:sampleRate": "22050",
-        "nfo:averageBitrate": "32000"
+        "nfo:averageBitrate": "32000",
+        "nmm:mbTrackID": "123456",
+        "nmm:mbRecordingID": "456123",
+        "nmm:performer": {
+            "@type": "nmm:Artist",
+            "nmm:artistName": "AbBaby",
+            "nmm:mbArtistID": "234561"
+        },
+        "nmm:musicAlbum": {
+            "@type": "nmm:MusicAlbum",
+            "nie:title": "SinCos",
+            "nmm:mbReleaseGroupID": "561234",
+            "nmm:mbReleaseID": "345612"
+        }
     }
 }
