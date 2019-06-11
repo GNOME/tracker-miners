@@ -13,6 +13,18 @@
         "nfo:codec": "MPEG",
         "nfo:channels": "2",
         "nfo:sampleRate": "44100",
-        "nfo:averageBitrate": "256000"
+        "nfo:averageBitrate": "256000",
+        "nmm:mbTrackID": "123456",
+        "nmm:mbRecordingID": "456123",
+        "nmm:performer": {
+            "@type": "nmm:Artist",
+            "nmm:artistName": "Anna Abreu",
+            "nmm:mbArtistID": "234561"
+        },
+        "nmm:musicAlbum": {
+            "@type": "nmm:MusicAlbum",
+            "nmm:mbReleaseGroupID": "561234",
+            "nmm:mbReleaseID": "345612"
+        }
     }
 }
