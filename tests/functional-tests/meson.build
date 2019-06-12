@@ -35,12 +35,9 @@ functional_tests = [
   '410-extractor-decorator',
   '500-writeback',
   '501-writeback-details',
+  '600-applications-camera',
   '601-applications-sync',
 ]
-
-# FIXME: this is currently skipped as it doesn't work.
-# '600-applications-camera',
-
 
 test_runner = find_program('test-runner.sh')
 
