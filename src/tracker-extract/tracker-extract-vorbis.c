@@ -57,6 +57,7 @@ typedef struct {
 	gchar *codec_version;
 	gchar *sample_rate;
 	gchar *channels;
+	gchar *acoustid_fingerprint;
 	gchar *mb_release_id;
 	gchar *mb_release_group_id;
 	gchar *mb_track_id;
@@ -148,6 +149,7 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 		vd.codec_version = ogg_get_comment (comment, "CodecVersion");
 		vd.sample_rate = ogg_get_comment (comment, "SampleRate");
 		vd.channels = ogg_get_comment (comment, "Channels");
+		vd.acoustid_fingerprint = ogg_get_comment (comment, "ACOUSTID_FINGERPRINT");
 		vd.mb_release_id = ogg_get_comment (comment, "MUSICBRAINZ_ALBUMID");
 		vd.mb_release_group_id = ogg_get_comment (comment, "MUSICBRAINZ_RELEASEGROUPID");
 		vd.mb_artist_id = ogg_get_comment (comment, "MUSICBRAINZ_ARTISTID");
@@ -281,6 +283,22 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 	if (vd.channels) {
 		tracker_resource_set_string (metadata, "nfo:channels", vd.channels);
 		g_free (vd.channels);
+	}
+
+	if (vd.acoustid_fingerprint) {
+		TrackerResource *hash_resource;
+
+		hash_resource = tracker_resource_new (NULL);
+		tracker_resource_set_uri (hash_resource, "rdf:type", "nfo:FileHash");
+
+		tracker_resource_set_string (hash_resource, "nfo:hashValue", vd.acoustid_fingerprint);
+		tracker_resource_set_string (hash_resource, "nfo:hashAlgorithm", "chromaprint");
+
+		tracker_resource_set_relation (main_resource, "nfo:hasHash", hash_resource);
+
+		g_object_unref (hash_resource);
+
+		g_free (vd.acoustid_fingerprint);
 	}
 
 	if (vd.mb_recording_id) {
