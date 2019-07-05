@@ -95,6 +95,7 @@ typedef struct {
 	gint track_count;
 	gint set_number;
 	gint set_count;
+	gchar *acoustid_fingerprint;
 	gchar *mb_recording_id;
 	gchar *mb_track_id;
 	gchar *mb_release_id;
@@ -150,6 +151,7 @@ typedef enum {
 } id3v24frame;
 
 typedef enum {
+	ACOUSTID_FINGERPRINT,
 	MB_TRACK_ID,
 	MB_RELEASE_ID,
 	MB_ARTIST_ID,
@@ -187,6 +189,7 @@ typedef struct {
 	gint track_count;
 	gint set_number;
 	gint set_count;
+	const gchar *acoustid_fingerprint;
 	const gchar *mb_recording_id;
 	const gchar *mb_track_id;
 	const gchar *mb_release_id;
@@ -274,6 +277,7 @@ static const struct {
 	const char *name;
 	id3txxxtype txxxtype;
 } id3_txxxtypes[] = {
+	{ "Acoustid Fingerprint", ACOUSTID_FINGERPRINT },
 	{ "MusicBrainz Release Track Id", MB_TRACK_ID },
 	{ "MusicBrainz Album Id", MB_RELEASE_ID },
 	{ "MusicBrainz Artist Id", MB_ARTIST_ID },
@@ -572,6 +576,7 @@ id3v2tag_free (id3v2tag *tags)
 	g_free (tags->title1);
 	g_free (tags->title2);
 	g_free (tags->title3);
+	g_free (tags->acoustid_fingerprint);
 	g_free (tags->mb_recording_id);
 	g_free (tags->mb_track_id);
 	g_free (tags->mb_release_id);
@@ -1398,6 +1403,9 @@ extract_txxx_tags (id3v2tag *tag, const gchar *data, guint pos, size_t csize, id
 		return;
 	}
 	switch (txxxtype) {
+	case ACOUSTID_FINGERPRINT:
+		tag->acoustid_fingerprint = value;
+		break;
 	case MB_TRACK_ID:
 		tag->mb_track_id = value;
 		break;
@@ -2640,6 +2648,9 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 	                                        md.id3v23.encoded_by,
 	                                        md.id3v22.encoded_by);
 
+	md.acoustid_fingerprint = tracker_coalesce_strip (2, md.id3v24.acoustid_fingerprint,
+	                                                  md.id3v23.acoustid_fingerprint);
+
 	md.mb_recording_id = tracker_coalesce_strip (2, md.id3v24.mb_recording_id,
 	                                             md.id3v23.mb_recording_id);
 
@@ -2800,6 +2811,20 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 
 	if (md.mb_track_id) {
 		tracker_resource_set_string (main_resource, "nmm:mbTrackID", md.mb_track_id);
+	}
+
+	if (md.acoustid_fingerprint) {
+		TrackerResource *hash_resource;
+
+		hash_resource = tracker_resource_new (NULL);
+		tracker_resource_set_uri (hash_resource, "rdf:type", "nfo:FileHash");
+
+		tracker_resource_set_string (hash_resource, "nfo:hashValue", md.acoustid_fingerprint);
+		tracker_resource_set_string (hash_resource, "nfo:hashAlgorithm", "chromaprint");
+
+		tracker_resource_set_relation (main_resource, "nfo:hasHash", hash_resource);
+
+		g_object_unref (hash_resource);
 	}
 
 	/* Get mp3 stream info */
