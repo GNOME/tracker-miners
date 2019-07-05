@@ -2,11 +2,204 @@
 # GitLab project: https://gitlab.gnome.org/sthursfield/tracker-oci-images/
 
 stages:
+  - preparation
+  - pre-build
+  - build
   - test
+
+variables:
+  CERBERO_IMAGE: 'registry.freedesktop.org/gstreamer/gst-ci/amd64/cerbero-fedora:2019-06-06-343857'
+  FEDORA_IMAGE: 'registry.freedesktop.org/gstreamer/gst-ci/amd64/fedora:2019-03-26-196223'
+  FEDORA30_IMAGE: 'registry.freedesktop.org/gstreamer/gst-ci/amd64/fedora:2019-05-29-324578'
+  INDENT_IMAGE: 'registry.freedesktop.org/gstreamer/gst-ci/amd64/gst-indent:6f7e01e1e30a73efa880acdc8e911f1f20c58dbb'
+  MANIFEST_IMAGE: 'registry.freedesktop.org/gstreamer/gst-ci/amd64/build-manifest:d19082b72667fb3382bdc3621520c4d26e258b2e'
+
+  # Branch to track for modules that have no ref specified in the manifest
+  GST_UPSTREAM_BRANCH: 'master'
+  ORC_UPSTREAM_BRANCH: 'master'
+
+  GIT_STRATEGY: none
+  MESON_BUILDTYPE_ARGS: --default-library=both
+  DEFAULT_MESON_ARGS: >
+    --werror
+    -Dpython=enabled
+    -Dlibav=enabled
+    -Dugly=enabled
+    -Dbad=enabled
+    -Ddevtools=enabled
+    -Dges=enabled
+    -Drtsp_server=enabled
+    -Dvaapi=enabled
+    -Dsharp=disabled
+
+  DEFAULT_CERBERO_ARGS: >
+    --variants werror
+    --timestamps
+
+gst indent:
+  image: $INDENT_IMAGE
+  stage: 'preparation'
+  variables:
+    GIT_STRATEGY: 'fetch'
+  script:
+    # man indent. grep RETURN VALUE, grab a beer on my behalf...
+    - indent --version || true
+    - curl -o gst-indent https://gitlab.freedesktop.org/gstreamer/gstreamer/raw/${GST_UPSTREAM_BRANCH}/tools/gst-indent
+    - chmod +x gst-indent
+    - find . -name '*.c' -exec ./gst-indent {} +
+    - |
+      if git diff --quiet; then
+          echo "Code is properly formatted"
+      else
+          git diff --color=always
+          echo 'style diverges, please run gst-indent first'
+          exit 1
+      fi
+  except:
+    variables:
+      # No point on trying to format C files in those repositories
+      - $CI_PROJECT_NAME == "gstreamer-sharp"
+      - $CI_PROJECT_NAME == "gst-integration-testsuites"
+      - $CI_PROJECT_NAME == "cerbero"
+      - $CI_PROJECT_NAME == "gst-docs"
+
+manifest:
+  image: $MANIFEST_IMAGE
+  stage: 'preparation'
+  script:
+    - cd /gst-ci
+    - gitlab/build_manifest.py --self-update
+    - gitlab/build_manifest.py ${CI_PROJECT_DIR}/manifest.xml
+    - cat ${CI_PROJECT_DIR}/manifest.xml
+  artifacts:
+    expire_in: "7 days"
+    paths:
+      - "manifest.xml"
+
+      .cerbero deps:
+  extends: .cerbero
+  stage: "pre-build"
+  script:
+    - $CERBERO $CERBERO_ARGS show-config
+    - $CERBERO $CERBERO_ARGS fetch-bootstrap --build-tools-only
+    - $CERBERO $CERBERO_ARGS fetch-package --deps gstreamer-1.0
+    - $CERBERO $CERBERO_ARGS bootstrap --offline --build-tools-only
+    - $CERBERO $CERBERO_ARGS build-deps --offline
+          gstreamer-1.0 gst-plugins-base-1.0 gst-plugins-good-1.0
+          gst-plugins-bad-1.0 gst-plugins-ugly-1.0 gst-rtsp-server-1.0
+          gst-libav-1.0 gst-validate gst-editing-services-1.0 libnice
+    - $CERBERO $CERBERO_ARGS fetch-cache --branch ${GST_UPSTREAM_BRANCH} --skip-fetch --job-id=${CI_JOB_ID}
+    - test "x${CERBERO_OVERRIDDEN_DIST_DIR}" != "x"
+          && mkdir -p ${CERBERO_HOME}/dist/${ARCH}
+          && rsync -aH ${CERBERO_OVERRIDDEN_DIST_DIR}/ ${CERBERO_HOME}/dist/${ARCH}
+    - tar -C ${CERBERO_HOME} -czf $CERBERO_DEPS
+              build-tools build-tools.cache
+              dist/${ARCH} ${ARCH}.cache
+  only:
+    variables:
+      - $CI_PROJECT_NAME == "cerbero"
+  artifacts:
+    name: "${CI_JOB_NAME}_${CI_COMMIT_SHA}"
+    expire_in: '10 days'
+    when: 'always'
+    paths:
+      - "manifest.xml"
+      - "${CERBERO_HOME}/logs"
+      - "${CERBERO_HOME}/cerbero-deps.log"
+      - "${CERBERO_DEPS}"
+
+#
+# Cerbero Linux X86_64 build
+#
+cerbero deps fedora x86_64:
+  extends: '.cerbero deps'
+  variables:
+    CONFIG: "linux.config"
+    ARCH: "linux_x86_64"
+
+.cerbero fedora x86_64:
+  extends: '.cerbero'
+  variables:
+    CONFIG: "linux.config"
+
+cerbero fedora x86_64:
+  extends: '.cerbero fedora x86_64'
+  dependencies:
+    - "cerbero deps fedora x86_64"
+  only:
+    variables:
+      - $CI_PROJECT_NAME == "cerbero"
+
+build cerbero fedora x86_64:
+  extends: '.cerbero fedora x86_64'
+  except:
+    variables:
+      - $CI_PROJECT_NAME == "cerbero"
+      - $CI_PROJECT_NAME == "gst-build"
+      - $CI_PROJECT_NAME == "gst-omx"
+      - $CI_PROJECT_NAME == "gstreamer-vaapi"
+      - $CI_PROJECT_NAME == "gst-docs"
+
+.build:
+  stage: 'build'
+  dependencies:
+    - "manifest"
+  variables:
+    CC: "ccache gcc"
+    CXX: "ccache g++"
+    CCACHE_BASEDIR: "${CI_PROJECT_DIR}"
+    CCACHE_DIR: "${CI_PROJECT_DIR}/ccache"
+    MESON_ARGS: "${DEFAULT_MESON_ARGS} ${MESON_BUILDTYPE_ARGS}"
+
+  script:
+    - ccache -z
+    - curl -o clone_manifest_ref.py https://gitlab.freedesktop.org/gstreamer/gst-ci/raw/${GST_UPSTREAM_BRANCH}/gitlab/clone_manifest_ref.py
+    - chmod +x clone_manifest_ref.py
+    - ./clone_manifest_ref.py --manifest manifest.xml --project gst-build --destination gst-build
+    - cd gst-build/
+    # only copy immediate directories. We don't want to modify .wrap files
+    - find /gst-build/subprojects/ -mindepth 1 -maxdepth 1 -type d -exec cp -r \{\} subprojects/ \;
+    - ./git-update --no-interaction --manifest="${CI_PROJECT_DIR}/manifest.xml"
+    - meson build/ $MESON_ARGS
+    - ninja -C build/
+    - ccache -s
+  after_script:
+    - cd gst-build/
+    # Clean the artifacts packages to avoid copying "useless" build products.
+    - test -d build && find build -name '*.[ao]' -delete
+    # Clean the .git repos since we won't need them anymore
+    - rm -rf subprojects/*/.git/
+    - rm -rf build/subprojects/*/.git/
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - "${CCACHE_DIR}"
+  artifacts:
+    expire_in: '5 days'
+    when: always
+    paths:
+      - "manifest.xml"
+      - "gst-build/"
+  except:
+    variables:
+      - $CI_PROJECT_NAME == "cerbero"
+
+build fedora x86_64:
+  extends: '.build'
+  stage: 'build'
+  image: $FEDORA_IMAGE
+  variables:
+    MESON_ARGS: "${DEFAULT_MESON_ARGS} -Dsharp=enabled -Domx=enabled -Dgst-omx:target=generic ${MESON_BUILDTYPE_ARGS}"
+  except:
+    variables:
+      - $CI_PROJECT_NAME == "gst-docs"
+      - $CI_PROJECT_NAME == "cerbero"
 
 test-fedora-latest:
   stage: test
-  image: registry.gitlab.gnome.org/gnome/tracker-oci-images/amd64/fedora:latest
+  image: $FEDORA_IMAGE
+  dependencies:
+    - build fedora x86_64
 
   script:
     # We can build and test tracker-miners against tracker just by building
