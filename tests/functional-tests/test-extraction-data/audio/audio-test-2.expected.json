@@ -25,6 +25,11 @@
             "@type": "nmm:MusicAlbum",
             "nmm:mbReleaseGroupID": "561234",
             "nmm:mbReleaseID": "345612"
+        },
+        "nfo:hasHash": {
+            "@type": "nfo:hasHash",
+            "nfo:hashAlgorithm": "chromaprint",
+            "nfo:hashValue": "111222"
         }
     }
 }
