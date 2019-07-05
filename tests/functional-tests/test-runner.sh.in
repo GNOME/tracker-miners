@@ -16,6 +16,6 @@ export REAL_HOME=`echo ~`
 # in the filesystem
 HOME=$TEMP_DIR
 
-dbus-run-session $@
+dbus-run-session --config-file=@abs_top_builddir@/tests/test-bus.conf -- "$@"
 
 rm -R $TEMP_DIR

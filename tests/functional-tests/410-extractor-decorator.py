@@ -54,6 +54,7 @@ class ExtractorDecoratorTest(ut.TestCase):
 
         config = {
             cfg.DCONF_MINER_SCHEMA: {
+                'enable-writeback': GLib.Variant.new_boolean(False),
                 'index-recursive-directories': GLib.Variant.new_strv([]),
                 'index-single-directories': GLib.Variant.new_strv([self.datadir]),
                 'index-optical-discs': GLib.Variant.new_boolean(False),
@@ -80,29 +81,32 @@ class ExtractorDecoratorTest(ut.TestCase):
         # Insert a valid file and wait extraction of its metadata.
         file_path = os.path.join(self.datadir, os.path.basename(VALID_FILE))
         shutil.copy(VALID_FILE, file_path)
-        file_id, file_urn = store.await_resource_inserted(
-            VALID_FILE_CLASS, title=VALID_FILE_TITLE)
+        try:
+            file_id, file_urn = store.await_resource_inserted(
+                VALID_FILE_CLASS, title=VALID_FILE_TITLE)
 
-        # Remove a key piece of metadata.
-        store.update(
-            'DELETE { <%s> nie:title ?title }'
-            ' WHERE { <%s> nie:title ?title }' % (file_urn, file_urn))
-        store.await_property_changed(VALID_FILE_CLASS, file_id, 'nie:title')
-        assert not store.ask('ASK { <%s> nie:title ?title }' % file_urn)
+            # Remove a key piece of metadata.
+            #   (Writeback must be disabled in the config so that the file
+            #   itself is not changed).
+            store.update(
+                'DELETE { <%s> nie:title ?title }'
+                ' WHERE { <%s> nie:title ?title }' % (file_urn, file_urn))
+            store.await_property_changed(VALID_FILE_CLASS, file_id, 'nie:title')
+            assert not store.ask('ASK { <%s> nie:title ?title }' % file_urn)
 
-        log("Sending re-index request")
-        # Request re-indexing (same as `tracker index --file ...`)
-        miner_fs.index_file('file://' + os.path.join(self.datadir, file_path))
+            log("Sending re-index request")
+            # Request re-indexing (same as `tracker index --file ...`)
+            miner_fs.index_file('file://' + os.path.join(self.datadir, file_path))
 
-        # The extractor should reindex the file and re-add the metadata that we
-        # deleted, so we should see the nie:title property change.
-        store.await_property_changed(VALID_FILE_CLASS, file_id, 'nie:title')
+            # The extractor should reindex the file and re-add the metadata that we
+            # deleted, so we should see the nie:title property change.
+            store.await_property_changed(VALID_FILE_CLASS, file_id, 'nie:title')
 
-        title_result = store.query('SELECT ?title { <%s> nie:title ?title }' % file_urn)
-        assert len(title_result) == 1
-        self.assertEqual(title_result[0][0], VALID_FILE_TITLE)
-
-        os.remove(file_path)
+            title_result = store.query('SELECT ?title { <%s> nie:title ?title }' % file_urn)
+            assert len(title_result) == 1
+            self.assertEqual(title_result[0][0], VALID_FILE_TITLE)
+        finally:
+            os.remove(file_path)
 
 
 if __name__ == '__main__':

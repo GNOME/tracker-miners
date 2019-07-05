@@ -35,8 +35,6 @@ libtracker_miners_common = library('tracker-miners-common',
   dependencies: tracker_miners_common_dependencies + tracker_miners_common_private_dependencies,
   c_args: tracker_c_args,
   include_directories: [configinc, srcinc],
-  install: true,
-  install_dir: tracker_internal_libs_dir,
 )
 
 commoninc = include_directories('.')

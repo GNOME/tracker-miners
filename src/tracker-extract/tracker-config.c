@@ -90,16 +90,6 @@ tracker_config_class_init (TrackerConfigClass *klass)
 	                                                   G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class,
-	                                 PROP_MAX_MEDIA_ART_WIDTH,
-	                                 g_param_spec_int ("max-media-art-width",
-	                                                   "Max Media Art Width",
-	                                                   " Maximum width of the Media Art to be generated (-1=disable, 0=original width, 1->2048=max pixel width)",
-	                                                   -1,
-	                                                   2048,
-	                                                   0,
-	                                                   G_PARAM_READWRITE));
-
-	g_object_class_install_property (object_class,
 	                                 PROP_WAIT_FOR_MINER_FS,
 	                                 g_param_spec_boolean ("wait-for-miner-fs",
 	                                                       "Wait for FS miner to be done before extracting",
@@ -167,11 +157,6 @@ config_get_property (GObject    *object,
 		                 tracker_config_get_max_bytes (config));
 		break;
 
-	case PROP_MAX_MEDIA_ART_WIDTH:
-		g_value_set_int (value,
-		                 tracker_config_get_max_media_art_width (config));
-		break;
-
 	case PROP_WAIT_FOR_MINER_FS:
 		g_value_set_boolean (value,
 		                     tracker_config_get_wait_for_miner_fs (config));
@@ -226,7 +211,6 @@ config_constructed (GObject *object)
 	 */
 	g_settings_bind (settings, "verbosity", object, "verbosity", G_SETTINGS_BIND_GET | G_SETTINGS_BIND_GET_NO_CHANGES);
 	g_settings_bind (settings, "sched-idle", object, "sched-idle", G_SETTINGS_BIND_GET);
-	g_settings_bind (settings, "max-media-art-width", object, "max-media-art-width", G_SETTINGS_BIND_GET);
 	g_settings_bind (settings, "wait-for-miner-fs", object, "wait-for-miner-fs", G_SETTINGS_BIND_GET);
 
 	/* Cache settings accessed from extractor modules, we don't want
@@ -309,14 +293,6 @@ tracker_config_get_max_bytes (TrackerConfig *config)
 	g_return_val_if_fail (TRACKER_IS_CONFIG (config), 0);
 
 	return config->max_bytes;
-}
-
-gint
-tracker_config_get_max_media_art_width (TrackerConfig *config)
-{
-	g_return_val_if_fail (TRACKER_IS_CONFIG (config), 0);
-
-	return g_settings_get_int (G_SETTINGS (config), "max-media-art-width");
 }
 
 gboolean

@@ -349,6 +349,7 @@ conf.set('PACKAGE_VERSION', '"@0@"'.format(meson.project_version()))
 conf.set('TRACKER_VERSION', '"@0@"'.format(meson.project_version()))
 
 # Config that goes in some other generated files (.desktop, .pc, etc)
+conf.set('abs_top_builddir', meson.current_build_dir())
 conf.set('exec_prefix', get_option('prefix'))
 conf.set('bindir', join_paths(get_option('prefix'), get_option('bindir')))
 conf.set('datadir', datadir)

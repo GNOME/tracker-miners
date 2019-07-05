@@ -46,8 +46,6 @@ get_file_content (GFile *file,
 	gchar *text, *uri, *path;
 	int fd;
 
-	g_return_val_if_fail (n_bytes > 0, NULL);
-
 	uri = g_file_get_uri (file);
 
 	/* Get filename from URI */
@@ -82,19 +80,15 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 {
 	TrackerResource *metadata;
 	TrackerConfig *config;
-	gsize n_bytes;
 	gchar *content = NULL;
 
 	config = tracker_main_get_config ();
 
-	n_bytes = tracker_config_get_max_bytes (config);
-	if (n_bytes > 0) {
-		content = get_file_content (tracker_extract_info_get_file (info), n_bytes);
+	content = get_file_content (tracker_extract_info_get_file (info), tracker_config_get_max_bytes (config));
 
-		if (content == NULL) {
-			/* An error occurred, perhaps the file was deleted. */
-			return FALSE;
-		}
+	if (content == NULL) {
+		/* An error occurred, perhaps the file was deleted. */
+		return FALSE;
 	}
 
 	metadata = tracker_resource_new (NULL);

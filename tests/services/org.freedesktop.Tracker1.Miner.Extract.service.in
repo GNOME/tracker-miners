@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=org.freedesktop.Tracker1.Miner.Extract
+Exec=@abs_top_builddir@/src/tracker-extract/tracker-extract
+SystemdService=tracker-extract.service

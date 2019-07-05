@@ -81,11 +81,11 @@ enable_writeback_cb (GObject    *object,
                      GParamSpec *pspec,
                      gpointer    user_data)
 {
-	if (enabled && !tracker_config_get_enable_monitors (gconfig)) {
+	if (enabled && !tracker_config_get_enable_writeback (gconfig)) {
 		shutdown_writeback ();
 	}
 
-	if (!enabled && tracker_config_get_enable_monitors (gconfig)) {
+	if (!enabled && tracker_config_get_enable_writeback (gconfig)) {
 		GError *error = NULL;
 
 		initialize_all (gminer_files, &error);
@@ -104,7 +104,7 @@ tracker_writeback_init (TrackerMinerFiles  *miner_files,
 {
 	GError *internal_error = NULL;
 
-	if (tracker_config_get_enable_monitors (config)) {
+	if (tracker_config_get_enable_writeback (config)) {
 		initialize_all (miner_files, &internal_error);
 	}
 

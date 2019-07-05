@@ -93,7 +93,7 @@ process_chunk (const gchar  *read_bytes,
                gsize         read_size,
                gsize         buffer_size,
                gsize        *remaining_size,
-               GString     **s)
+               GString      *s)
 {
 	/* If no more bytes to read, halt loop */
 	if (read_size == 0) {
@@ -114,7 +114,7 @@ process_chunk (const gchar  *read_bytes,
 	 * UTF-16LE), so we can't rely on methods which assume
 	 * NUL-terminated strings, as g_strstr_len().
 	 */
-	if (*s == NULL) {
+	if (s->len == 0) {
 		if (read_size <= 3) {
 			g_debug ("  File has less than 3 characters in it, "
 			         "not indexing file");
@@ -153,9 +153,7 @@ process_chunk (const gchar  *read_bytes,
 	         *remaining_size);
 
 	/* Append non-NIL terminated bytes */
-	*s = (*s ?
-	      g_string_append_len (*s, read_bytes, read_size) :
-	      g_string_new_len (read_bytes, read_size));
+	g_string_append_len (s, read_bytes, read_size);
 
 	return TRUE;
 }
@@ -305,7 +303,7 @@ tracker_read_text_from_stream (GInputStream *stream,
 		                    n_bytes_read,
 		                    BUFFER_SIZE,
 		                    &n_bytes_remaining,
-		                    &s)) {
+		                    s)) {
 			break;
 		}
 	}
@@ -333,16 +331,16 @@ tracker_read_text_from_fd (gint  fd,
                            gsize max_bytes)
 {
 	FILE *fz;
-	GString *s = NULL;
+	GString *s;
 	gsize n_bytes_remaining = max_bytes;
-
-	g_return_val_if_fail (max_bytes > 0, NULL);
 
 	if ((fz = fdopen (fd, "r")) == NULL) {
 		g_warning ("Cannot read from FD... could not extract text");
 		close (fd);
 		return NULL;
 	}
+
+	s = g_string_new ("");
 
 	/* Reading in chunks of BUFFER_SIZE
 	 *   Loop is halted whenever one of this conditions is met:
@@ -367,7 +365,7 @@ tracker_read_text_from_fd (gint  fd,
 		                    n_bytes_read,
 		                    BUFFER_SIZE,
 		                    &n_bytes_remaining,
-		                    &s)) {
+		                    s)) {
 			break;
 		}
 	}
@@ -380,5 +378,5 @@ tracker_read_text_from_fd (gint  fd,
 	fclose (fz);
 
 	/* Validate UTF-8 if something was read, and return it */
-	return s ? process_whole_string (s) : NULL;
+	return process_whole_string (s);
 }
