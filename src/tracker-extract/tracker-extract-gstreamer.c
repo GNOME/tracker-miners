@@ -500,6 +500,8 @@ extractor_apply_general_metadata (MetadataExtractor     *extractor,
 	*p_composer = NULL;
 	*p_performer = NULL;
 
+	GValue acoustid_fingerprint = G_VALUE_INIT;
+
 	gst_tag_list_get_string (tag_list, GST_TAG_PERFORMER, &performer_temp);
 	gst_tag_list_get_string (tag_list, GST_TAG_ARTIST, &artist_temp);
 	gst_tag_list_get_string (tag_list, GST_TAG_COMPOSER, &composer_name);
@@ -543,6 +545,24 @@ extractor_apply_general_metadata (MetadataExtractor     *extractor,
 	set_property_from_gst_tag (resource, "nmm:mbReleaseID", tag_list, GST_TAG_MUSICBRAINZ_ALBUMID);
 	set_property_from_gst_tag (resource, "nmm:mbReleaseGroupID", tag_list, GST_TAG_MUSICBRAINZ_RELEASEGROUPID);
 	set_property_from_gst_tag (resource, "nmm:mbRecordingID", tag_list, GST_TAG_MUSICBRAINZ_TRACKID);
+
+	gst_tag_list_copy_value (&acoustid_fingerprint, tag_list, GST_TAG_ACOUSTID_FINGERPRINT);
+
+	if (acoustid_fingerprint) {
+		TrackerResource *hash_resource;
+
+		hash_resource = tracker_resource_new (NULL);
+		tracker_resource_set_uri (hash_resource, "rdf:type", "nfo:FileHash");
+
+		tracker_resource_set_string (hash_resource, "nfo:hashValue", acoustid_fingerprint);
+		tracker_resource_set_string (hash_resource, "nfo:hashAlgorithm", "chromaprint");
+
+		tracker_resource_set_relation (resource, "nfo:hasHash", hash_resource);
+
+		g_object_unref (hash_resource);
+
+		g_free (acoustid_fingerprint);
+	}
 
 	g_free (title_guaranteed);
 	g_free (performer_temp);
