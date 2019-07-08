@@ -41,6 +41,7 @@ functional_tests = [
   '410-extractor-decorator',
   '500-writeback-images',
   '501-writeback-image-details',
+  '502-writeback-audio',
   '600-applications-camera',
   '601-applications-sync',
 ]
