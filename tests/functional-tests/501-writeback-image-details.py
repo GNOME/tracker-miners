@@ -52,6 +52,10 @@ class WritebackKeepDateTest (CommonTrackerWritebackTest):
         """
         NB#217627 - Order if results is different when an image is marked as favorite.
         """
+        jpeg_path = self.prepare_test_image(self.datadir_path('writeback-test-1.jpeg'))
+        tif_path = self.prepare_test_image(self.datadir_path('writeback-test-2.tif'))
+        png_path = self.prepare_test_image(self.datadir_path('writeback-test-4.png'))
+
         query_images = """
           SELECT nie:url(?u) ?contentCreated WHERE {
               ?u a nfo:Visual ;
@@ -64,10 +68,7 @@ class WritebackKeepDateTest (CommonTrackerWritebackTest):
         log("Waiting 2 seconds to ensure there is a noticiable difference in the timestamp")
         time.sleep(2)
 
-        url = self.get_test_filename_jpeg()
-
-        filename = url[len('file://'):]
-        initial_mtime = os.stat(filename).st_mtime
+        initial_mtime = jpeg_path.stat().st_mtime
 
         # This triggers the writeback
         mark_as_favorite = """
@@ -76,14 +77,14 @@ class WritebackKeepDateTest (CommonTrackerWritebackTest):
          } WHERE {
            ?u nie:url <%s> .
          }
-        """ % url
+        """ % jpeg_path.as_uri()
         self.tracker.update(mark_as_favorite)
-        log("Setting favorite in <%s>" % url)
+        log("Setting favorite in <%s>" % jpeg_path.as_uri())
 
-        self.wait_for_file_change(filename, initial_mtime)
+        self.wait_for_file_change(jpeg_path, initial_mtime)
 
         # Check the value is written in the file
-        metadata = get_tracker_extract_jsonld_output(filename, "")
+        metadata = get_tracker_extract_jsonld_output(jpeg_path, "")
 
         tags = metadata.get('nao:hasTag', [])
         tag_names = [tag['nao:prefLabel'] for tag in tags]

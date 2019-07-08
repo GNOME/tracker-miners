@@ -24,6 +24,7 @@ from common.utils.system import TrackerSystemAbstraction
 import shutil
 import unittest as ut
 import os
+import pathlib
 from common.utils import configuration as cfg
 from common.utils.helpers import log
 import time
@@ -32,22 +33,12 @@ TEST_FILE_JPEG = "writeback-test-1.jpeg"
 TEST_FILE_TIFF = "writeback-test-2.tif"
 TEST_FILE_PNG = "writeback-test-4.png"
 
-NFO_IMAGE = 'http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#Image'
-
 
 class CommonTrackerWritebackTest (ut.TestCase):
     """
     Superclass to share methods. Shouldn't be run by itself.
     Start all processes including writeback, miner pointing to WRITEBACK_TMP_DIR
     """
-
-    def __prepare_directories(self):
-        datadir = os.path.join(os.path.dirname(__file__), '..', '..', 'test-writeback-data')
-
-        for testfile in [TEST_FILE_JPEG, TEST_FILE_PNG, TEST_FILE_TIFF]:
-            origin = os.path.join(datadir, testfile)
-            log("Copying %s -> %s" % (origin, self.workdir))
-            shutil.copy(origin, self.workdir)
 
     def setUp(self):
         self.workdir = cfg.create_monitored_test_dir()
@@ -66,21 +57,8 @@ class CommonTrackerWritebackTest (ut.TestCase):
             }
         }
 
-        self.__prepare_directories()
-
         self.system = TrackerSystemAbstraction()
         self.system.tracker_writeback_testing_start(CONF_OPTIONS)
-
-        def await_resource_extraction(url):
-            # Make sure a resource has been crawled by the FS miner and by
-            # tracker-extract. The extractor adds nie:contentCreated for
-            # image resources, so know once this property is set the
-            # extraction is complete.
-            self.system.store.await_resource_inserted(NFO_IMAGE, url=url, required_property='nfo:width')
-
-        await_resource_extraction(self.get_test_filename_jpeg())
-        await_resource_extraction(self.get_test_filename_tiff())
-        await_resource_extraction(self.get_test_filename_png())
 
         self.tracker = self.system.store
         self.extractor = self.system.extractor
@@ -88,22 +66,39 @@ class CommonTrackerWritebackTest (ut.TestCase):
     def tearDown(self):
         self.system.finish()
 
-        for testfile in [TEST_FILE_JPEG, TEST_FILE_PNG, TEST_FILE_TIFF]:
-            os.remove(os.path.join(self.workdir, testfile))
-
+        for test_file in pathlib.Path(self.workdir).iterdir():
+            test_file.unlink()
         cfg.remove_monitored_test_dir(self.workdir)
 
+    def datadir_path(self, filename):
+        """Returns the full path to a writeback test file."""
+        datadir = os.path.join(os.path.dirname(__file__), '..', '..', 'test-writeback-data')
+        return pathlib.Path(os.path.join(datadir, filename))
+
+    def prepare_test_file(self, path, expect_mime_type, expect_property):
+        """Copies a file into the test working directory.
+
+        The function waits until the file has been seen by the Tracker
+        miner before returning.
+
+        """
+        log("Copying %s -> %s" % (path, self.workdir))
+        shutil.copy(path, self.workdir)
+
+        output_path = pathlib.Path(os.path.join(self.workdir, os.path.basename(path)))
+
+        # Make sure a resource has been crawled by the FS miner and by
+        # tracker-extract. The extractor adds nie:contentCreated for
+        # image resources, so know once this property is set the
+        # extraction is complete.
+        self.system.store.await_resource_inserted(expect_mime_type, url=output_path.as_uri(), required_property=expect_property)
+        return output_path
+
+    def prepare_test_audio(self, filename):
+        return self.prepare_test_file(filename, 'http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#Audio', 'nfo:duration')
+
     def uri(self, filename):
-        return "file://" + os.path.join(self.workdir, filename)
-
-    def get_test_filename_jpeg(self):
-        return self.uri(TEST_FILE_JPEG)
-
-    def get_test_filename_tiff(self):
-        return self.uri(TEST_FILE_TIFF)
-
-    def get_test_filename_png(self):
-        return self.uri(TEST_FILE_PNG)
+        return pathlib.Path(filename).as_uri()
 
     def get_mtime(self, filename):
         return os.stat(filename).st_mtime
