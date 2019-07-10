@@ -402,7 +402,7 @@ class StoreHelper (Helper):
             try:
                 self.loop.run_checked()
             except GraphUpdateTimeoutException as e:
-                raise GraphUpdateTimeoutException("Timeout waiting for resource: class %s, URL %s, title %s" % (rdf_class, url, title))
+                raise GraphUpdateTimeoutException("Timeout waiting for resource: class %s, URL %s, title %s" % (rdf_class, url, title)) from e
             self.inserts_match_function = None
 
         self.class_to_track = None
