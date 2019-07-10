@@ -19,7 +19,7 @@
  * Authors: Carlos Garnacho <carlosg@gnome.org>
  */
 
-#include "config.h"
+#include "config-miners.h"
 
 #include <string.h>
 #include "tracker-domain-ontology.h"

@@ -24,7 +24,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "config.h"
+#include "config-miners.h"
 
 #ifdef __linux__
 

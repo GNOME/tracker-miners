@@ -20,7 +20,7 @@
  * Boston, MA  02110-1301, USA.
  */
 
-#include "config.h"
+#include "config-miners.h"
 
 /* Ensure we have a valid backend enabled */
 #if !defined(GSTREAMER_BACKEND_DISCOVERER) && \

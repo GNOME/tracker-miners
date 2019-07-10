@@ -368,8 +368,8 @@ conf.set('FUNCTIONAL_TESTS_TRACKER_WRITEBACK_PATH', join_paths(meson.current_bui
 
 conf.set('FUNCTIONAL_TESTS_TRACKER_STORE_PATH', tracker_store_path)
 
-configure_file(input: 'config.h.meson.in',
-               output: 'config.h',
+configure_file(input: 'config-miners.h.meson.in',
+               output: 'config-miners.h',
                configuration: conf)
 
 # Global compiler defines. We avoid add_global_arguments() as it breaks

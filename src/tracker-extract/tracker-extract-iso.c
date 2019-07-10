@@ -20,7 +20,7 @@
  *          Zeeshan Ali (Khattak) <zeeshanak@gnome.org>
  */
 
-#include "config.h"
+#include "config-miners.h"
 
 #include <stdio.h>
 

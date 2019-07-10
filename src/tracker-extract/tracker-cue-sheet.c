@@ -19,7 +19,7 @@
  * Author: Sam Thursfield <sam.thursfield@codethink.co.uk>
  */
 
-#include "config.h"
+#include "config-miners.h"
 
 #include <stdlib.h>
 #include <string.h>
