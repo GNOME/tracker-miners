@@ -18,7 +18,7 @@
  * Boston, MA  02110-1301, USA.
  */
 
-#include "config.h"
+#include "config-miners.h"
 
 #define _XOPEN_SOURCE
 #define _XOPEN_SOURCE_EXTENDED 1	/* strcasecmp is XPG4v2 */

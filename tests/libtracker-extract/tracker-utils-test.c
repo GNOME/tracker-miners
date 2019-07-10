@@ -19,7 +19,7 @@
  * Authors: Philip Van Hoof <philip@codeminded.be>
  */
 
-#include "config.h"
+#include "config-miners.h"
 
 #include <time.h>
 #include <string.h>

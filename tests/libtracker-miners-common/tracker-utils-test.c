@@ -18,7 +18,7 @@
  *
  */
 
-#include "config.h"
+#include "config-miners.h"
 
 #include <glib-object.h>
 #include <libtracker-miners-common/tracker-file-utils.h>
