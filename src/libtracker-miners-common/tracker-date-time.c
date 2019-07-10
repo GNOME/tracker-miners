@@ -18,7 +18,7 @@
  * Boston, MA  02110-1301, USA.
  */
 
-#include "config.h"
+#include "config-miners.h"
 
 /* For timegm usage on __GLIBC__ we need _GNU_SOURCE, should be
  * defined in config.h based on configure checks...

@@ -19,7 +19,7 @@
  * Author: Carlos Garnacho <carlos@lanedo.com>
  */
 
-#include "config.h"
+#include "config-miners.h"
 
 #include "tracker-extract-info.h"
 

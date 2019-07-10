@@ -18,7 +18,7 @@
  * Boston, MA  02110-1301, USA.
  */
 
-#include "config.h"
+#include "config-miners.h"
 
 #include <string.h>
 

@@ -19,7 +19,7 @@
  * Boston, MA  02110-1301, USA.
  */
 
-#include "config.h"
+#include "config-miners.h"
 
 #include <libtracker-miners-common/tracker-common.h>
 #include <libtracker-extract/tracker-extract.h>
