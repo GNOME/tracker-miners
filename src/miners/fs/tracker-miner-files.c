@@ -55,7 +55,7 @@
 
 #define TRACKER_EXTRACT_DATA_SOURCE TRACKER_PREFIX_TRACKER "extractor-data-source"
 
-#define TRACKER_MINER_FILES_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), TRACKER_TYPE_MINER_FILES, TrackerMinerFilesPrivate))
+#define TRACKER_MINER_FILES_GET_PRIVATE(o) (tracker_miner_files_get_instance_private (TRACKER_MINER_FILES (o)))
 
 static GQuark miner_files_error_quark = 0;
 
@@ -239,6 +239,7 @@ static void        miner_files_update_filters                     (TrackerMinerF
 static GInitableIface* miner_files_initable_parent_iface;
 
 G_DEFINE_TYPE_WITH_CODE (TrackerMinerFiles, tracker_miner_files, TRACKER_TYPE_MINER_FS,
+                         G_ADD_PRIVATE (TrackerMinerFiles)
                          G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE,
                                                 miner_files_initable_iface_init));
 
@@ -378,8 +379,6 @@ tracker_miner_files_class_init (TrackerMinerFilesClass *klass)
 	                                                      TRACKER_TYPE_CONFIG,
 	                                                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
 
-	g_type_class_add_private (klass, sizeof (TrackerMinerFilesPrivate));
-
 	miner_files_error_quark = g_quark_from_static_string ("TrackerMinerFiles");
 }
 
@@ -465,7 +464,7 @@ tracker_miner_files_init (TrackerMinerFiles *mf)
 	gchar *rdf_types_str;
 	GStrv rdf_types;
 
-	priv = mf->private = TRACKER_MINER_FILES_GET_PRIVATE (mf);
+	priv = mf->private = tracker_miner_files_get_instance_private (mf);
 
 	priv->storage = tracker_storage_new ();
 

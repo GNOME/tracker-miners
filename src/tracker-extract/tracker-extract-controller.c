@@ -38,7 +38,7 @@ struct TrackerExtractControllerPrivate {
 	gint paused;
 };
 
-G_DEFINE_TYPE (TrackerExtractController, tracker_extract_controller, G_TYPE_OBJECT)
+G_DEFINE_TYPE_WITH_PRIVATE (TrackerExtractController, tracker_extract_controller, G_TYPE_OBJECT)
 
 static void
 files_miner_idleness_changed (TrackerExtractController *self,
@@ -288,17 +288,12 @@ tracker_extract_controller_class_init (TrackerExtractControllerClass *klass)
 	                                                      G_PARAM_STATIC_STRINGS |
 	                                                      G_PARAM_READWRITE |
 	                                                      G_PARAM_CONSTRUCT_ONLY));
-
-	g_type_class_add_private (object_class,
-	                          sizeof (TrackerExtractControllerPrivate));
 }
 
 static void
 tracker_extract_controller_init (TrackerExtractController *self)
 {
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE (self,
-	                                          TRACKER_TYPE_EXTRACT_CONTROLLER,
-	                                          TrackerExtractControllerPrivate);
+	self->priv = tracker_extract_controller_get_instance_private (self);
 }
 
 TrackerExtractController *

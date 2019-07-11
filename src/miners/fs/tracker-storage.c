@@ -95,7 +95,7 @@ enum {
 
 static guint signals[LAST_SIGNAL] = {0};
 
-G_DEFINE_TYPE (TrackerStorage, tracker_storage, G_TYPE_OBJECT);
+G_DEFINE_TYPE_WITH_PRIVATE (TrackerStorage, tracker_storage, G_TYPE_OBJECT);
 
 static void
 tracker_storage_class_init (TrackerStorageClass *klass)
@@ -132,8 +132,6 @@ tracker_storage_class_init (TrackerStorageClass *klass)
 		              2,
 		              G_TYPE_STRING,
 		              G_TYPE_STRING);
-
-	g_type_class_add_private (object_class, sizeof (TrackerStoragePrivate));
 }
 
 static void
@@ -143,7 +141,7 @@ tracker_storage_init (TrackerStorage *storage)
 
 	g_message ("Initializing Storage...");
 
-	priv = TRACKER_STORAGE_GET_PRIVATE (storage);
+	priv = tracker_storage_get_instance_private (storage);
 
 	priv->mounts = g_node_new (NULL);
 
@@ -177,7 +175,7 @@ tracker_storage_finalize (GObject *object)
 {
 	TrackerStoragePrivate *priv;
 
-	priv = TRACKER_STORAGE_GET_PRIVATE (object);
+	priv = tracker_storage_get_instance_private (TRACKER_STORAGE (object));
 
 	g_hash_table_destroy (priv->unmount_watchdogs);
 
@@ -345,7 +343,7 @@ mount_add_new (TrackerStorage *storage,
 	TrackerStoragePrivate *priv;
 	GNode *node;
 
-	priv = TRACKER_STORAGE_GET_PRIVATE (storage);
+	priv = tracker_storage_get_instance_private (storage);
 
 	node = mount_add_hierarchy (priv->mounts, uuid, mount_point, removable_device, optical_disc);
 	g_hash_table_insert (priv->mounts_by_uuid, g_strdup (uuid), node);
@@ -573,7 +571,7 @@ mount_add (TrackerStorage *storage,
 		return;
 	}
 
-	priv = TRACKER_STORAGE_GET_PRIVATE (storage);
+	priv = tracker_storage_get_instance_private (storage);
 
 	/* fstab partitions may not have corresponding
 	 * GVolumes, so volume may be NULL */
@@ -706,7 +704,7 @@ mounts_setup (TrackerStorage *storage)
 	TrackerStoragePrivate *priv;
 	GList *mounts, *lm;
 
-	priv = TRACKER_STORAGE_GET_PRIVATE (storage);
+	priv = tracker_storage_get_instance_private (storage);
 
 	mounts = g_volume_monitor_get_mounts (priv->volume_monitor);
 
@@ -748,7 +746,7 @@ mount_remove (TrackerStorage *storage,
 	gchar *mount_point;
 	gchar *mp;
 
-	priv = TRACKER_STORAGE_GET_PRIVATE (storage);
+	priv = tracker_storage_get_instance_private (storage);
 
 	file = g_mount_get_root (mount);
 	mount_point = g_file_get_path (file);
@@ -790,7 +788,7 @@ mount_removed_cb (GVolumeMonitor *monitor,
 	TrackerStoragePrivate *priv;
 
 	storage = user_data;
-	priv = TRACKER_STORAGE_GET_PRIVATE (storage);
+	priv = tracker_storage_get_instance_private (storage);
 
 	mount_remove (storage, mount);
 
@@ -810,7 +808,7 @@ unmount_failed_cb (gpointer user_data)
 	 * due to an error, and add back the still mounted
 	 * path.
 	 */
-	priv = TRACKER_STORAGE_GET_PRIVATE (data->storage);
+	priv = tracker_storage_get_instance_private (data->storage);
 
 	g_warning ("Unmount operation failed, adding back mount point...");
 
@@ -831,7 +829,7 @@ mount_pre_removed_cb (GVolumeMonitor *monitor,
 	guint id;
 
 	storage = user_data;
-	priv = TRACKER_STORAGE_GET_PRIVATE (storage);
+	priv = tracker_storage_get_instance_private (storage);
 
 	mount_remove (storage, mount);
 
@@ -918,7 +916,7 @@ tracker_storage_get_device_roots (TrackerStorage     *storage,
 
 	g_return_val_if_fail (TRACKER_IS_STORAGE (storage), NULL);
 
-	priv = TRACKER_STORAGE_GET_PRIVATE (storage);
+	priv = tracker_storage_get_instance_private (storage);
 
 	gr.roots = NULL;
 	gr.type = type;
@@ -956,7 +954,7 @@ tracker_storage_get_device_uuids (TrackerStorage     *storage,
 
 	g_return_val_if_fail (TRACKER_IS_STORAGE (storage), NULL);
 
-	priv = TRACKER_STORAGE_GET_PRIVATE (storage);
+	priv = tracker_storage_get_instance_private (storage);
 
 	uuids = NULL;
 
@@ -1004,7 +1002,7 @@ tracker_storage_get_mount_point_for_uuid (TrackerStorage *storage,
 	g_return_val_if_fail (TRACKER_IS_STORAGE (storage), NULL);
 	g_return_val_if_fail (uuid != NULL, NULL);
 
-	priv = TRACKER_STORAGE_GET_PRIVATE (storage);
+	priv = tracker_storage_get_instance_private (storage);
 
 	node = g_hash_table_lookup (priv->mounts_by_uuid, uuid);
 
@@ -1037,7 +1035,7 @@ tracker_storage_get_type_for_uuid (TrackerStorage     *storage,
 	g_return_val_if_fail (TRACKER_IS_STORAGE (storage), 0);
 	g_return_val_if_fail (uuid != NULL, 0);
 
-	priv = TRACKER_STORAGE_GET_PRIVATE (storage);
+	priv = tracker_storage_get_instance_private (storage);
 
 	node = g_hash_table_lookup (priv->mounts_by_uuid, uuid);
 
@@ -1094,7 +1092,7 @@ tracker_storage_get_uuid_for_file (TrackerStorage *storage,
 		path = norm_path;
 	}
 
-	priv = TRACKER_STORAGE_GET_PRIVATE (storage);
+	priv = tracker_storage_get_instance_private (storage);
 
 	info = mount_info_find (priv->mounts, path);
 

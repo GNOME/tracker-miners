@@ -39,7 +39,6 @@ typedef struct TrackerExtractDecoratorClass TrackerExtractDecoratorClass;
 
 struct TrackerExtractDecorator {
 	TrackerDecoratorFS parent_instance;
-        gpointer priv;
 };
 
 struct TrackerExtractDecoratorClass {
