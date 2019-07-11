@@ -41,7 +41,7 @@
 #warning Main thread traces enabled
 #endif /* THREAD_ENABLE_TRACE */
 
-#define TRACKER_EXTRACT_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TRACKER_TYPE_EXTRACT, TrackerExtractPrivate))
+#define TRACKER_EXTRACT_GET_PRIVATE(obj) (tracker_extract_get_instance_private (TRACKER_EXTRACT (obj)))
 
 G_DEFINE_QUARK (TrackerExtractError, tracker_extract_error)
 
@@ -100,7 +100,7 @@ static gboolean get_metadata         (TrackerExtractTask *task);
 static gboolean dispatch_task_cb     (TrackerExtractTask *task);
 
 
-G_DEFINE_TYPE(TrackerExtract, tracker_extract, G_TYPE_OBJECT)
+G_DEFINE_TYPE_WITH_PRIVATE(TrackerExtract, tracker_extract, G_TYPE_OBJECT)
 
 static void
 tracker_extract_class_init (TrackerExtractClass *klass)
@@ -110,8 +110,6 @@ tracker_extract_class_init (TrackerExtractClass *klass)
 	object_class = G_OBJECT_CLASS (klass);
 
 	object_class->finalize = tracker_extract_finalize;
-
-	g_type_class_add_private (object_class, sizeof (TrackerExtractPrivate));
 }
 
 static void

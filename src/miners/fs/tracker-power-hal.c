@@ -39,7 +39,7 @@
 
 #define BATTERY_LOW_THRESHOLD  0.05f
 
-#define GET_PRIV(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TRACKER_TYPE_POWER, TrackerPowerPriv))
+#define GET_PRIV(obj) (tracker_power_get_instance_private (TRACKER_POWER (obj)))
 
 typedef struct {
 	LibHalContext *context;
@@ -50,7 +50,7 @@ typedef struct {
 	gchar         *ac_adapter_udi;
 	gboolean       on_battery;
 	gdouble        battery_percentage;
-} TrackerPowerPriv;
+} TrackerPowerPrivate;
 
 static void     tracker_power_finalize          (GObject         *object);
 static void     hal_get_property                (GObject         *object,
@@ -81,7 +81,7 @@ enum {
 	PROP_ON_LOW_BATTERY
 };
 
-G_DEFINE_TYPE (TrackerPower, tracker_power, G_TYPE_OBJECT);
+G_DEFINE_TYPE_WITH_PRIVATE (TrackerPower, tracker_power, G_TYPE_OBJECT);
 
 static void
 tracker_power_class_init (TrackerPowerClass *klass)
@@ -107,14 +107,12 @@ tracker_power_class_init (TrackerPowerClass *klass)
 	                                                       "Whether the battery is low",
 	                                                       FALSE,
 	                                                       G_PARAM_READABLE));
-
-	g_type_class_add_private (object_class, sizeof (TrackerPowerPriv));
 }
 
 static void
 tracker_power_init (TrackerPower *power)
 {
-	TrackerPowerPriv *priv;
+	TrackerPowerPrivate *priv;
 	DBusError       error;
 
 	g_message ("Initializing HAL Power...");
@@ -185,7 +183,7 @@ tracker_power_init (TrackerPower *power)
 static void
 tracker_power_finalize (GObject *object)
 {
-	TrackerPowerPriv *priv;
+	TrackerPowerPrivate *priv;
 
 	priv = GET_PRIV (object);
 
@@ -214,7 +212,7 @@ hal_get_property (GObject    *object,
                   GValue     *value,
                   GParamSpec *pspec)
 {
-	TrackerPowerPriv *priv;
+	TrackerPowerPrivate *priv;
 
 	priv = GET_PRIV (object);
 
@@ -235,7 +233,7 @@ hal_get_property (GObject    *object,
 static gboolean
 hal_setup_ac_adapters (TrackerPower *power)
 {
-	TrackerPowerPriv        *priv;
+	TrackerPowerPrivate        *priv;
 	DBusError        error;
 	gchar          **devices, **p;
 	gint             num;
@@ -311,7 +309,7 @@ hal_setup_ac_adapters (TrackerPower *power)
 static gboolean
 hal_setup_batteries (TrackerPower *power)
 {
-	TrackerPowerPriv        *priv;
+	TrackerPowerPrivate        *priv;
 	DBusError        error;
 	gchar          **devices, **p;
 	gint             num;
@@ -360,7 +358,7 @@ hal_setup_batteries (TrackerPower *power)
 static void
 hal_battery_notify (TrackerPower *power)
 {
-	TrackerPowerPriv *priv;
+	TrackerPowerPrivate *priv;
 	GList *values, *v;
 	gint percentage, n_values;
 	gdouble old_percentage;
@@ -399,7 +397,7 @@ static void
 hal_battery_modify (TrackerPower *power,
                     const gchar  *udi)
 {
-	TrackerPowerPriv *priv;
+	TrackerPowerPrivate *priv;
 	gint percentage;
 
 	priv = GET_PRIV (power);
@@ -418,7 +416,7 @@ static void
 hal_battery_remove (TrackerPower *power,
                     const gchar  *udi)
 {
-	TrackerPowerPriv *priv;
+	TrackerPowerPrivate *priv;
 
 	priv = GET_PRIV (power);
 
@@ -444,7 +442,7 @@ hal_device_removed_cb (LibHalContext *context,
                        const gchar   *udi)
 {
 	TrackerPower     *power;
-	TrackerPowerPriv *priv;
+	TrackerPowerPrivate *priv;
 
 	power = (TrackerPower*) libhal_ctx_get_user_data (context);
 	priv = GET_PRIV (power);
@@ -462,7 +460,7 @@ hal_device_property_modified_cb (LibHalContext *context,
                                  dbus_bool_t    is_added)
 {
 	TrackerPower     *power;
-	TrackerPowerPriv *priv;
+	TrackerPowerPrivate *priv;
 	DBusError       error;
 
 	power = (TrackerPower*) libhal_ctx_get_user_data (context);
@@ -519,7 +517,7 @@ tracker_power_new ()
 gboolean
 tracker_power_get_on_battery (TrackerPower *power)
 {
-	TrackerPowerPriv *priv;
+	TrackerPowerPrivate *priv;
 
 	g_return_val_if_fail (TRACKER_IS_POWER (power), TRUE);
 
@@ -539,7 +537,7 @@ tracker_power_get_on_battery (TrackerPower *power)
 gboolean
 tracker_power_get_on_low_battery (TrackerPower *power)
 {
-	TrackerPowerPriv *priv;
+	TrackerPowerPrivate *priv;
 
 	g_return_val_if_fail (TRACKER_IS_POWER (power), TRUE);
 

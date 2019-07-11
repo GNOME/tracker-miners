@@ -110,6 +110,7 @@ static gboolean tracker_controller_start                (TrackerController  *con
                                                          GError            **error);
 
 G_DEFINE_TYPE_WITH_CODE (TrackerController, tracker_controller, G_TYPE_OBJECT,
+                         G_ADD_PRIVATE (TrackerController)
                          G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE,
                                                 tracker_controller_initable_iface_init));
 
@@ -134,7 +135,7 @@ tracker_controller_finalize (GObject *object)
 	TrackerController *controller;
 
 	controller = TRACKER_CONTROLLER (object);
-	priv = controller->priv;
+	priv = tracker_controller_get_instance_private (controller);
 
 	if (priv->shutdown_source) {
 		g_source_destroy (priv->shutdown_source);
@@ -162,7 +163,7 @@ tracker_controller_get_property (GObject    *object,
                                  GValue     *value,
                                  GParamSpec *pspec)
 {
-	TrackerControllerPrivate *priv = TRACKER_CONTROLLER (object)->priv;
+	TrackerControllerPrivate *priv = tracker_controller_get_instance_private (TRACKER_CONTROLLER (object));
 
 	switch (param_id) {
 	case PROP_SHUTDOWN_TIMEOUT:
@@ -177,7 +178,7 @@ tracker_controller_set_property (GObject      *object,
                                  const GValue *value,
                                  GParamSpec   *pspec)
 {
-	TrackerControllerPrivate *priv = TRACKER_CONTROLLER (object)->priv;
+	TrackerControllerPrivate *priv = tracker_controller_get_instance_private (TRACKER_CONTROLLER (object));
 
 	switch (param_id) {
 	case PROP_SHUTDOWN_TIMEOUT:
@@ -202,8 +203,6 @@ tracker_controller_class_init (TrackerControllerClass *klass)
 	                                                    "Shutdown timeout, 0 to disable",
 	                                                    0, 1000, 0,
 	                                                    G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
-
-	g_type_class_add_private (object_class, sizeof (TrackerControllerPrivate));
 }
 
 static void
@@ -212,7 +211,7 @@ task_cancellable_cancelled_cb (GCancellable  *cancellable,
 {
 	TrackerControllerPrivate *priv;
 
-	priv = data->controller->priv;
+	priv = tracker_controller_get_instance_private (data->controller);
 
 	g_mutex_lock (&priv->mutex);
 
@@ -285,7 +284,7 @@ cancel_tasks (TrackerController *controller,
 	TrackerControllerPrivate *priv;
 	GList *elem;
 
-	priv = controller->priv;
+	priv = tracker_controller_get_instance_private (controller);
 
 	for (elem = priv->ongoing_tasks; elem; elem = elem->next) {
 		WritebackData *data = elem->data;
@@ -339,7 +338,7 @@ reset_shutdown_timeout_cb (gpointer user_data)
 
 	g_message ("Shutting down due to no activity");
 
-	priv = TRACKER_CONTROLLER (user_data)->priv;
+	priv = tracker_controller_get_instance_private (TRACKER_CONTROLLER (user_data));
 	g_main_loop_quit (priv->main_loop);
 
 	return FALSE;
@@ -351,7 +350,7 @@ reset_shutdown_timeout (TrackerController *controller)
 	TrackerControllerPrivate *priv;
 	GSource *source;
 
-	priv = controller->priv;
+	priv = tracker_controller_get_instance_private (controller);
 
 	if (priv->shutdown_timeout == 0) {
 		return;
@@ -380,9 +379,7 @@ tracker_controller_init (TrackerController *controller)
 {
 	TrackerControllerPrivate *priv;
 
-	priv = controller->priv = G_TYPE_INSTANCE_GET_PRIVATE (controller,
-	                                                       TRACKER_TYPE_CONTROLLER,
-	                                                       TrackerControllerPrivate);
+	priv = tracker_controller_get_instance_private (controller);
 
 	priv->context = g_main_context_new ();
 	priv->main_loop = g_main_loop_new (priv->context, FALSE);
@@ -427,7 +424,7 @@ perform_writeback_cb (gpointer user_data)
 	WritebackData *data;
 
 	data = user_data;
-	priv = data->controller->priv;
+	priv = tracker_controller_get_instance_private (data->controller);
 	priv->ongoing_tasks = g_list_remove (priv->ongoing_tasks, data);
 
 	if (data->error == NULL) {
@@ -473,7 +470,7 @@ io_writeback_job (GTask        *task,
                   GCancellable *cancellable)
 {
 	WritebackData *data = task_data;
-	TrackerControllerPrivate *priv = data->controller->priv;
+	TrackerControllerPrivate *priv = tracker_controller_get_instance_private (data->controller);
 	GError *error = NULL;
 	gboolean handled = FALSE;
 	GList *writeback_handlers;
@@ -527,7 +524,7 @@ handle_method_call_perform_writeback (TrackerController     *controller,
 	gchar *rdf_type = NULL;
 	GList *writeback_handlers = NULL;
 
-	priv = controller->priv;
+	priv = tracker_controller_get_instance_private (controller);
 
 	results = g_ptr_array_new_with_free_func ((GDestroyNotify) g_strfreev);
 	g_variant_get (parameters, "(&sasaas)", &subject, &iter1, &iter2);
@@ -669,7 +666,7 @@ controller_notify_main_thread (TrackerController *controller,
 {
 	TrackerControllerPrivate *priv;
 
-	priv = controller->priv;
+	priv = tracker_controller_get_instance_private (controller);
 
 	g_mutex_lock (&priv->initialization_mutex);
 
@@ -698,7 +695,7 @@ bus_name_vanished_cb (GDBusConnection *connection,
 	TrackerControllerPrivate *priv;
 
 	controller = user_data;
-	priv = controller->priv;
+	priv = tracker_controller_get_instance_private (controller);
 
 	if (!priv->initialized) {
 		GError *error;
@@ -726,7 +723,7 @@ tracker_controller_dbus_start (TrackerController   *controller,
 		NULL, NULL
 	};
 
-	priv = controller->priv;
+	priv = tracker_controller_get_instance_private (controller);
 
 	priv->connection = tracker_sparql_connection_get (NULL, &err);
 
@@ -791,7 +788,7 @@ tracker_controller_dbus_stop (TrackerController *controller)
 {
 	TrackerControllerPrivate *priv;
 
-	priv = controller->priv;
+	priv = tracker_controller_get_instance_private (controller);
 
 	if (priv->registration_id != 0) {
 		g_dbus_connection_unregister_object (priv->d_connection,
@@ -838,7 +835,7 @@ tracker_controller_thread_func (gpointer user_data)
 #endif /* THREAD_ENABLE_TRACE */
 
 	controller = user_data;
-	priv = controller->priv;
+	priv = tracker_controller_get_instance_private (controller);
 	g_main_context_push_thread_default (priv->context);
 
 	reset_shutdown_timeout (controller);
@@ -877,7 +874,7 @@ tracker_controller_start (TrackerController  *controller,
 	GList *modules;
 	GThread *thread;
 
-	priv = controller->priv;
+	priv = tracker_controller_get_instance_private (controller);
 
 	priv->modules = g_hash_table_new_full (g_str_hash,
 	                                       g_str_equal,

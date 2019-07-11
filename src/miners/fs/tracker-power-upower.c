@@ -26,7 +26,7 @@
 
 #include "tracker-power.h"
 
-#define GET_PRIV(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TRACKER_TYPE_POWER, TrackerPowerPriv))
+#define GET_PRIV(obj) (tracker_power_get_instance_private (TRACKER_POWER (obj)))
 
 typedef struct {
 	UpClient  *client;
@@ -35,7 +35,7 @@ typedef struct {
 #endif
 	gboolean   on_battery;
 	gboolean   on_low_battery;
-} TrackerPowerPriv;
+} TrackerPowerPrivate;
 
 static void     tracker_power_initable_iface_init (GInitableIface *iface);
 static void     tracker_power_finalize            (GObject         *object);
@@ -55,6 +55,7 @@ enum {
 };
 
 G_DEFINE_TYPE_WITH_CODE (TrackerPower, tracker_power, G_TYPE_OBJECT,
+                         G_ADD_PRIVATE (TrackerPower)
                          G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE, tracker_power_initable_iface_init));
 
 static void
@@ -82,8 +83,6 @@ tracker_power_class_init (TrackerPowerClass *klass)
 	                                                       "Whether the battery is low",
 	                                                       FALSE,
 	                                                       G_PARAM_READABLE));
-
-	g_type_class_add_private (object_class, sizeof (TrackerPowerPriv));
 }
 
 #ifndef HAVE_UP_CLIENT_GET_ON_LOW_BATTERY
@@ -92,7 +91,7 @@ on_on_battery_changed (UpClient     *client,
                        GParamSpec   *pspec,
                        TrackerPower *power)
 {
-	TrackerPowerPriv *priv = GET_PRIV (power);
+	TrackerPowerPrivate *priv = GET_PRIV (power);
 	gboolean on_battery;
 
 	on_battery = up_client_get_on_battery (priv->client);
@@ -107,7 +106,7 @@ on_warning_level_changed (UpDevice     *device,
                           GParamSpec   *pspec,
                           TrackerPower *power)
 {
-	TrackerPowerPriv *priv = GET_PRIV (power);
+	TrackerPowerPrivate *priv = GET_PRIV (power);
 	UpDeviceLevel warning_level;
 	gboolean on_low_battery;
 
@@ -130,7 +129,7 @@ tracker_power_initable_init (GInitable     *initable,
                              GError       **error)
 {
 	TrackerPower *power;
-	TrackerPowerPriv *priv;
+	TrackerPowerPrivate *priv;
 
 	g_message ("Initializing UPower...");
 
@@ -165,7 +164,7 @@ tracker_power_initable_init (GInitable     *initable,
 static void
 tracker_power_finalize (GObject *object)
 {
-	TrackerPowerPriv *priv;
+	TrackerPowerPrivate *priv;
 
 	priv = GET_PRIV (object);
 
@@ -184,7 +183,7 @@ tracker_power_get_property (GObject    *object,
                             GValue     *value,
                             GParamSpec *pspec)
 {
-	TrackerPowerPriv *priv;
+	TrackerPowerPrivate *priv;
 
 	priv = GET_PRIV (object);
 
@@ -206,7 +205,7 @@ static void
 tracker_power_client_changed_cb (UpClient     *client,
                                  TrackerPower *power)
 {
-	TrackerPowerPriv *priv;
+	TrackerPowerPrivate *priv;
 	gboolean on_battery;
 	gboolean on_low_battery;
 
@@ -267,7 +266,7 @@ tracker_power_new ()
 gboolean
 tracker_power_get_on_battery (TrackerPower *power)
 {
-	TrackerPowerPriv *priv;
+	TrackerPowerPrivate *priv;
 
 	g_return_val_if_fail (TRACKER_IS_POWER (power), TRUE);
 
@@ -287,7 +286,7 @@ tracker_power_get_on_battery (TrackerPower *power)
 gboolean
 tracker_power_get_on_low_battery (TrackerPower *power)
 {
-	TrackerPowerPriv *priv;
+	TrackerPowerPrivate *priv;
 
 	g_return_val_if_fail (TRACKER_IS_POWER (power), TRUE);
 

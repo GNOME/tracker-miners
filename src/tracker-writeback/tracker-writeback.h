@@ -39,7 +39,6 @@ typedef struct TrackerControllerClass TrackerControllerClass;
 
 struct TrackerController {
 	GObject parent_instance;
-	gpointer priv;
 };
 
 struct TrackerControllerClass {

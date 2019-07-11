@@ -85,6 +85,7 @@ static void tracker_extract_decorator_initable_iface_init (GInitableIface *iface
 
 G_DEFINE_TYPE_WITH_CODE (TrackerExtractDecorator, tracker_extract_decorator,
                         TRACKER_TYPE_DECORATOR_FS,
+                        G_ADD_PRIVATE (TrackerExtractDecorator)
                         G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE, tracker_extract_decorator_initable_iface_init))
 
 static void
@@ -95,7 +96,7 @@ tracker_extract_decorator_get_property (GObject    *object,
 {
 	TrackerExtractDecoratorPrivate *priv;
 
-	priv = TRACKER_EXTRACT_DECORATOR (object)->priv;
+	priv = tracker_extract_decorator_get_instance_private (TRACKER_EXTRACT_DECORATOR (object));
 
 	switch (param_id) {
 	case PROP_EXTRACTOR:
@@ -112,7 +113,7 @@ tracker_extract_decorator_set_property (GObject      *object,
 {
 	TrackerExtractDecoratorPrivate *priv;
 
-	priv = TRACKER_EXTRACT_DECORATOR (object)->priv;
+	priv = tracker_extract_decorator_get_instance_private (TRACKER_EXTRACT_DECORATOR (object));
 
 	switch (param_id) {
 	case PROP_EXTRACTOR:
@@ -126,7 +127,7 @@ tracker_extract_decorator_finalize (GObject *object)
 {
 	TrackerExtractDecoratorPrivate *priv;
 
-	priv = TRACKER_EXTRACT_DECORATOR (object)->priv;
+	priv = tracker_extract_decorator_get_instance_private (TRACKER_EXTRACT_DECORATOR (object));
 
 	if (priv->extractor)
 		g_object_unref (priv->extractor);
@@ -181,7 +182,7 @@ get_metadata_cb (TrackerExtract *extract,
 	GError *error = NULL;
 	gchar *sparql;
 
-	priv = TRACKER_EXTRACT_DECORATOR (data->decorator)->priv;
+	priv = tracker_extract_decorator_get_instance_private (TRACKER_EXTRACT_DECORATOR (data->decorator));
 	info = tracker_extract_file_finish (extract, result, &error);
 
 	tracker_extract_persistence_remove_file (priv->persistence, data->file);
@@ -222,7 +223,7 @@ decorator_get_recovery_file (TrackerExtractDecorator *decorator,
 	TrackerExtractDecoratorPrivate *priv;
 	GFile *file;
 
-	priv = decorator->priv;
+	priv = tracker_extract_decorator_get_instance_private (decorator);
 	file = g_hash_table_lookup (priv->recovery_files,
 	                            tracker_decorator_info_get_url (info));
 
@@ -246,7 +247,7 @@ decorator_next_item_cb (TrackerDecorator *decorator,
 	ExtractData *data;
 	GTask *task;
 
-	priv = TRACKER_EXTRACT_DECORATOR (decorator)->priv;
+	priv = tracker_extract_decorator_get_instance_private (TRACKER_EXTRACT_DECORATOR (decorator));
 	info = tracker_decorator_next_finish (decorator, result, &error);
 
 	if (!info) {
@@ -298,7 +299,7 @@ decorator_get_next_file (TrackerDecorator *decorator)
 	TrackerExtractDecoratorPrivate *priv;
 	guint available_items;
 
-	priv = TRACKER_EXTRACT_DECORATOR (decorator)->priv;
+	priv = tracker_extract_decorator_get_instance_private (TRACKER_EXTRACT_DECORATOR (decorator));
 
 	if (!tracker_miner_is_started (TRACKER_MINER (decorator)) ||
 	    tracker_miner_is_paused (TRACKER_MINER (decorator)))
@@ -320,7 +321,7 @@ tracker_extract_decorator_paused (TrackerMiner *miner)
 {
 	TrackerExtractDecoratorPrivate *priv;
 
-	priv = TRACKER_EXTRACT_DECORATOR (miner)->priv;
+	priv = tracker_extract_decorator_get_instance_private (TRACKER_EXTRACT_DECORATOR (miner));
 	g_message ("Decorator paused");
 
 	if (priv->timer)
@@ -332,7 +333,7 @@ tracker_extract_decorator_resumed (TrackerMiner *miner)
 {
 	TrackerExtractDecoratorPrivate *priv;
 
-	priv = TRACKER_EXTRACT_DECORATOR (miner)->priv;
+	priv = tracker_extract_decorator_get_instance_private (TRACKER_EXTRACT_DECORATOR (miner));
 	g_message ("Decorator resumed, processing remaining %d items",
 	           tracker_decorator_get_n_items (TRACKER_DECORATOR (miner)));
 
@@ -347,7 +348,7 @@ tracker_extract_decorator_items_available (TrackerDecorator *decorator)
 {
 	TrackerExtractDecoratorPrivate *priv;
 
-	priv = TRACKER_EXTRACT_DECORATOR (decorator)->priv;
+	priv = tracker_extract_decorator_get_instance_private (TRACKER_EXTRACT_DECORATOR (decorator));
 	g_message ("Starting to process %d items",
 	           tracker_decorator_get_n_items (decorator));
 
@@ -365,7 +366,7 @@ tracker_extract_decorator_finished (TrackerDecorator *decorator)
 	gchar *time_str;
 	gdouble elapsed = 0;
 
-	priv = TRACKER_EXTRACT_DECORATOR (decorator)->priv;
+	priv = tracker_extract_decorator_get_instance_private (TRACKER_EXTRACT_DECORATOR (decorator));
 	if (priv->timer) {
 		elapsed = g_timer_elapsed (priv->timer, NULL);
 		g_clear_pointer (&priv->timer, g_timer_destroy);
@@ -412,7 +413,7 @@ priority_changed (TrackerExtractDecorator *decorator)
 	GHashTableIter                  iter;
 	gpointer                        value;
 
-	priv = TRACKER_EXTRACT_DECORATOR (decorator)->priv;
+	priv = tracker_extract_decorator_get_instance_private (decorator);
 
 	/* Construct an strv removing dups */
 	array = g_ptr_array_new ();
@@ -449,7 +450,7 @@ name_vanished_cb (GDBusConnection *connection,
 	TrackerExtractDecorator        *decorator = user_data;
 	TrackerExtractDecoratorPrivate *priv;
 
-	priv = TRACKER_EXTRACT_DECORATOR (decorator)->priv;
+	priv = tracker_extract_decorator_get_instance_private (TRACKER_EXTRACT_DECORATOR (decorator));
 	g_hash_table_remove (priv->apps, name);
 	priority_changed (decorator);
 }
@@ -466,7 +467,7 @@ handle_set_rdf_types_cb (TrackerExtractDBusPriority *iface,
 	AppData *data;
 	guint i;
 
-	priv = TRACKER_EXTRACT_DECORATOR (decorator)->priv;
+	priv = tracker_extract_decorator_get_instance_private (TRACKER_EXTRACT_DECORATOR (decorator));
 	sender = g_dbus_method_invocation_get_sender (invocation);
 	conn = g_dbus_method_invocation_get_connection (invocation);
 
@@ -521,7 +522,7 @@ handle_clear_rdf_types_cb (TrackerExtractDBusPriority *iface,
 	TrackerExtractDecoratorPrivate *priv;
 	const gchar *sender;
 
-	priv = TRACKER_EXTRACT_DECORATOR (decorator)->priv;
+	priv = tracker_extract_decorator_get_instance_private (TRACKER_EXTRACT_DECORATOR (decorator));
 	sender = g_dbus_method_invocation_get_sender (invocation);
 
 	g_hash_table_remove (priv->apps, sender);
@@ -557,9 +558,6 @@ tracker_extract_decorator_class_init (TrackerExtractDecoratorClass *klass)
 	                                                      TRACKER_TYPE_EXTRACT,
 	                                                      G_PARAM_READWRITE |
 	                                                      G_PARAM_CONSTRUCT_ONLY));
-
-	g_type_class_add_private (object_class,
-	                          sizeof (TrackerExtractDecoratorPrivate));
 }
 
 static void
@@ -567,7 +565,7 @@ decorator_retry_file (GFile    *file,
                       gpointer  user_data)
 {
 	TrackerExtractDecorator *decorator = user_data;
-	TrackerExtractDecoratorPrivate *priv = decorator->priv;
+	TrackerExtractDecoratorPrivate *priv = tracker_extract_decorator_get_instance_private (decorator);
 	gchar *path;
 
 	path = g_file_get_uri (file);
@@ -612,7 +610,7 @@ tracker_extract_decorator_init (TrackerExtractDecorator *decorator)
 {
 	TrackerExtractDecoratorPrivate *priv;
 
-	decorator->priv = priv = TRACKER_EXTRACT_DECORATOR_GET_PRIVATE (decorator);
+	priv = tracker_extract_decorator_get_instance_private (decorator);
 	priv->recovery_files = g_hash_table_new_full (g_str_hash, g_str_equal,
 	                                              (GDestroyNotify) g_free,
 	                                              (GDestroyNotify) g_object_unref);
@@ -629,7 +627,7 @@ tracker_extract_decorator_initable_init (GInitable     *initable,
 	gboolean                        ret = TRUE;
 
 	decorator = TRACKER_EXTRACT_DECORATOR (initable);
-	priv = decorator->priv;
+	priv = tracker_extract_decorator_get_instance_private (TRACKER_EXTRACT_DECORATOR (decorator));
 
 	priv->apps = g_hash_table_new_full (g_str_hash,
 	                                    g_str_equal,

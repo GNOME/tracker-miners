@@ -71,7 +71,7 @@ enum {
 	PROP_FILES_MINER
 };
 
-#define TRACKER_MINER_FILES_INDEX_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), TRACKER_TYPE_MINER_FILES_INDEX, TrackerMinerFilesIndexPrivate))
+#define TRACKER_MINER_FILES_INDEX_GET_PRIVATE(o) (tracker_miner_files_index_get_instance_private (TRACKER_MINER_FILES_INDEX (o)))
 
 static void     index_set_property        (GObject              *object,
                                            guint                 param_id,
@@ -83,7 +83,7 @@ static void     index_get_property        (GObject              *object,
                                            GParamSpec           *pspec);
 static void     index_finalize            (GObject              *object);
 
-G_DEFINE_TYPE(TrackerMinerFilesIndex, tracker_miner_files_index, G_TYPE_OBJECT)
+G_DEFINE_TYPE_WITH_PRIVATE(TrackerMinerFilesIndex, tracker_miner_files_index, G_TYPE_OBJECT)
 
 static void
 tracker_miner_files_index_class_init (TrackerMinerFilesIndexClass *klass)
@@ -103,8 +103,6 @@ tracker_miner_files_index_class_init (TrackerMinerFilesIndexClass *klass)
 	                                                      "The FS Miner",
 	                                                      TRACKER_TYPE_MINER_FILES,
 	                                                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
-
-	g_type_class_add_private (klass, sizeof (TrackerMinerFilesIndexPrivate));
 }
 
 static void
