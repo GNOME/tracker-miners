@@ -126,7 +126,7 @@ enum {
 
 };
 
-G_DEFINE_TYPE (TrackerConfig, tracker_config, G_TYPE_SETTINGS)
+G_DEFINE_TYPE_WITH_PRIVATE (TrackerConfig, tracker_config, G_TYPE_SETTINGS)
 
 static void
 tracker_config_class_init (TrackerConfigClass *klass)
@@ -303,14 +303,11 @@ tracker_config_class_init (TrackerConfigClass *klass)
 	                                                       "Set to false to disable writeback",
 	                                                       DEFAULT_ENABLE_WRITEBACK,
 	                                                       G_PARAM_READWRITE));
-
-	g_type_class_add_private (object_class, sizeof (TrackerConfigPrivate));
 }
 
 static void
 tracker_config_init (TrackerConfig *object)
 {
-	object->priv = G_TYPE_INSTANCE_GET_PRIVATE (object, TRACKER_TYPE_CONFIG, TrackerConfigPrivate);
 }
 
 static void
@@ -401,7 +398,7 @@ config_get_property (GObject    *object,
                      GParamSpec *pspec)
 {
 	TrackerConfig *config = TRACKER_CONFIG (object);
-	TrackerConfigPrivate *priv = config->priv;
+	TrackerConfigPrivate *priv = tracker_config_get_instance_private (config);
 
 	switch (param_id) {
 		/* General */
@@ -478,7 +475,7 @@ config_finalize (GObject *object)
 {
 	TrackerConfigPrivate *priv;
 
-	priv = TRACKER_CONFIG (object)->priv;
+	priv = tracker_config_get_instance_private (TRACKER_CONFIG (object));
 
 	g_slist_foreach (priv->ignored_file_patterns,
 	                 (GFunc) g_pattern_spec_free,
@@ -561,7 +558,7 @@ config_set_ignored_file_conveniences (TrackerConfig *config)
 	GSList *paths = NULL;
 	GSList *patterns = NULL;
 
-	priv = config->priv;
+	priv = tracker_config_get_instance_private (config);
 
 	g_slist_foreach (priv->ignored_file_patterns,
 	                 (GFunc) g_pattern_spec_free,
@@ -602,7 +599,7 @@ config_set_ignored_directory_conveniences (TrackerConfig *config)
 	GSList *patterns = NULL;
 	GSList *paths = NULL;
 
-	priv = config->priv;
+	priv = tracker_config_get_instance_private (config);
 
 	g_slist_foreach (priv->ignored_directory_patterns,
 	                 (GFunc) g_pattern_spec_free,
@@ -839,7 +836,7 @@ tracker_config_get_index_recursive_directories (TrackerConfig *config)
 
 	g_return_val_if_fail (TRACKER_IS_CONFIG (config), NULL);
 
-	priv = config->priv;
+	priv = tracker_config_get_instance_private (config);
 
 	return priv->index_recursive_directories;
 }
@@ -851,7 +848,7 @@ tracker_config_get_index_single_directories (TrackerConfig *config)
 
 	g_return_val_if_fail (TRACKER_IS_CONFIG (config), NULL);
 
-	priv = config->priv;
+	priv = tracker_config_get_instance_private (config);
 
 	return priv->index_single_directories;
 }
@@ -863,7 +860,7 @@ tracker_config_get_ignored_directories (TrackerConfig *config)
 
 	g_return_val_if_fail (TRACKER_IS_CONFIG (config), NULL);
 
-	priv = config->priv;
+	priv = tracker_config_get_instance_private (config);
 
 	return priv->ignored_directories;
 }
@@ -875,7 +872,7 @@ tracker_config_get_ignored_directories_with_content (TrackerConfig *config)
 
 	g_return_val_if_fail (TRACKER_IS_CONFIG (config), NULL);
 
-	priv = config->priv;
+	priv = tracker_config_get_instance_private (config);
 
 	return priv->ignored_directories_with_content;
 }
@@ -887,7 +884,7 @@ tracker_config_get_ignored_files (TrackerConfig *config)
 
 	g_return_val_if_fail (TRACKER_IS_CONFIG (config), NULL);
 
-	priv = config->priv;
+	priv = tracker_config_get_instance_private (config);
 
 	return priv->ignored_files;
 }
@@ -943,7 +940,7 @@ rebuild_filtered_lists (TrackerConfig *config)
 	 * 1. Only notify on changes.
 	 * 2. Don't update the unfiltered lists (since they have aliases)
 	 */
-	priv = config->priv;
+	priv = tracker_config_get_instance_private (config);
 
 	/* Filter single directories first, checking duplicates */
 	old_list = priv->index_single_directories;
@@ -1025,7 +1022,7 @@ config_set_index_recursive_directories (TrackerConfig *config,
 
 	g_return_if_fail (TRACKER_IS_CONFIG (config));
 
-	priv = config->priv;
+	priv = tracker_config_get_instance_private (config);
 
 	l = priv->index_recursive_directories_unfiltered;
 
@@ -1058,7 +1055,7 @@ config_set_index_single_directories (TrackerConfig *config,
 
 	g_return_if_fail (TRACKER_IS_CONFIG (config));
 
-	priv = config->priv;
+	priv = tracker_config_get_instance_private (config);
 
 	l = priv->index_single_directories_unfiltered;
 
@@ -1091,7 +1088,7 @@ config_set_ignored_directories (TrackerConfig *config,
 
 	g_return_if_fail (TRACKER_IS_CONFIG (config));
 
-	priv = config->priv;
+	priv = tracker_config_get_instance_private (config);
 
 	l = priv->ignored_directories;
 
@@ -1127,7 +1124,7 @@ config_set_ignored_directories_with_content (TrackerConfig *config,
 
 	g_return_if_fail (TRACKER_IS_CONFIG (config));
 
-	priv = config->priv;
+	priv = tracker_config_get_instance_private (config);
 
 	l = priv->ignored_directories_with_content;
 
@@ -1160,7 +1157,7 @@ config_set_ignored_files (TrackerConfig *config,
 
 	g_return_if_fail (TRACKER_IS_CONFIG (config));
 
-	priv = config->priv;
+	priv = tracker_config_get_instance_private (config);
 
 	l = priv->ignored_files;
 
@@ -1197,7 +1194,7 @@ tracker_config_get_ignored_directory_patterns (TrackerConfig *config)
 
 	g_return_val_if_fail (TRACKER_IS_CONFIG (config), NULL);
 
-	priv = config->priv;
+	priv = tracker_config_get_instance_private (config);
 
 	return priv->ignored_directory_patterns;
 }
@@ -1209,7 +1206,7 @@ tracker_config_get_ignored_file_patterns (TrackerConfig *config)
 
 	g_return_val_if_fail (TRACKER_IS_CONFIG (config), NULL);
 
-	priv = config->priv;
+	priv = tracker_config_get_instance_private (config);
 
 	return priv->ignored_file_patterns;
 }
@@ -1221,7 +1218,7 @@ tracker_config_get_ignored_directory_paths (TrackerConfig *config)
 
 	g_return_val_if_fail (TRACKER_IS_CONFIG (config), NULL);
 
-	priv = config->priv;
+	priv = tracker_config_get_instance_private (config);
 
 	return priv->ignored_directory_paths;
 }
@@ -1233,7 +1230,7 @@ tracker_config_get_ignored_file_paths (TrackerConfig *config)
 
 	g_return_val_if_fail (TRACKER_IS_CONFIG (config), NULL);
 
-	priv = config->priv;
+	priv = tracker_config_get_instance_private (config);
 
 	return priv->ignored_file_paths;
 }

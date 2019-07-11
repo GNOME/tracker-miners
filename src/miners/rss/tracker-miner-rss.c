@@ -32,7 +32,7 @@
 
 #include "tracker-miner-rss.h"
 
-#define TRACKER_MINER_RSS_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TRACKER_TYPE_MINER_RSS, TrackerMinerRSSPrivate))
+#define TRACKER_MINER_RSS_GET_PRIVATE(obj) (tracker_miner_rss_get_instance_private (TRACKER_MINER_RSS (obj)))
 
 typedef struct _TrackerMinerRSSPrivate TrackerMinerRSSPrivate;
 
@@ -96,7 +96,7 @@ static void         feed_ready_cb                   (GrssFeedsPool             *
                                                      gpointer               user_data);
 static const gchar *get_message_url                 (GrssFeedItem              *item);
 
-G_DEFINE_TYPE (TrackerMinerRSS, tracker_miner_rss, TRACKER_TYPE_MINER_ONLINE)
+G_DEFINE_TYPE_WITH_PRIVATE (TrackerMinerRSS, tracker_miner_rss, TRACKER_TYPE_MINER_ONLINE)
 
 static void
 parser_characters (void          *data,
@@ -239,8 +239,6 @@ tracker_miner_rss_class_init (TrackerMinerRSSClass *klass)
 	miner_class->resumed = miner_resumed;
 
 	miner_online_class->connected = miner_connected;
-
-	g_type_class_add_private (object_class, sizeof (TrackerMinerRSSPrivate));
 }
 
 static void
