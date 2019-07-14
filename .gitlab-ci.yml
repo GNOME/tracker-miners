@@ -19,7 +19,7 @@ test-fedora-latest:
     # that Tracker is installed on the host here, thanks to `dnf builddep`.
     - su tracker -c 'mkdir subprojects; cd subprojects; git clone https://gitlab.gnome.org/GNOME/tracker'
     - su tracker -c 'mkdir build'
-    - su tracker -c 'cd build; meson .. --prefix=/usr -Dtracker_core=subproject'
+    - su tracker -c 'cd build; meson .. --prefix=/usr -Dtracker_core=subproject -Db_lto=true'
     - su tracker -c 'cd build; ninja'
     - |
       # Remove the many "CI_" variables from the environment. Meson dumps the
