@@ -394,25 +394,6 @@ main (int argc, char *argv[])
 
 	setlocale (LC_ALL, "");
 
-	tracker_sparql_connection_set_domain (domain_ontology_name);
-
-	tracker_load_domain_config (domain_ontology_name, &dbus_domain_name, &error);
-
-	if (error) {
-		g_critical ("Could not load domain ontology '%s': %s",
-		            domain_ontology_name, error->message);
-		g_error_free (error);
-		return EXIT_FAILURE;
-	}
-
-	connection = g_bus_get_sync (TRACKER_IPC_BUS, NULL, &error);
-	if (error) {
-		g_critical ("Could not create DBus connection: %s\n",
-		            error->message);
-		g_error_free (error);
-		return EXIT_FAILURE;
-	}
-
 	config = tracker_config_new ();
 
 	/* Extractor command line arguments */
@@ -431,6 +412,25 @@ main (int argc, char *argv[])
 	/* Set conditions when we use stand alone settings */
 	if (filename) {
 		return run_standalone (config);
+	}
+
+	tracker_sparql_connection_set_domain (domain_ontology_name);
+
+	tracker_load_domain_config (domain_ontology_name, &dbus_domain_name, &error);
+
+	if (error) {
+		g_critical ("Could not load domain ontology '%s': %s",
+		            domain_ontology_name, error->message);
+		g_error_free (error);
+		return EXIT_FAILURE;
+	}
+
+	connection = g_bus_get_sync (TRACKER_IPC_BUS, NULL, &error);
+	if (error) {
+		g_critical ("Could not create DBus connection: %s\n",
+		            error->message);
+		g_error_free (error);
+		return EXIT_FAILURE;
 	}
 
 	/* Initialize subsystems */
