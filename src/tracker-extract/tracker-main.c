@@ -350,8 +350,7 @@ main (int argc, char *argv[])
 	GMainLoop *my_main_loop;
 	GDBusConnection *connection;
 	TrackerMinerProxy *proxy;
-	TrackerDomainOntology *domain_ontology;
-	gchar *domain_name, *dbus_name;
+	gchar *dbus_domain_name, *dbus_name;
 
 	bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
 	bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
@@ -397,7 +396,8 @@ main (int argc, char *argv[])
 
 	tracker_sparql_connection_set_domain (domain_ontology_name);
 
-	domain_ontology = tracker_domain_ontology_new (domain_ontology_name, NULL, &error);
+	tracker_load_domain_config (domain_ontology_name, &dbus_domain_name, &error);
+
 	if (error) {
 		g_critical ("Could not load domain ontology '%s': %s",
 		            domain_ontology_name, error->message);
@@ -479,7 +479,7 @@ main (int argc, char *argv[])
 	tracker_miner_start (TRACKER_MINER (decorator));
 
 	/* Request DBus name */
-	dbus_name = tracker_domain_ontology_get_domain (domain_ontology, DBUS_NAME_SUFFIX);
+	dbus_name = g_strconcat (dbus_domain_name, ".", DBUS_NAME_SUFFIX, NULL);
 
 	if (!tracker_dbus_request_name (connection, dbus_name, &error)) {
 		g_critical ("Could not request DBus name '%s': %s",
@@ -494,18 +494,16 @@ main (int argc, char *argv[])
 	/* Main loop */
 	main_loop = g_main_loop_new (NULL, FALSE);
 
-	if (domain_ontology && domain_ontology_name) {
+	if (domain_ontology_name) {
 		/* If we are running for a specific domain, we tie the lifetime of this
 		 * process to the domain. For example, if the domain name is
 		 * org.example.MyApp then this tracker-extract process will exit as
 		 * soon as org.example.MyApp exits.
 		 */
-		domain_name = tracker_domain_ontology_get_domain (domain_ontology, NULL);
-		g_bus_watch_name_on_connection (connection, domain_name,
+		g_bus_watch_name_on_connection (connection, dbus_domain_name,
 		                                G_BUS_NAME_WATCHER_FLAGS_NONE,
 		                                NULL, on_domain_vanished,
 		                                main_loop, NULL);
-		g_free (domain_name);
 	}
 
 	g_signal_connect (decorator, "finished",
@@ -531,7 +529,7 @@ main (int argc, char *argv[])
 	g_object_unref (controller);
 	g_object_unref (proxy);
 	g_object_unref (connection);
-	g_object_unref (domain_ontology);
+	g_free (dbus_domain_name);
 
 	tracker_log_shutdown ();
 
