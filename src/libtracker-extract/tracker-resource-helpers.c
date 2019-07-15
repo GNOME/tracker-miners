@@ -141,6 +141,39 @@ tracker_extract_new_equipment (const char *make,
 }
 
 /**
+ * tracker_extract_new_external_reference:
+ * @source_uri: the source uri of the external reference
+ * @identifier: the identifier of the external reference
+ *
+ * Create a new tracker:ExternalReference resource and set its source and its
+ * identifier. Both @source and @identifer must be non-%NULL.
+ *
+ * Returns: a newly allocated #TrackerResource instance, of type tracker:ExternalReference
+ *
+ * Since: 2.3.0
+ */
+TrackerResource *
+tracker_extract_new_external_reference (const char *source_uri,
+				        const char *identifier)
+{
+	TrackerResource *external_reference;
+	gchar *uri;
+
+	g_return_val_if_fail (source_uri != NULL && identifier != NULL, NULL);
+
+	uri = tracker_sparql_escape_uri_printf ("tracker:ExternalReference:%s", source_uri);
+
+	external_reference = tracker_resource_new (uri);
+	tracker_resource_set_uri (external_reference, "rdf:type", "tracker:ExternalReference");
+	tracker_resource_set_uri (external_reference, "tracker:referenceSource", source_uri);
+	tracker_resource_set_string (external_reference, "tracker:referenceIdentifier", identifier);
+
+	g_free(uri);
+
+	return external_reference;
+}
+
+/**
  * tracker_extract_new_location:
  * @street_address: (allow none): main part of postal address, or %NULL
  * @state: (allow none): regional part of postal address, or %NULL
