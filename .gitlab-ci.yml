@@ -17,6 +17,8 @@ test-fedora-latest:
     # somewhere. It would be nice to improve the functional-tests so that they
     # will run without depending on any files outside of the build tree. Note
     # that Tracker is installed on the host here, thanks to `dnf builddep`.
+    - su rm -rf ~/gst
+    - ./create-uninstalled-setup.sh 
     - su tracker -c 'mkdir subprojects; cd subprojects; git clone https://gitlab.gnome.org/GNOME/tracker'
     - su tracker -c 'mkdir build'
     - su tracker -c 'cd build; meson .. --prefix=/usr -Dtracker_core=subproject'
