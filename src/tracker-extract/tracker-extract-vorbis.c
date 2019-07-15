@@ -170,10 +170,10 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 	if (md.creator_name) {
 		md.creator = tracker_extract_new_artist (md.creator_name);
 
-		if (vd.mb_artist_id) {
-			tracker_resource_set_string (md.creator, "nmm:mbArtistID", vd.mb_artist_id);
-			g_free (vd.mb_artist_id);
-		}
+		/* if (vd.mb_artist_id) { */
+		/* 	tracker_resource_set_string (md.creator, "nmm:mbArtistID", vd.mb_artist_id); */
+		/* 	g_free (vd.mb_artist_id); */
+		/* } */
 
 		tracker_resource_set_relation (metadata, "nmm:performer", md.creator);
 	}
@@ -209,15 +209,15 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 			tracker_resource_set_double (album, "nmm:albumPeakGain", atof (vd.album_peak_gain));
 		}
 
-		if (vd.mb_release_id) {
-			tracker_resource_set_string (album, "nmm:mbReleaseID", vd.mb_release_id);
-			g_free (vd.mb_release_id);
-		}
+		/* if (vd.mb_release_id) { */
+		/* 	tracker_resource_set_string (album, "nmm:mbReleaseID", vd.mb_release_id); */
+		/* 	g_free (vd.mb_release_id); */
+		/* } */
 
-		if (vd.mb_release_group_id) {
-			tracker_resource_set_string (album, "nmm:mbReleaseGroupID", vd.mb_release_group_id);
-			g_free (vd.mb_release_group_id);
-		}
+		/* if (vd.mb_release_group_id) { */
+		/* 	tracker_resource_set_string (album, "nmm:mbReleaseGroupID", vd.mb_release_group_id); */
+		/* 	g_free (vd.mb_release_group_id); */
+		/* } */
 
 		tracker_resource_set_relation (metadata, "nmm:musicAlbum", album);
 		tracker_resource_set_relation (metadata, "nmm:musicAlbumDisc", album_disc);
@@ -301,15 +301,15 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 		g_free (vd.acoustid_fingerprint);
 	}
 
-	if (vd.mb_recording_id) {
-		tracker_resource_set_string (metadata, "nmm:mbRecordingID", vd.mb_recording_id);
-		g_free (vd.mb_recording_id);
-	}
+	/* if (vd.mb_recording_id) { */
+	/* 	tracker_resource_set_string (metadata, "nmm:mbRecordingID", vd.mb_recording_id); */
+	/* 	g_free (vd.mb_recording_id); */
+	/* } */
 
-	if (vd.mb_track_id) {
-		tracker_resource_set_string (metadata, "nmm:mbTrackID", vd.mb_track_id);
-		g_free (vd.mb_track_id);
-	}
+	/* if (vd.mb_track_id) { */
+	/* 	tracker_resource_set_string (metadata, "nmm:mbTrackID", vd.mb_track_id); */
+	/* 	g_free (vd.mb_track_id); */
+	/* } */
 
 	if (vd.lyrics) {
 		tracker_resource_set_string (metadata, "nie:plainTextContent", vd.lyrics);
