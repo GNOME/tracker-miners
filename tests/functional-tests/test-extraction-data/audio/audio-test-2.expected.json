@@ -14,18 +14,42 @@
         "nfo:channels": "2",
         "nfo:sampleRate": "44100",
         "nfo:averageBitrate": "256000",
-        "nmm:mbTrackID": "123456",
-        "nmm:mbRecordingID": "456123",
         "nmm:performer": {
             "@type": "nmm:Artist",
             "nmm:artistName": "Anna Abreu",
-            "nmm:mbArtistID": "234561"
+            "nfo:hasExternalReference": {
+                "@type": "tracker:ExternalReference",
+                "tracker:referenceSource": "MusicBrainz Artist Id",
+                "tracker:referenceIdentifier": "234561"
+                }
         },
         "nmm:musicAlbum": {
             "@type": "nmm:MusicAlbum",
-            "nmm:mbReleaseGroupID": "561234",
-            "nmm:mbReleaseID": "345612"
+            "nfo:hasExternalReference": [
+                {
+                    "@type": "tracker:ExternalReference",
+                    "tracker:referenceSource": "MusicBrainz Release Id",
+                    "tracker:referenceIdentifier": "345612"
+                },
+                {
+                    "@type": "tracker:ExternalReference",
+                    "tracker:referenceSource": "MusicBrainz Release Group Id",
+                    "tracker:referenceIdentifier": "561234"
+                }
+            ]
         },
+        "nfo:hasExternalReference": [
+            {
+                "@type": "tracker:ExternalReference",
+                "tracker:referenceSource": "MusicBrainz Recording Id",
+                "tracker:referenceIdentifier": "456123"
+            },
+            {
+                "@type": "tracker:ExternalReference",
+                "tracker:referenceSource": "MusicBrainz Track Id",
+                "tracker:referenceIdentifier": "123456"
+            }
+        ],
         "nfo:hasHash": {
             "@type": "nfo:hasHash",
             "nfo:hashAlgorithm": "chromaprint",

@@ -2729,12 +2729,24 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 		tracker_resource_set_relation (main_resource, "nmm:musicAlbumDisc", album_disc);
 
 		if (md.mb_release_id) {
-			tracker_resource_set_string (md.album, "nmm:mbReleaseID", md.mb_release_id);
+			TrackerResource *mb_release_id = tracker_extract_new_external_resource("MusicBrainz Release Id",
+											       md.mb_release_id);
+
+			tracker_resource_set_relation (md.album, "nfo:hasExternalReference", mb_release_id);
+			g_object_unref (mb_release_id);
+
 		}
 
 		if (md.mb_release_group_id) {
-			tracker_resource_set_string (md.album, "nmm:mbReleaseGroupID",
-										 md.mb_release_group_id);
+			TrackerResource *mb_release_group_id = tracker_extract_new_external_resource("MusicBrainz Release Group Id",
+												     md.mb_release_group_id);
+
+			if (md.mb_release_id) {
+				tracker_resource_add_relation (md.album, "nfo:hasExternalReference", mb_release_group_id);
+			} else
+				tracker_resource_set_relation (md.album, "nfo:hasExternalReference", mb_release_group_id);
+
+			g_object_unref (mb_release_group_id);
 		}
 
 		if (md.track_count > 0) {
@@ -2762,7 +2774,10 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 	if (md.performer) {
 		tracker_resource_set_relation (main_resource, "nmm:performer", md.performer);
 		if (md.mb_artist_id) {
-			tracker_resource_set_string (md.performer, "nmm:mbArtistID", md.mb_artist_id);
+			TrackerResource *mb_artist_id = tracker_extract_new_external_resource("MusicBrainz Artist Id", md.mb_artist_id);
+
+			tracker_resource_set_relation (md.performer, "nfo:hasExternalReference", mb_artist_id);
+			g_object_unref (mb_artist_id);
 		}
 	}
 
@@ -2806,11 +2821,24 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 	}
 
 	if (md.mb_recording_id) {
-		tracker_resource_set_string (main_resource, "nmm:mbRecordingID", md.mb_recording_id);
+			TrackerResource *mb_recording_id = tracker_extract_new_external_resource("MusicBrainz Recording Id",
+												 md.mb_recording_id);
+
+			tracker_resource_set_relation (main_resource, "nfo:hasExternalReference", mb_recording_id);
+			g_object_unref (mb_recording_id);
 	}
 
 	if (md.mb_track_id) {
-		tracker_resource_set_string (main_resource, "nmm:mbTrackID", md.mb_track_id);
+			TrackerResource *mb_track_id = tracker_extract_new_external_resource("MusicBrainz Track Id",
+											     md.mb_track_id);
+
+			if (md.mb_recording_id) {
+				tracker_resource_add_relation (main_resource, "nfo:hasExternalReference", mb_track_id);
+			} else {
+				tracker_resource_set_relation (main_resource, "nfo:hasExternalReference", mb_track_id);
+			}
+
+			g_object_unref (mb_track_id);
 	}
 
 	if (md.acoustid_fingerprint) {
