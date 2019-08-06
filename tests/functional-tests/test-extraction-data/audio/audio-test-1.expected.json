@@ -16,19 +16,48 @@
         "nfo:duration": "15",
         "nfo:sampleRate": "22050",
         "nfo:averageBitrate": "32000",
-        "nmm:mbTrackID": "123456",
-        "nmm:mbRecordingID": "456123",
         "nmm:performer": {
             "@type": "nmm:Artist",
             "nmm:artistName": "AbBaby",
-            "nmm:mbArtistID": "234561"
+            "tracker:hasExternalReference": {
+                "@id": "tracker:ExternalReference:https:%2F%2Fmusicbrainz.org%2Fdoc%2FArtist",
+                "@type": "tracker:ExternalReference",
+                "tracker:referenceSource": "https://musicbrainz.org/doc/Artist",
+                "tracker:referenceIdentifier": "234561"
+            }
         },
         "nmm:musicAlbum": {
             "@type": "nmm:MusicAlbum",
             "nie:title": "SinCos",
-            "nmm:mbReleaseGroupID": "561234",
-            "nmm:mbReleaseID": "345612"
+            "tracker:hasExternalReference": [
+                {
+                    "@id": "tracker:ExternalReference:https:%2F%2Fmusicbrainz.org%2Fdoc%2FRelease",
+                    "@type": "tracker:ExternalReference",
+                    "tracker:referenceSource": "https://musicbrainz.org/doc/Release",
+                    "tracker:referenceIdentifier": "345612"
+                },
+                {
+                    "@id": "tracker:ExternalReference:https:%2F%2Fmusicbrainz.org%2Fdoc%2FRelease_Group",
+                    "@type": "tracker:ExternalReference",
+                    "tracker:referenceSource": "https://musicbrainz.org/doc/Release_Group",
+                    "tracker:referenceIdentifier": "561234"
+                }
+            ]
         },
+        "tracker:hasExternalReference": [
+            {
+                "@id": "tracker:ExternalReference:https:%2F%2Fmusicbrainz.org%2Fdoc%2FRecording",
+                "@type": "tracker:ExternalReference",
+                "tracker:referenceSource": "https://musicbrainz.org/doc/Recording",
+                "tracker:referenceIdentifier": "456123"
+            },
+            {
+                "@id": "tracker:ExternalReference:https:%2F%2Fmusicbrainz.org%2Fdoc%2FTrack",
+                "@type": "tracker:ExternalReference",
+                "tracker:referenceSource": "https://musicbrainz.org/doc/Track",
+                "tracker:referenceIdentifier": "123456"
+            }
+        ],
         "nfo:hasHash": {
             "@type": "nfo:hasHash",
             "nfo:hashAlgorithm": "chromaprint",
