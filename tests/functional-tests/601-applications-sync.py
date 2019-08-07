@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
-#
 # Copyright (C) 2011, Nokia Corporation <ivan.frade@nokia.com>
+# Copyright (C) 2019, Sam Thursfield (sam@afuera.me.uk)
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -28,7 +27,7 @@ import random
 import shutil
 
 import unittest as ut
-from common.utils.applicationstest import CommonTrackerApplicationTest as CommonTrackerApplicationTest
+from applicationstest import CommonTrackerApplicationTest as CommonTrackerApplicationTest
 
 
 log = logging.getLogger(__name__)
@@ -61,7 +60,7 @@ class TrackerSyncApplicationTests (CommonTrackerApplicationTest):
         This is because the test already inserted the resource in the store.
         """
 
-        self.system.miner_fs.await_wakeup_count(1)
+        self.miner_fs.start_watching_progress()
 
         origin_filepath = os.path.join(self.get_data_dir(), self.get_test_music())
         dest_filepath = os.path.join(self.get_dest_dir(), self.get_test_music())
@@ -104,13 +103,13 @@ class TrackerSyncApplicationTests (CommonTrackerApplicationTest):
 
         resource_id = self.tracker.get_resource_id(dest_fileuri)
 
-        miner_wakeup_count = self.system.miner_fs.wakeup_count()
+        miner_wakeup_count = self.miner_fs.wakeup_count()
 
         # Copy the image to the dest path
         self.slowcopy_file(origin_filepath, dest_filepath)
         assert os.path.exists(dest_filepath)
 
-        self.system.miner_fs.await_wakeup_count(miner_wakeup_count + 1)
+        self.miner_fs.await_wakeup_count(miner_wakeup_count + 1)
 
         self.assertEqual(self.get_urn_count_by_url(dest_fileuri), 1)
 
@@ -119,6 +118,8 @@ class TrackerSyncApplicationTests (CommonTrackerApplicationTest):
         os.remove(dest_filepath)
         self.tracker.await_resource_deleted(NMM_MUSICPIECE, resource_id)
         self.assertEqual(self.get_urn_count_by_url(dest_fileuri), 0)
+
+        self.miner_fs.stop_watching_progress()
 
 
 if __name__ == "__main__":

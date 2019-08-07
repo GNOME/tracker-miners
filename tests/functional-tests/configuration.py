@@ -1,6 +1,6 @@
-#!/usr/bin/env python3
 #
 # Copyright (C) 2010, Nokia <jean-luc.lamadon@nokia.com>
+# Copyright (C) 2019, Sam Thursfield (sam@afuera.me.uk)
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -18,16 +18,14 @@
 # 02110-1301, USA.
 #
 
-"Constants describing Tracker D-Bus services"
 
 import errno
 import json
 import logging
 import os
+import shutil
 import tempfile
 import sys
-
-from . import options
 
 
 if 'TRACKER_FUNCTIONAL_TEST_CONFIG' not in os.environ:
@@ -38,64 +36,26 @@ if 'TRACKER_FUNCTIONAL_TEST_CONFIG' not in os.environ:
 with open(os.environ['TRACKER_FUNCTIONAL_TEST_CONFIG']) as f:
     config = json.load(f)
 
-TRACKER_BUSNAME = 'org.freedesktop.Tracker1'
-TRACKER_OBJ_PATH = '/org/freedesktop/Tracker1/Resources'
-RESOURCES_IFACE = "org.freedesktop.Tracker1.Resources"
 
-MINERFS_BUSNAME = "org.freedesktop.Tracker1.Miner.Files"
-MINERFS_OBJ_PATH = "/org/freedesktop/Tracker1/Miner/Files"
-MINER_IFACE = "org.freedesktop.Tracker1.Miner"
-MINERFS_INDEX_OBJ_PATH = "/org/freedesktop/Tracker1/Miner/Files/Index"
-MINER_INDEX_IFACE = "org.freedesktop.Tracker1.Miner.Files.Index"
-
-TRACKER_BACKUP_OBJ_PATH = "/org/freedesktop/Tracker1/Backup"
-BACKUP_IFACE = "org.freedesktop.Tracker1.Backup"
-
-TRACKER_STATS_OBJ_PATH = "/org/freedesktop/Tracker1/Statistics"
-STATS_IFACE = "org.freedesktop.Tracker1.Statistics"
-
-TRACKER_STATUS_OBJ_PATH = "/org/freedesktop/Tracker1/Status"
-STATUS_IFACE = "org.freedesktop.Tracker1.Status"
-
-TRACKER_EXTRACT_BUSNAME = "org.freedesktop.Tracker1.Miner.Extract"
-TRACKER_EXTRACT_OBJ_PATH = "/org/freedesktop/Tracker1/Miner/Extract"
-
-WRITEBACK_BUSNAME = "org.freedesktop.Tracker1.Writeback"
+TEST_DBUS_DAEMON_CONFIG_FILE = config['TEST_DBUS_DAEMON_CONFIG_FILE']
+TRACKER_EXTRACT_PATH = config['TRACKER_EXTRACT_PATH']
 
 
-DCONF_MINER_SCHEMA = "org.freedesktop.Tracker.Miner.Files"
-
-# Autoconf substitutes paths in the configuration.json file without
-# expanding variables, so we need to manually insert these.
-
-
-def expandvars(variable):
-    # Note: the order matters!
-    result = variable
-    for var, value in [("${datarootdir}", RAW_DATAROOT_DIR),
-                       ("${exec_prefix}", RAW_EXEC_PREFIX),
-                       ("${prefix}", PREFIX),
-                       ("@top_builddir@", TOP_BUILDDIR)]:
-        result = result.replace(var, value)
-
-    return result
-
-
-PREFIX = config['PREFIX']
-RAW_EXEC_PREFIX = config['RAW_EXEC_PREFIX']
-RAW_DATAROOT_DIR = config['RAW_DATAROOT_DIR']
-TOP_BUILDDIR = os.environ['TRACKER_FUNCTIONAL_TEST_BUILD_DIR']
-
-TRACKER_EXTRACT_PATH = os.path.normpath(expandvars(config['TRACKER_EXTRACT_PATH']))
-TRACKER_MINER_FS_PATH = os.path.normpath(expandvars(config['TRACKER_MINER_FS_PATH']))
-TRACKER_STORE_PATH = os.path.normpath(expandvars(config['TRACKER_STORE_PATH']))
-TRACKER_WRITEBACK_PATH = os.path.normpath(expandvars(config['TRACKER_WRITEBACK_PATH']))
-
-DATADIR = os.path.normpath(expandvars(config['RAW_DATAROOT_DIR']))
-
-
-def generated_ttl_dir():
-    return os.path.join(TOP_BUILD_DIR, 'tests', 'functional-tests', 'ttl')
+def test_environment(tmpdir):
+    return {
+        'DCONF_PROFILE': config['TEST_DCONF_PROFILE'],
+        'TRACKER_TEST_DOMAIN_ONTOLOGY_RULE': config['TEST_DOMAIN_ONTOLOGY_RULE'],
+        'TRACKER_EXTRACTOR_RULES_DIR': config['TEST_EXTRACTOR_RULES_DIR'],
+        'TRACKER_EXTRACTORS_DIR': config['TEST_EXTRACTORS_DIR'],
+        'GSETTINGS_SCHEMA_DIR': config['TEST_GSETTINGS_SCHEMA_DIR'],
+        'TRACKER_LANGUAGE_STOP_WORDS_DIR': config['TEST_LANGUAGE_STOP_WORDS_DIR'],
+        'TRACKER_DB_ONTOLOGIES_DIR': config['TEST_ONTOLOGIES_DIR'],
+        'TRACKER_WRITEBACK_MODULES_DIR': config['TEST_WRITEBACK_MODULES_DIR'],
+        'XDG_CACHE_HOME': os.path.join(tmpdir, 'cache'),
+        'XDG_CONFIG_HOME': os.path.join(tmpdir, 'config'),
+        'XDG_DATA_HOME': os.path.join(tmpdir, 'data'),
+        'XDG_RUNTIME_DIR': os.path.join(tmpdir, 'run'),
+    }
 
 
 # This path is used for test data for tests which expect filesystem monitoring
@@ -116,19 +76,12 @@ if _TEST_MONITORED_TMP_DIR.startswith('/tmp'):
 
 def create_monitored_test_dir():
     '''Returns a unique tmpdir which supports filesystem monitor events.'''
-    try:
-        os.makedirs(_TEST_MONITORED_TMP_DIR)
-    except OSError as e:
-        if e.errno == errno.EEXIST:
-            pass
-        else:
-            raise
+    os.makedirs(_TEST_MONITORED_TMP_DIR, exist_ok=True)
     return tempfile.mkdtemp(dir=_TEST_MONITORED_TMP_DIR)
 
 
 def remove_monitored_test_dir(path):
-    # This will fail if the directory is not empty.
-    os.rmdir(path)
+    shutil.rmtree(path)
 
     # We delete the parent directory if possible, to avoid cluttering the user's
     # home dir, but there may be other tests running in parallel so we ignore
@@ -140,5 +93,37 @@ def remove_monitored_test_dir(path):
             pass
 
 
-if options.get_environment_boolean('TRACKER_TESTS_VERBOSE'):
+def get_environment_boolean(variable):
+    '''Parse a yes/no boolean passed through the environment.'''
+
+    value = os.environ.get(variable, 'no').lower()
+    if value in ['no', '0', 'false']:
+        return False
+    elif value in ['yes', '1', 'true']:
+        return True
+    else:
+        raise RuntimeError('Unexpected value for %s: %s' %
+                           (variable, value))
+
+
+def get_environment_int(variable, default=0):
+    try:
+        return int(os.environ.get(variable))
+    except (TypeError, ValueError):
+        return default
+
+
+if get_environment_boolean('TRACKER_TESTS_VERBOSE'):
+    # Output all logs to stderr
     logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+else:
+    # Output some messages from D-Bus daemon to stderr by default. In practice,
+    # only errors and warnings should be output here unless the environment
+    # contains G_MESSAGES_DEBUG= and/or TRACKER_VERBOSITY=1 or more.
+    handler_stderr = logging.StreamHandler(stream=sys.stderr)
+    handler_stderr.addFilter(logging.Filter('trackertestutils.dbusdaemon.stderr'))
+    handler_stdout = logging.StreamHandler(stream=sys.stderr)
+    handler_stdout.addFilter(logging.Filter('trackertestutils.dbusdaemon.stdout'))
+    logging.basicConfig(level=logging.INFO,
+                        handlers=[handler_stderr, handler_stdout],
+                        format='%(message)s')

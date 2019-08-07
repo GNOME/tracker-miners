@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #
 # Copyright (C) 2010, Nokia <ivan.frade@nokia.com>
 # Copyright (C) 2018-2019, Sam Thursfield <sam@afuera.me.uk>
@@ -19,7 +18,7 @@
 # 02110-1301, USA.
 #
 
-from common.utils import configuration as cfg
+import configuration as cfg
 import errno
 import json
 import logging
@@ -36,7 +35,7 @@ from gi.repository import GLib, Gst
 log = logging.getLogger(__name__)
 
 
-def get_tracker_extract_jsonld_output(filename, mime_type=None):
+def get_tracker_extract_jsonld_output(extra_env, filename, mime_type=None):
     """
     Runs `tracker-extract --file` to extract metadata from a file.
     """
@@ -47,10 +46,13 @@ def get_tracker_extract_jsonld_output(filename, mime_type=None):
         command.extend(['--mime', mime_type])
 
     # We depend on parsing the output, so verbosity MUST be 0.
-    env = os.environ.copy()
-    env['TRACKER_VERBOSITY'] = '0'
+    extra_env['TRACKER_VERBOSITY'] = '0'
     # Tell GStreamer not to fork to create the registry
-    env['GST_REGISTRY_FORK'] = 'no'
+    extra_env['GST_REGISTRY_FORK'] = 'no'
+    log.debug('Adding to environment: %s', ' '.join('%s=%s' % (k, v) for k, v in extra_env.items()))
+
+    env = os.environ.copy()
+    env.update(extra_env)
 
     log.debug('Running: %s', ' '.join(command))
     try:
@@ -65,10 +67,10 @@ def get_tracker_extract_jsonld_output(filename, mime_type=None):
     if p.returncode != 0:
         raise RuntimeError(
             "tracker-extract returned non-zero exit code: %s\n"
-            "Error output:\n%s\n" % (p.returncode, stderr.decode('unicode-escape').strip()))
+            "Error output:\n%s\n" % (p.returncode, stderr.decode('utf-8').strip()))
 
     if len(stderr) > 0:
-        error_output = stderr.decode('unicode-escape').strip()
+        error_output = stderr.decode('utf-8').strip()
         log.debug("Error output from tracker-extract:\n%s", error_output)
 
     try:
@@ -91,6 +93,9 @@ class TrackerExtractTestCase(ut.TestCase):
         if not isinstance(d, dict):
             self.fail("Expected dict, got %s" % d)
         if key not in d:
+            import pdb
+            pdb.set_trace()
+
             standardMsg = "Missing: %s" % (key)
             self.fail(self._formatMessage(msg, standardMsg))
         else:

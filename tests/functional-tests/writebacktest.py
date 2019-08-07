@@ -1,6 +1,6 @@
-#!/usr/bin/env python3
-
+#
 # Copyright (C) 2010, Nokia (ivan.frade@nokia.com)
+# Copyright (C) 2019, Sam Thursfield <sam@afuera.me.uk>
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -27,14 +27,23 @@ import shutil
 import time
 import unittest as ut
 
-from common.utils.system import TrackerSystemAbstraction
-from common.utils import configuration as cfg
+import trackertestutils.dconf
+import trackertestutils.helpers
+
+import configuration as cfg
+from minerfshelper import MinerFsHelper
+
 
 TEST_FILE_JPEG = "writeback-test-1.jpeg"
 TEST_FILE_TIFF = "writeback-test-2.tif"
 TEST_FILE_PNG = "writeback-test-4.png"
 
 log = logging.getLogger(__name__)
+
+
+def ensure_dir_exists(dirname):
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
 
 
 class CommonTrackerWritebackTest (ut.TestCase):
@@ -46,36 +55,68 @@ class CommonTrackerWritebackTest (ut.TestCase):
     def setUp(self):
         self.workdir = cfg.create_monitored_test_dir()
 
-        index_dirs = [self.workdir]
+        self.indexed_dir = os.path.join(self.workdir, 'test-monitored')
 
-        CONF_OPTIONS = {
-            cfg.DCONF_MINER_SCHEMA: {
-                'index-recursive-directories': GLib.Variant.new_strv(index_dirs),
-                'index-single-directories': GLib.Variant.new_strv([]),
-                'index-optical-discs': GLib.Variant.new_boolean(False),
-                'index-removable-devices': GLib.Variant.new_boolean(False),
-            },
-            'org.freedesktop.Tracker.Store': {
-                'graphupdated-delay': GLib.Variant.new_int32(100)
-            }
-        }
+        # It's important that this directory exists BEFORE we start Tracker:
+        # it won't monitor an indexing root for changes if it doesn't exist,
+        # it'll silently ignore it instead. See the tracker_crawler_start()
+        # function.
+        ensure_dir_exists(self.indexed_dir)
 
-        self.system = TrackerSystemAbstraction()
-        self.system.tracker_writeback_testing_start(CONF_OPTIONS)
+        try:
+            self.extra_env = cfg.test_environment(self.workdir)
 
-        self.tracker = self.system.store
-        self.extractor = self.system.extractor
+            self.sandbox = trackertestutils.helpers.TrackerDBusSandbox(
+                dbus_daemon_config_file=cfg.TEST_DBUS_DAEMON_CONFIG_FILE, extra_env=self.extra_env)
+
+            self.sandbox.start()
+
+            try:
+                settings = {
+                    'org.freedesktop.Tracker.Store': {
+                        'graphupdated-delay': GLib.Variant('i', 100)
+                    },
+                    'org.freedesktop.Tracker.Miner.Files': {
+                        'index-recursive-directories': GLib.Variant.new_strv([self.indexed_dir]),
+                        'index-single-directories': GLib.Variant.new_strv([]),
+                        'index-optical-discs': GLib.Variant.new_boolean(False),
+                        'index-removable-devices': GLib.Variant.new_boolean(False),
+                        'throttle': GLib.Variant.new_int32(5),
+                    }
+                }
+
+                for schema_name, contents in settings.items():
+                    dconf = trackertestutils.dconf.DConfClient(self.sandbox)
+                    for key, value in contents.items():
+                        dconf.write(schema_name, key, value)
+
+                self.tracker = trackertestutils.helpers.StoreHelper(
+                    self.sandbox.get_connection())
+                self.tracker.start_and_wait_for_ready()
+                self.tracker.start_watching_updates()
+
+                self.miner_fs = MinerFsHelper(
+                    self.sandbox.get_connection())
+                self.miner_fs.start()
+            except Exception:
+                self.sandbox.stop()
+                raise
+        except Exception:
+            self.remove_test_data()
+            cfg.remove_monitored_test_dir(self.workdir)
+            raise
 
     def tearDown(self):
-        self.system.finish()
+        self.sandbox.stop()
 
-        for test_file in pathlib.Path(self.workdir).iterdir():
+        for test_file in pathlib.Path(self.indexed_dir).iterdir():
             test_file.unlink()
+
         cfg.remove_monitored_test_dir(self.workdir)
 
     def datadir_path(self, filename):
         """Returns the full path to a writeback test file."""
-        datadir = os.path.join(os.path.dirname(__file__), '..', '..', 'test-writeback-data')
+        datadir = os.path.join(os.path.dirname(__file__), 'test-writeback-data')
         return pathlib.Path(os.path.join(datadir, filename))
 
     def prepare_test_file(self, path, expect_mime_type, expect_property):
@@ -85,16 +126,16 @@ class CommonTrackerWritebackTest (ut.TestCase):
         miner before returning.
 
         """
-        log.debug("Copying %s -> %s", path, self.workdir)
-        shutil.copy(path, self.workdir)
+        log.debug("Copying %s -> %s", path, self.indexed_dir)
+        shutil.copy(path, self.indexed_dir)
 
-        output_path = pathlib.Path(os.path.join(self.workdir, os.path.basename(path)))
+        output_path = pathlib.Path(os.path.join(self.indexed_dir, os.path.basename(path)))
 
         # Make sure a resource has been crawled by the FS miner and by
         # tracker-extract. The extractor adds nie:contentCreated for
         # image resources, so know once this property is set the
         # extraction is complete.
-        self.system.store.await_resource_inserted(expect_mime_type, url=output_path.as_uri(), required_property=expect_property)
+        self.tracker.await_resource_inserted(expect_mime_type, url=output_path.as_uri(), required_property=expect_property)
         return output_path
 
     def prepare_test_audio(self, filename):

@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # Copyright (C) 2019, Sam Thursfield (sam@afuera.me.uk)
 #
 # This library is free software; you can redistribute it and/or
@@ -27,8 +25,8 @@ import shutil
 import tempfile
 import unittest as ut
 
-import common.utils.configuration as cfg
-from common.utils.extractor import get_tracker_extract_jsonld_output, create_test_flac, TrackerExtractTestCase
+import configuration as cfg
+from extractor import get_tracker_extract_jsonld_output, create_test_flac, TrackerExtractTestCase
 
 
 class FlacCuesheetTest(TrackerExtractTestCase):
@@ -90,7 +88,8 @@ class FlacCuesheetTest(TrackerExtractTestCase):
             audio_path = os.path.join(tmpdir, 'cuesheet-test.flac')
             create_test_flac(audio_path, duration=6*60)
 
-            result = get_tracker_extract_jsonld_output(audio_path)
+            result = get_tracker_extract_jsonld_output(
+                cfg.test_environment(tmpdir), audio_path)
 
         self.assert_extract_result_matches_spec(
             self.spec(audio_path), result, audio_path, __file__)

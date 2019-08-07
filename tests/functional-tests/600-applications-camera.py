@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
-#
 # Copyright (C) 2011, Nokia Corporation <ivan.frade@nokia.com>
+# Copyright (C) 2019, Sam Thursfield (sam@afuera.me.uk)
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -27,7 +26,7 @@ import os
 import random
 
 import unittest as ut
-from common.utils.applicationstest import CommonTrackerApplicationTest as CommonTrackerApplicationTest
+from applicationstest import CommonTrackerApplicationTest as CommonTrackerApplicationTest
 
 
 log = logging.getLogger(__name__)

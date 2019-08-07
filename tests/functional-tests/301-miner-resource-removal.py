@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
-
 # Copyright (C) 2010, Nokia (ivan.frade@nokia.com)
+# Copyright (C) 2019, Sam Thursfield (sam@afuera.me.uk)
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -22,8 +21,8 @@ Test that resource removal does not leave debris or clobber too much,
 especially in the case where nie:InformationElement != nie:DataObject
 """
 
-from common.utils import configuration as cfg
-from common.utils.minertest import CommonTrackerMinerTest
+import configuration as cfg
+from minertest import CommonTrackerMinerTest
 
 from gi.repository import GLib
 

@@ -1,7 +1,7 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # Copyright (C) 2010, Nokia (ivan.frade@nokia.com)
+# Copyright (C) 2019, Sam Thursfield (sam@afuera.me.uk)
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -32,8 +32,8 @@ import locale
 import time
 
 import unittest as ut
-from common.utils.minertest import CommonTrackerMinerFTSTest, DEFAULT_TEXT
-from common.utils import configuration as cfg
+from minertest import CommonTrackerMinerFTSTest, DEFAULT_TEXT
+import configuration as cfg
 
 
 class MinerFTSStopwordsTest (CommonTrackerMinerFTSTest):
@@ -47,7 +47,8 @@ class MinerFTSStopwordsTest (CommonTrackerMinerFTSTest):
         if "_" in langcode:
             langcode = langcode.split("_")[0]
 
-        stopwordsfile = os.path.join(cfg.DATADIR, "tracker", "stop-words", "stopwords." + langcode)
+        stopwordsdir = os.environ['TRACKER_LANGUAGE_STOP_WORDS_DIR']
+        stopwordsfile = os.path.join(stopwordsdir, "stopwords." + langcode)
 
         if not os.path.exists(stopwordsfile):
             self.skipTest("No stopwords for the current locale ('%s' doesn't exist)" % (stopwordsfile))
@@ -55,13 +56,14 @@ class MinerFTSStopwordsTest (CommonTrackerMinerFTSTest):
 
         stopwords = []
         counter = 0
-        for line in open(stopwordsfile, "r"):
-            if len(line) > 4:
-                stopwords.append(line[:-1])
-                counter += 1
+        with open(stopwordsfile) as f:
+            for line in f:
+                if len(line) > 4:
+                    stopwords.append(line[:-1])
+                    counter += 1
 
-            if counter > 5:
-                break
+                if counter > 5:
+                    break
 
         return stopwords
 
