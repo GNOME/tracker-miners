@@ -22,21 +22,16 @@
 Tests trying to simulate the behaviour of applications working with tracker
 """
 
-import sys
+import logging
 import os
-import unittest
-import time
 import random
-import string
-import datetime
 import shutil
-import fcntl
 
-from common.utils import configuration as cfg
 import unittest as ut
 from common.utils.applicationstest import CommonTrackerApplicationTest as CommonTrackerApplicationTest
-from common.utils.helpers import log
 
+
+log = logging.getLogger(__name__)
 
 NMM_MUSICPIECE = 'http://www.tracker-project.org/temp/nmm#MusicPiece'
 
@@ -72,7 +67,7 @@ class TrackerSyncApplicationTests (CommonTrackerApplicationTest):
         dest_filepath = os.path.join(self.get_dest_dir(), self.get_test_music())
         dest_fileuri = "file://" + dest_filepath
 
-        log("Synchronizing audio file in '%s'..." % (dest_filepath))
+        log.debug("Synchronizing audio file in '%s'...", dest_filepath)
 
         # Insert new resource in the store
         insert = """
@@ -120,7 +115,7 @@ class TrackerSyncApplicationTests (CommonTrackerApplicationTest):
         self.assertEqual(self.get_urn_count_by_url(dest_fileuri), 1)
 
         # Clean the new file so the test directory is as before
-        log("Remove and wait")
+        log.debug("Remove and wait")
         os.remove(dest_filepath)
         self.tracker.await_resource_deleted(NMM_MUSICPIECE, resource_id)
         self.assertEqual(self.get_urn_count_by_url(dest_fileuri), 0)

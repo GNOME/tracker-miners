@@ -31,7 +31,6 @@ import tempfile
 import time
 
 import common.utils.configuration as cfg
-from common.utils.helpers import log
 from common.utils.system import TrackerSystemAbstraction
 
 
@@ -94,7 +93,6 @@ class ExtractorDecoratorTest(ut.TestCase):
             store.await_property_changed(VALID_FILE_CLASS, file_id, 'nie:title')
             assert not store.ask('ASK { <%s> nie:title ?title }' % file_urn)
 
-            log("Sending re-index request")
             # Request re-indexing (same as `tracker index --file ...`)
             miner_fs.index_file('file://' + os.path.join(self.datadir, file_path))
 

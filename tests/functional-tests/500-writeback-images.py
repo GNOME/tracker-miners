@@ -21,14 +21,16 @@
 """Tests for Tracker writeback daemon."""
 
 
+import logging
 import os
 import sys
 import time
 
 from common.utils.extractor import get_tracker_extract_jsonld_output
-from common.utils.helpers import log
 from common.utils.writebacktest import CommonTrackerWritebackTest
 import unittest as ut
+
+log = logging.getLogger(__name__)
 
 REASONABLE_TIMEOUT = 5  # Seconds we wait for tracker-writeback to do the work
 
@@ -61,9 +63,9 @@ class WritebackImagesTest (CommonTrackerWritebackTest):
         """
         self.tracker.update(SPARQL_TMPL % (prop, path.as_uri(), prop, prop, TEST_VALUE, path.as_uri()))
 
-        log("Waiting for change on %s" % path)
+        log.debug("Waiting for change on %s", path)
         self.wait_for_file_change(path, initial_mtime)
-        log("Got the change")
+        log.debug("Got the change")
 
         results = get_tracker_extract_jsonld_output(path, mimetype)
         keyDict = expectedKey or prop

@@ -20,9 +20,9 @@
 #
 
 from common.utils import configuration as cfg
-from common.utils.helpers import log
 import errno
 import json
+import logging
 import math
 import os
 import re
@@ -32,6 +32,8 @@ import unittest as ut
 import gi
 gi.require_version('Gst', '1.0')
 from gi.repository import GLib, Gst
+
+log = logging.getLogger(__name__)
 
 
 def get_tracker_extract_jsonld_output(filename, mime_type=None):
@@ -50,7 +52,7 @@ def get_tracker_extract_jsonld_output(filename, mime_type=None):
     # Tell GStreamer not to fork to create the registry
     env['GST_REGISTRY_FORK'] = 'no'
 
-    log('Running: %s' % ' '.join(command))
+    log.debug('Running: %s', ' '.join(command))
     try:
         p = subprocess.Popen(command, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError as e:
@@ -67,7 +69,7 @@ def get_tracker_extract_jsonld_output(filename, mime_type=None):
 
     if len(stderr) > 0:
         error_output = stderr.decode('unicode-escape').strip()
-        log("Error output from tracker-extract:\n%s" % error_output)
+        log.debug("Error output from tracker-extract:\n%s", error_output)
 
     try:
         output = stdout.decode('utf-8')
@@ -203,7 +205,7 @@ def create_test_flac(path, duration, timeout=10):
         'filesink location=%s' % path,
     ])
 
-    log("Running pipeline: %s" % pipeline_src)
+    log.debug("Running pipeline: %s", pipeline_src)
     pipeline = Gst.parse_launch(pipeline_src)
     ret = pipeline.set_state(Gst.State.PLAYING)
 

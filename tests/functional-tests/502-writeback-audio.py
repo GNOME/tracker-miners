@@ -21,7 +21,6 @@
 import unittest
 
 from common.utils.extractor import get_tracker_extract_jsonld_output
-from common.utils.helpers import log
 from common.utils.writebacktest import CommonTrackerWritebackTest
 
 

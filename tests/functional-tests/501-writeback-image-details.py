@@ -17,13 +17,18 @@
 # Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 # Boston, MA  02110-1301, USA.
 #
-from common.utils.writebacktest import CommonTrackerWritebackTest as CommonTrackerWritebackTest
-from common.utils.extractor import get_tracker_extract_jsonld_output
-from common.utils.helpers import log
-import unittest as ut
+
+import logging
 import os
 import sys
 import time
+import unittest as ut
+
+from common.utils.writebacktest import CommonTrackerWritebackTest as CommonTrackerWritebackTest
+from common.utils.extractor import get_tracker_extract_jsonld_output
+
+
+log = logging.getLogger(__name__)
 
 REASONABLE_TIMEOUT = 5  # Seconds we wait for tracker-writeback to do the work
 
@@ -65,7 +70,7 @@ class WritebackKeepDateTest (CommonTrackerWritebackTest):
         results = self.tracker.query(query_images)
         self.assertEqual(len(results), 3, results)
 
-        log("Waiting 2 seconds to ensure there is a noticiable difference in the timestamp")
+        log.debug("Waiting 2 seconds to ensure there is a noticiable difference in the timestamp")
         time.sleep(2)
 
         initial_mtime = jpeg_path.stat().st_mtime
@@ -79,7 +84,7 @@ class WritebackKeepDateTest (CommonTrackerWritebackTest):
          }
         """ % jpeg_path.as_uri()
         self.tracker.update(mark_as_favorite)
-        log("Setting favorite in <%s>" % jpeg_path.as_uri())
+        log.debug("Setting favorite in <%s>", jpeg_path.as_uri())
 
         self.wait_for_file_change(jpeg_path, initial_mtime)
 
