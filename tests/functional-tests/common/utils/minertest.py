@@ -19,12 +19,12 @@
 # 02110-1301, USA.
 #
 from common.utils import configuration as cfg
-from common.utils.helpers import log
 from common.utils.system import TrackerSystemAbstraction
 import unittest as ut
 
 from gi.repository import GLib
 
+import logging
 import os
 import shutil
 import tempfile
@@ -34,6 +34,8 @@ from itertools import chain
 DEFAULT_TEXT = "Some stupid content, to have a test file"
 
 NFO_DOCUMENT = 'http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#Document'
+
+log = logging.getLogger(__name__)
 
 
 def ensure_dir_exists(dirname):
@@ -121,7 +123,7 @@ class CommonTrackerMinerTest (ut.TestCase):
             shutil.rmtree(os.path.join(self.workdir, 'test-monitored'))
             shutil.rmtree(os.path.join(self.workdir, 'test-no-monitored'))
         except Exception as e:
-            log("Failed to remove temporary data dir: %s" % e)
+            log.warning("Failed to remove temporary data dir: %s", e)
 
     def assertResourceExists(self, urn):
         if self.tracker.ask("ASK { <%s> a rdfs:Resource }" % urn) == False:
@@ -168,7 +170,7 @@ class CommonTrackerMinerFTSTest (CommonTrackerMinerTest):
         """
         Return list of URIs with the word in them
         """
-        log("Search for: %s" % word)
+        log.info("Search for: %s", word)
         results = self.tracker.query("""
                 SELECT ?url WHERE {
                   ?u a nfo:TextDocument ;

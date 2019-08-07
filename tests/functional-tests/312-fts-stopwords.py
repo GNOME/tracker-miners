@@ -32,7 +32,6 @@ import locale
 import time
 
 import unittest as ut
-from common.utils.helpers import log
 from common.utils.minertest import CommonTrackerMinerFTSTest, DEFAULT_TEXT
 from common.utils import configuration as cfg
 
@@ -73,7 +72,6 @@ class MinerFTSStopwordsTest (CommonTrackerMinerFTSTest):
         self.set_text(TEXT)
         results = self.search_word("automobile")
         self.assertEqual(len(results), 1)
-        log("Stopwords: %s" % stopwords)
         for i in range(0, len(stopwords)):
             results = self.search_word(stopwords[i])
             self.assertEqual(len(results), 0)

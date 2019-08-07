@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import logging
 import os
 import subprocess
 import shutil
@@ -16,6 +17,8 @@ from common.utils import helpers
 TEST_ENV_VARS = {"LC_COLLATE": "en_GB.utf8"}
 
 REASONABLE_TIMEOUT = 5
+
+log = logging.getLogger(__name__)
 
 
 class UnableToBootException (Exception):
@@ -95,7 +98,7 @@ class TrackerSystemAbstraction (object):
     def tracker_store_restart_with_new_ontologies(self, ontodir):
         self.store.stop()
         if ontodir:
-            helpers.log("[Conf] Setting %s - %s" % ("TRACKER_DB_ONTOLOGIES_DIR", ontodir))
+            log.debug("[Conf] Setting %s - %s", "TRACKER_DB_ONTOLOGIES_DIR", ontodir)
             os.environ["TRACKER_DB_ONTOLOGIES_DIR"] = ontodir
         try:
             self.store.start()

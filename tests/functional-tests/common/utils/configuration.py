@@ -22,8 +22,12 @@
 
 import errno
 import json
+import logging
 import os
 import tempfile
+import sys
+
+from . import options
 
 
 if 'TRACKER_FUNCTIONAL_TEST_CONFIG' not in os.environ:
@@ -134,3 +138,7 @@ def remove_monitored_test_dir(path):
     except OSError as e:
         if e.errno == errno.ENOTEMPTY:
             pass
+
+
+if options.get_environment_boolean('TRACKER_TESTS_VERBOSE'):
+    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)

@@ -32,7 +32,6 @@ import locale
 import time
 
 import unittest as ut
-from common.utils.helpers import log
 from common.utils.minertest import CommonTrackerMinerFTSTest, DEFAULT_TEXT
 from common.utils import configuration as cfg
 
