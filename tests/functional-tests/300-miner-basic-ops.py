@@ -25,13 +25,15 @@
 Monitor a test directory and copy/move/remove/update files and folders there.
 Check the basic data of the files is updated accordingly in tracker.
 """
+import logging
 import os
 import shutil
 import time
 
 import unittest as ut
-from common.utils.helpers import log
 from common.utils.minertest import CommonTrackerMinerTest
+
+log = logging.getLogger(__name__)
 
 NFO_DOCUMENT = 'http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#Document'
 
@@ -114,7 +116,7 @@ class MinerCrawlTest (CommonTrackerMinerTest):
         self.assertIn(self.uri("test-monitored/file0.txt"), unpacked_result)
 
         # Clean the new file so the test directory is as before
-        log("Remove and wait")
+        log.debug("Remove and wait")
         os.remove(dest)
         self.system.store.await_resource_deleted(NFO_DOCUMENT, dest_id)
 

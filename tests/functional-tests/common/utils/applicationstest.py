@@ -19,17 +19,19 @@
 #
 from common.utils import configuration as cfg
 from common.utils.system import TrackerSystemAbstraction
-from common.utils.helpers import log
 import unittest as ut
 
 from gi.repository import GLib
 
-import shutil
+import logging
 import os
+import shutil
 import time
 
 # Copy rate, 10KBps (1024b/100ms)
 SLOWCOPY_RATE = 1024
+
+log = logging.getLogger(__name__)
 
 
 class CommonTrackerApplicationTest (ut.TestCase):
@@ -62,7 +64,7 @@ class CommonTrackerApplicationTest (ut.TestCase):
         """
         @rate: bytes per 100ms
         """
-        log("Copying slowly\n '%s' to\n '%s'" % (src, fdest.name))
+        log.debug("Copying slowly\n '%s' to\n '%s'", src, fdest.name)
         fsrc = open(src, 'rb')
         buffer_ = fsrc.read(rate)
         while (buffer_ != b""):

@@ -20,18 +20,21 @@
 
 from gi.repository import GLib
 
-from common.utils.system import TrackerSystemAbstraction
-import shutil
-import unittest as ut
+import logging
 import os
 import pathlib
-from common.utils import configuration as cfg
-from common.utils.helpers import log
+import shutil
 import time
+import unittest as ut
+
+from common.utils.system import TrackerSystemAbstraction
+from common.utils import configuration as cfg
 
 TEST_FILE_JPEG = "writeback-test-1.jpeg"
 TEST_FILE_TIFF = "writeback-test-2.tif"
 TEST_FILE_PNG = "writeback-test-4.png"
+
+log = logging.getLogger(__name__)
 
 
 class CommonTrackerWritebackTest (ut.TestCase):
@@ -82,7 +85,7 @@ class CommonTrackerWritebackTest (ut.TestCase):
         miner before returning.
 
         """
-        log("Copying %s -> %s" % (path, self.workdir))
+        log.debug("Copying %s -> %s", path, self.workdir)
         shutil.copy(path, self.workdir)
 
         output_path = pathlib.Path(os.path.join(self.workdir, os.path.basename(path)))

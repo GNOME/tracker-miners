@@ -22,13 +22,15 @@
 Tests trying to simulate the behaviour of applications working with tracker
 """
 
+import logging
 import os
 import random
 
 import unittest as ut
 from common.utils.applicationstest import CommonTrackerApplicationTest as CommonTrackerApplicationTest
-from common.utils.helpers import log
 
+
+log = logging.getLogger(__name__)
 
 NMM_PHOTO = 'http://www.tracker-project.org/temp/nmm#Photo'
 NMM_VIDEO = 'http://www.tracker-project.org/temp/nmm#Video'
@@ -154,7 +156,7 @@ class TrackerCameraPicturesApplicationTests (TrackerCameraTestSuite):
         self.assertEqual(self.get_urn_count_by_url(dest_fileuri), 1)
 
         # Clean the new file so the test directory is as before
-        log("Remove and wait")
+        log.debug("Remove and wait")
         os.remove(dest_filepath)
         self.system.store.await_resource_deleted(NMM_PHOTO, dest_id)
         self.assertEqual(self.get_urn_count_by_url(dest_fileuri), 0)
@@ -200,7 +202,7 @@ class TrackerCameraPicturesApplicationTests (TrackerCameraTestSuite):
         self.assertEqual(self.get_urn_count_by_url(dest_fileuri), 1)
 
         # Clean the new file so the test directory is as before
-        log("Remove and wait")
+        log.debug("Remove and wait")
         os.remove(dest_filepath)
         self.system.store.await_resource_deleted(NMM_PHOTO, dest_id)
         self.assertEqual(self.get_urn_count_by_url(dest_fileuri), 0)
@@ -232,7 +234,7 @@ class TrackerCameraVideosApplicationTests (TrackerCameraTestSuite):
         self.assertEqual(self.get_urn_count_by_url(dest_fileuri), 1)
 
         # Clean the new file so the test directory is as before
-        log("Remove and wait")
+        log.debug("Remove and wait")
         os.remove(dest_filepath)
         self.system.store.await_resource_deleted(NMM_PHOTO, dest_id)
         self.assertEqual(self.get_urn_count_by_url(dest_fileuri), 0)
@@ -278,7 +280,7 @@ class TrackerCameraVideosApplicationTests (TrackerCameraTestSuite):
         self.assertEqual(self.get_urn_count_by_url(dest_fileuri), 1)
 
         # Clean the new file so the test directory is as before
-        log("Remove and wait")
+        log.debug("Remove and wait")
         os.remove(dest_filepath)
         self.system.store.await_resource_deleted(NMM_VIDEO, dest_id)
         self.assertEqual(self.get_urn_count_by_url(dest_fileuri), 0)

@@ -21,6 +21,7 @@ from gi.repository import Gio
 from gi.repository import GLib
 from gi.repository import GObject
 import atexit
+import logging
 import os
 import sys
 import subprocess
@@ -31,6 +32,8 @@ from common.utils import configuration as cfg
 from common.utils import mainloop
 from common.utils import options
 
+log = logging.getLogger(__name__)
+
 
 class NoMetadataException (Exception):
     pass
@@ -39,17 +42,12 @@ class NoMetadataException (Exception):
 REASONABLE_TIMEOUT = 30
 
 
-def log(message):
-    if options.is_verbose():
-        print (message)
-
-
 _process_list = []
 
 
 def _cleanup_processes():
     for process in _process_list:
-        log("helpers._cleanup_processes: stopping %s" % process)
+        log.debug("helpers._cleanup_processes: stopping %s", process)
         process.stop()
 
 
@@ -99,19 +97,19 @@ class Helper:
             kws = {'stdout': FNULL, 'stderr': subprocess.PIPE}
 
         command = [path] + flags
-        log("Starting %s" % ' '.join(command))
+        log.debug("Starting %s", ' '.join(command))
         try:
             return subprocess.Popen([path] + flags, **kws)
         except OSError as e:
             raise RuntimeError("Error starting %s: %s" % (path, e))
 
     def _bus_name_appeared(self, name, owner, data):
-        log("[%s] appeared in the bus as %s" % (self.PROCESS_NAME, owner))
+        log.debug("[%s] appeared in the bus as %s", self.PROCESS_NAME, owner)
         self.available = True
         self.loop.quit()
 
     def _bus_name_vanished(self, name, data):
-        log("[%s] disappeared from the bus" % self.PROCESS_NAME)
+        log.debug("[%s] disappeared from the bus", self.PROCESS_NAME)
         self.available = False
         self.loop.quit()
 
@@ -136,7 +134,7 @@ class Helper:
             raise RuntimeError("%s exited with status: %i\n%s" % (self.PROCESS_NAME, status, error))
 
     def _timeout_on_idle_cb(self):
-        log("[%s] Timeout waiting... asumming idle." % self.PROCESS_NAME)
+        log.debug("[%s] Timeout waiting... asumming idle.", self.PROCESS_NAME)
         self.loop.quit()
         self.timeout_id = None
         return False
@@ -163,7 +161,7 @@ class Helper:
                                 "already running " % self.PROCESS_NAME)
 
             self.process = self._start_process()
-            log('[%s] Started process %i' % (self.PROCESS_NAME, self.process.pid))
+            log.debug('[%s] Started process %i', self.PROCESS_NAME, self.process.pid)
             self.process_watch_timeout = GLib.timeout_add(200, self._process_watch_cb)
 
         self.abort_if_process_exits_with_status_0 = True
@@ -191,11 +189,11 @@ class Helper:
                 time.sleep(0.1)
 
                 if time.time() > (start + REASONABLE_TIMEOUT):
-                    log("[%s] Failed to terminate, sending kill!" % self.PROCESS_NAME)
+                    log.debug("[%s] Failed to terminate, sending kill!", self.PROCESS_NAME)
                     self.process.kill()
                     self.process.wait()
 
-            log("[%s] stopped." % self.PROCESS_NAME)
+            log.debug("[%s] stopped.", self.PROCESS_NAME)
 
             # Run the loop until the bus name disappears, or the process dies.
             self.loop.run_checked()
@@ -208,7 +206,7 @@ class Helper:
         global _process_list
 
         if options.is_manual_start():
-            log("kill(): ignoring, because process was started manually.")
+            log.debug("kill(): ignoring, because process was started manually.")
             return
 
         self.process.kill()
@@ -220,7 +218,7 @@ class Helper:
         self.process = None
         _process_list.remove(self)
 
-        log("[%s] killed." % self.PROCESS_NAME)
+        log.debug("[%s] killed.", self.PROCESS_NAME)
 
 
 class GraphUpdateTimeoutException(RuntimeError):
@@ -258,9 +256,9 @@ class StoreHelper (Helper):
             self.bus, Gio.DBusProxyFlags.DO_NOT_AUTO_START, None,
             cfg.TRACKER_BUSNAME, cfg.TRACKER_STATUS_OBJ_PATH, cfg.STATUS_IFACE)
 
-        log("[%s] booting..." % self.PROCESS_NAME)
+        log.debug("[%s] booting...", self.PROCESS_NAME)
         self.status_iface.Wait()
-        log("[%s] ready." % self.PROCESS_NAME)
+        log.debug("[%s] ready.", self.PROCESS_NAME)
 
         self.reset_graph_updates_tracking()
 
@@ -300,7 +298,7 @@ class StoreHelper (Helper):
         exit_loop = False
 
         if class_name == self.class_to_track:
-            log("GraphUpdated for %s: %i deletes, %i inserts" % (class_name, len(deletes_list), len(inserts_list)))
+            log.debug("GraphUpdated for %s: %i deletes, %i inserts", class_name, len(deletes_list), len(inserts_list))
 
             if inserts_list is not None:
                 if self.inserts_match_function is not None:
@@ -318,7 +316,7 @@ class StoreHelper (Helper):
                 self.graph_updated_timeout_id = 0
                 self.loop.quit()
         else:
-            log("Ignoring GraphUpdated for class %s, currently tracking %s" % (class_name, self.class_to_track))
+            log.debug("Ignoring GraphUpdated for class %s, currently tracking %s", class_name, self.class_to_track)
 
     def _enable_await_timeout(self):
         self.graph_updated_timeout_id = GLib.timeout_add_seconds(REASONABLE_TIMEOUT,
@@ -336,11 +334,11 @@ class StoreHelper (Helper):
         self.matched_resource_urn = None
         self.matched_resource_id = None
 
-        log("Await new %s (%i existing inserts)" % (rdf_class, len(self.inserts_list)))
+        log.debug("Await new %s (%i existing inserts)", rdf_class, len(self.inserts_list))
 
         if required_property is not None:
             required_property_id = self.get_resource_id_by_uri(required_property)
-            log("Required property %s id %i" % (required_property, required_property_id))
+            log.debug("Required property %s id %i", required_property, required_property_id)
 
         def find_resource_insertion(inserts_list):
             matched_creation = (self.matched_resource_id is not None)
@@ -369,17 +367,17 @@ class StoreHelper (Helper):
                         matched_creation = True
                         self.matched_resource_urn = result_set[0][0]
                         self.matched_resource_id = insert[1]
-                        log("Matched creation of resource %s (%i)" %
-                            (self.matched_resource_urn,
-                             self.matched_resource_id))
+                        log.debug("Matched creation of resource %s (%i)",
+                            self.matched_resource_urn,
+                             self.matched_resource_id)
                         if required_property is not None:
-                            log("Waiting for property %s (%i) to be set" %
-                                (required_property, required_property_id))
+                            log.debug("Waiting for property %s (%i) to be set",
+                                required_property, required_property_id)
 
                 if required_property is not None and matched_creation and not matched_required_property:
                     if id == self.matched_resource_id and insert[2] == required_property_id:
                         matched_required_property = True
-                        log("Matched %s %s" % (self.matched_resource_urn, required_property))
+                        log.debug("Matched %s %s", self.matched_resource_urn, required_property)
 
                 if not matched_creation or id != self.matched_resource_id:
                     remaining_events += [insert]
@@ -416,7 +414,7 @@ class StoreHelper (Helper):
         assert (self.class_to_track == None)
 
         def find_resource_deletion(deletes_list):
-            log("find_resource_deletion: looking for %i in %s" % (id, deletes_list))
+            log.debug("find_resource_deletion: looking for %i in %s", id, deletes_list)
 
             matched = False
             remaining_events = []
@@ -434,7 +432,7 @@ class StoreHelper (Helper):
             exit_loop = matched
             return exit_loop, remaining_events
 
-        log("Await deletion of %i (%i existing)" % (id, len(self.deletes_list)))
+        log.debug("Await deletion of %i (%i existing)", id, len(self.deletes_list))
 
         (existing_match, self.deletes_list) = find_resource_deletion(self.deletes_list)
 
@@ -460,7 +458,7 @@ class StoreHelper (Helper):
         assert (self.deletes_match_function == None)
         assert (self.class_to_track == None)
 
-        log("Await change to %i %s (%i, %i existing)" % (subject_id, property_uri, len(self.inserts_list), len(self.deletes_list)))
+        log.debug("Await change to %i %s (%i, %i existing)", subject_id, property_uri, len(self.inserts_list), len(self.deletes_list))
 
         self.class_to_track = rdf_class
 
@@ -472,7 +470,7 @@ class StoreHelper (Helper):
 
             for event in event_list:
                 if event[1] == subject_id and event[2] == property_id:
-                    log("Matched property change: %s" % str(event))
+                    log.debug("Matched property change: %s", str(event))
                     matched = True
                 else:
                     remaining_events += [event]
@@ -659,13 +657,13 @@ class MinerFsHelper (Helper):
         assert self._target_wakeup_count is None
 
         if self._wakeup_count >= target_wakeup_count:
-            log("miner-fs wakeup count is at %s (target is %s). No need to wait" % (self._wakeup_count, target_wakeup_count))
+            log.debug("miner-fs wakeup count is at %s (target is %s). No need to wait", self._wakeup_count, target_wakeup_count)
         else:
             def _timeout_cb():
                 raise WakeupCycleTimeoutException()
             timeout_id = GLib.timeout_add_seconds(timeout, _timeout_cb)
 
-            log("Waiting for miner-fs wakeup count of %s (currently %s)" % (target_wakeup_count, self._wakeup_count))
+            log.debug("Waiting for miner-fs wakeup count of %s (currently %s)", target_wakeup_count, self._wakeup_count)
             self._target_wakeup_count = target_wakeup_count
             self.loop.run_checked()
 
