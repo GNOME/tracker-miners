@@ -1,16 +1,11 @@
 #!/usr/bin/env python3
 import logging
 import os
-import subprocess
 import shutil
 import tempfile
 
-from gi.repository import GObject
 from gi.repository import GLib
-import time
 
-from common.utils import configuration as cfg
-from common.utils import options
 from common.utils.dconf import DConfClient
 from common.utils import helpers
 
@@ -102,7 +97,7 @@ class TrackerSystemAbstraction (object):
             os.environ["TRACKER_DB_ONTOLOGIES_DIR"] = ontodir
         try:
             self.store.start()
-        except GLib.Error:
+        except GLib.Error as e:
             raise UnableToBootException("Unable to boot the store \n(" + str(e) + ")")
 
     def tracker_store_prepare_journal_replay(self):
