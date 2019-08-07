@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #
 # Copyright (C) 2010, Nokia <ivan.frade@nokia.com>
 # Copyright (C) 2018, Sam Thursfield <sam@afuera.me.uk>
@@ -18,8 +17,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 # 02110-1301, USA.
 #
-from common.utils import configuration as cfg
-from common.utils.system import TrackerSystemAbstraction
+import configuration as cfg
 import unittest as ut
 
 from gi.repository import GLib
@@ -27,9 +25,12 @@ from gi.repository import GLib
 import logging
 import os
 import shutil
-import tempfile
 from itertools import chain
 
+import trackertestutils.dconf
+import trackertestutils.helpers
+
+from minerfshelper import MinerFsHelper
 
 DEFAULT_TEXT = "Some stupid content, to have a test file"
 
@@ -37,13 +38,15 @@ NFO_DOCUMENT = 'http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#Documen
 
 log = logging.getLogger(__name__)
 
+REASONABLE_TIMEOUT = 5
+
 
 def ensure_dir_exists(dirname):
     if not os.path.exists(dirname):
         os.makedirs(dirname)
 
 
-class CommonTrackerMinerTest (ut.TestCase):
+class CommonTrackerMinerTest(ut.TestCase):
     def setUp(self):
         self.workdir = cfg.create_monitored_test_dir()
 
@@ -55,40 +58,60 @@ class CommonTrackerMinerTest (ut.TestCase):
         # function.
         ensure_dir_exists(self.indexed_dir)
 
-        self.system = TrackerSystemAbstraction(
-            settings={
-                'org.freedesktop.Tracker.Store': {
-                    'graphupdated-delay': GLib.Variant('i', 100)
+        try:
+            extra_env = cfg.test_environment(self.workdir)
+
+            self.sandbox = trackertestutils.helpers.TrackerDBusSandbox(
+                dbus_daemon_config_file=cfg.TEST_DBUS_DAEMON_CONFIG_FILE, extra_env=extra_env)
+
+            self.sandbox.start()
+
+            try:
+                settings = {
+                    'org.freedesktop.Tracker.Store': {
+                        'graphupdated-delay': GLib.Variant('i', 100)
+                    },
+                    'org.freedesktop.Tracker.Miner.Files': {
+                        'enable-writeback': GLib.Variant.new_boolean(False),
+                        'index-recursive-directories': GLib.Variant.new_strv([self.indexed_dir]),
+                        'index-single-directories': GLib.Variant.new_strv([]),
+                        'index-optical-discs': GLib.Variant.new_boolean(False),
+                        'index-removable-devices': GLib.Variant.new_boolean(False),
+                        'throttle': GLib.Variant.new_int32(5),
+                    }
                 }
-            }
-        )
 
-        config = {
-            cfg.DCONF_MINER_SCHEMA: {
-                'index-recursive-directories': GLib.Variant.new_strv([self.indexed_dir]),
-                'index-single-directories': GLib.Variant.new_strv([]),
-                'index-optical-discs': GLib.Variant.new_boolean(False),
-                'index-removable-devices': GLib.Variant.new_boolean(False),
-                'throttle': GLib.Variant.new_int32(5),
-            }
-        }
+                for schema_name, contents in settings.items():
+                    dconf = trackertestutils.dconf.DConfClient(self.sandbox)
+                    for key, value in contents.items():
+                        dconf.write(schema_name, key, value)
 
-        try:
-            self.system.tracker_miner_fs_testing_start(config)
-        except RuntimeError as e:
-            self.fail(e)
+                self.tracker = trackertestutils.helpers.StoreHelper(
+                    self.sandbox.get_connection())
+                self.tracker.start_and_wait_for_ready()
+                self.tracker.start_watching_updates()
 
-        self.tracker = self.system.store
+                self.miner_fs = MinerFsHelper(
+                    self.sandbox.get_connection())
+                self.miner_fs.start()
+                self.miner_fs.start_watching_progress()
 
-        try:
-            self.create_test_data()
-            self.tracker.reset_graph_updates_tracking()
-        except Exception as e:
-            self.tearDown()
+                self.create_test_data()
+                self.tracker.stop_watching_updates()
+
+                # We reset update-tracking, so that updates for data created in the
+                # fixture can't be mixed up with updates created by the test case.
+                self.tracker.start_watching_updates()
+            except Exception:
+                self.sandbox.stop()
+                raise
+        except Exception:
+            self.remove_test_data()
+            cfg.remove_monitored_test_dir(self.workdir)
             raise
 
     def tearDown(self):
-        self.system.finish()
+        self.sandbox.stop()
         self.remove_test_data()
         cfg.remove_monitored_test_dir(self.workdir)
 
@@ -186,7 +209,7 @@ class CommonTrackerMinerFTSTest (CommonTrackerMinerTest):
         and assert the testfile is only result.
 
         Be careful with the default contents of the text files
-        ( see common/utils/minertest.py DEFAULT_TEXT )
+        ( see minertest.py DEFAULT_TEXT )
         """
         self.set_text(text)
         results = self.search_word(word)

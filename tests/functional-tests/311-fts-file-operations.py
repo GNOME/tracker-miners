@@ -1,7 +1,7 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # Copyright (C) 2010, Nokia (ivan.frade@nokia.com)
+# Copyright (C) 2019, Sam Thursfield (sam@afuera.me.uk)
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -32,8 +32,8 @@ import locale
 import time
 
 import unittest as ut
-from common.utils.minertest import CommonTrackerMinerFTSTest, DEFAULT_TEXT
-from common.utils import configuration as cfg
+from minertest import CommonTrackerMinerFTSTest, DEFAULT_TEXT
+import configuration as cfg
 
 
 NFO_DOCUMENT = 'http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#Document'

@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
-
 # Copyright (C) 2011, Nokia (ivan.frade@nokia.com)
+# Copyright (C) 2019, Sam Thursfield (sam@afuera.me.uk)
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -24,8 +23,8 @@ import sys
 import time
 import unittest as ut
 
-from common.utils.writebacktest import CommonTrackerWritebackTest as CommonTrackerWritebackTest
-from common.utils.extractor import get_tracker_extract_jsonld_output
+from writebacktest import CommonTrackerWritebackTest as CommonTrackerWritebackTest
+from extractor import get_tracker_extract_jsonld_output
 
 
 log = logging.getLogger(__name__)
@@ -89,7 +88,7 @@ class WritebackKeepDateTest (CommonTrackerWritebackTest):
         self.wait_for_file_change(jpeg_path, initial_mtime)
 
         # Check the value is written in the file
-        metadata = get_tracker_extract_jsonld_output(jpeg_path, "")
+        metadata = get_tracker_extract_jsonld_output(self.extra_env, jpeg_path, "")
 
         tags = metadata.get('nao:hasTag', [])
         tag_names = [tag['nao:prefLabel'] for tag in tags]
