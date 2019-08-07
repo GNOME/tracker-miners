@@ -27,8 +27,6 @@ import os
 import tempfile
 import sys
 
-from . import options
-
 
 if 'TRACKER_FUNCTIONAL_TEST_CONFIG' not in os.environ:
     raise RuntimeError("The TRACKER_FUNCTIONAL_TEST_CONFIG environment "
@@ -94,10 +92,6 @@ TRACKER_WRITEBACK_PATH = os.path.normpath(expandvars(config['TRACKER_WRITEBACK_P
 DATADIR = os.path.normpath(expandvars(config['RAW_DATAROOT_DIR']))
 
 
-def generated_ttl_dir():
-    return os.path.join(TOP_BUILD_DIR, 'tests', 'functional-tests', 'ttl')
-
-
 # This path is used for test data for tests which expect filesystem monitoring
 # to work. For this reason we must avoid it being on a tmpfs filesystem. Note
 # that this MUST NOT be a hidden directory, as Tracker is hardcoded to ignore
@@ -140,5 +134,18 @@ def remove_monitored_test_dir(path):
             pass
 
 
-if options.get_environment_boolean('TRACKER_TESTS_VERBOSE'):
+def get_environment_boolean(variable):
+    '''Parse a yes/no boolean passed through the environment.'''
+
+    value = os.environ.get(variable, 'no').lower()
+    if value in ['no', '0', 'false']:
+        return False
+    elif value in ['yes', '1', 'true']:
+        return True
+    else:
+        raise RuntimeError('Unexpected value for %s: %s' %
+                           (variable, value))
+
+
+if get_environment_boolean('TRACKER_TESTS_VERBOSE'):
     logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
