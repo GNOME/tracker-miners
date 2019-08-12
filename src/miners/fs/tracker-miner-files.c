@@ -2484,6 +2484,7 @@ process_file_cb (GObject      *object,
 	priv->extraction_queue = g_list_remove (priv->extraction_queue, data);
 	process_file_data_free (data);
 
+	g_object_run_dispose (resource);
 	g_object_unref (resource);
 	g_object_unref (file_info);
 	g_free (sparql_str);
