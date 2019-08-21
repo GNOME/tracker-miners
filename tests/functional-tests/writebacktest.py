@@ -59,8 +59,8 @@ class CommonTrackerWritebackTest (ut.TestCase):
             }
         }
 
-        self.system = TrackerSystemAbstraction()
-        self.system.tracker_writeback_testing_start(CONF_OPTIONS)
+        self.system = TrackerSystemAbstraction(CONF_OPTIONS)
+        self.system.tracker_writeback_testing_start()
 
         self.tracker = self.system.store
         self.extractor = self.system.extractor

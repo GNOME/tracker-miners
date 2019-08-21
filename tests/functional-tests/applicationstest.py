@@ -106,8 +106,8 @@ class CommonTrackerApplicationTest (ut.TestCase):
                                         "tracker-tests",
                                         "test-apps-data")
 
-        self.system = TrackerSystemAbstraction()
-        self.system.tracker_all_testing_start(CONF_OPTIONS)
+        self.system = TrackerSystemAbstraction(settings=CONF_OPTIONS)
+        self.system.tracker_all_testing_start()
         self.tracker = self.system.store
 
     @classmethod

@@ -61,8 +61,10 @@ class MinerFsHelper (trackertestutils.helpers.Helper):
         self._previous_status = None
         self._target_wakeup_count = None
 
-    def start(self):
-        trackertestutils.helpers.Helper.start(self, ['--initial-sleep=0'])
+    def start(self, command_args=None, extra_env=None):
+        command_args = command_args or []
+
+        trackertestutils.helpers.Helper.start(self, command_args + ['--initial-sleep=0'], extra_env)
 
         self.miner_fs = Gio.DBusProxy.new_sync(
             self.bus, Gio.DBusProxyFlags.DO_NOT_AUTO_START, None,
@@ -155,31 +157,13 @@ class WritebackHelper (trackertestutils.helpers.Helper):
 
 class TrackerSystemAbstraction (object):
     def __init__(self, settings=None, ontodir=None):
-        self._basedir = None
-
         self.extractor = None
         self.miner_fs = None
         self.store = None
         self.writeback = None
 
-        self.set_up_environment(settings=settings, ontodir=ontodir)
-        self.store = None
-
-    def xdg_data_home(self):
-        return os.path.join(self._basedir, 'data')
-
-    def xdg_cache_home(self):
-        return os.path.join(self._basedir, 'cache')
-
-    def set_up_environment(self, settings=None, ontodir=None):
-        """
-        Sets up the XDG_*_HOME variables and make sure the directories exist
-
-        Settings should be a dict mapping schema names to dicts that hold the
-        settings that should be changed in those schemas. The contents dicts
-        should map key->value, where key is a key name and value is a suitable
-        GLib.Variant instance.
-        """
+        self._dconf_settings = settings
+        self._ontologies_dir = ontodir
 
         self._basedir = tempfile.mkdtemp()
 
@@ -188,104 +172,70 @@ class TrackerSystemAbstraction (object):
             "XDG_CACHE_HOME": self.xdg_cache_home()
         }
 
-        for var, directory in list(self._dirs.items()):
-            os.makedirs(directory)
-            os.makedirs(os.path.join(directory, 'tracker'))
-            os.environ[var] = directory
+    def xdg_data_home(self):
+        return os.path.join(self._basedir, 'data')
 
-        if ontodir:
-            os.environ["TRACKER_DB_ONTOLOGIES_DIR"] = ontodir
+    def xdg_cache_home(self):
+        return os.path.join(self._basedir, 'cache')
+
+    def environment(self):
+        """Returns extra environment variables to set for the daemons."""
+        extra_env = {}
+
+        for var, directory in self._dirs.items():
+            extra_env[var] = directory
+
+        if self._ontologies_dir:
+            extra_env["TRACKER_DB_ONTOLOGIES_DIR"] = self._ontologies_dir
 
         for var, value in TEST_ENV_VARS.items():
-            os.environ[var] = value
+            extra_env[var] = value
 
-        # Previous loop should have set DCONF_PROFILE to the test location
-        if settings is not None:
-            self._apply_settings(settings)
+        return extra_env
 
-    def _apply_settings(self, settings):
-        for schema_name, contents in settings.items():
+    def _create_dirs(self):
+        # Make sure the XDG_*_HOME directories exist
+        for var, directory in self._dirs.items():
+            os.makedirs(directory)
+            os.makedirs(os.path.join(directory, 'tracker'))
+
+    def _setup_dconf(self):
+        # Initialize the DConf profile with our settings.
+        # (The profile we use is defined in meson.build by setting
+        # DCONF_PROFILE in the test environment).
+        for schema_name, contents in self._dconf_settings.items():
             dconf = trackertestutils.dconf.DConfClient(schema_name)
             dconf.reset()
             for key, value in contents.items():
                 dconf.write(key, value)
 
-    def tracker_store_testing_start(self, confdir=None, ontodir=None):
-        """
-        Stops any previous instance of the store, calls set_up_environment,
-        and starts a new instances of the store
-        """
-        self.set_up_environment(confdir, ontodir)
-
-        self.store = trackertestutils.helpers.StoreHelper(cfg.TRACKER_STORE_PATH)
-        self.store.start()
-
-    def tracker_store_start(self):
-        self.store.start()
-
-    def tracker_store_restart_with_new_ontologies(self, ontodir):
-        self.store.stop()
-        if ontodir:
-            log.debug("[Conf] Setting %s - %s", "TRACKER_DB_ONTOLOGIES_DIR", ontodir)
-            os.environ["TRACKER_DB_ONTOLOGIES_DIR"] = ontodir
-        try:
-            self.store.start()
-        except GLib.Error as e:
-            raise UnableToBootException("Unable to boot the store \n(" + str(e) + ")")
-
-    def tracker_store_prepare_journal_replay(self):
-        db_location = os.path.join(self.xdg_cache_home(), "tracker", "meta.db")
-        os.unlink(db_location)
-
-        lockfile = os.path.join(self.xdg_data_home(), "tracker", "data", ".ismeta.running")
-        f = open(lockfile, 'w')
-        f.write(" ")
-        f.close()
-
-    def tracker_store_corrupt_dbs(self):
-        for filename in ["meta.db", "meta.db-wal"]:
-            db_path = os.path.join(self.xdg_cache_home(), "tracker", filename)
-            f = open(db_path, "w")
-            for i in range(0, 100):
-                f.write("Some stupid content... hohohoho, not a sqlite file anymore!\n")
-            f.close()
-
-    def tracker_store_remove_journal(self):
-        db_location = os.path.join(self.xdg_data_home(), "tracker", "data")
-        shutil.rmtree(db_location)
-        os.mkdir(db_location)
-
-    def tracker_store_remove_dbs(self):
-        db_location = os.path.join(self.xdg_cache_home(), "tracker")
-        shutil.rmtree(db_location)
-        os.mkdir(db_location)
-
-    def tracker_miner_fs_testing_start(self, confdir=None):
+    def tracker_miner_fs_testing_start(self):
         """
         Stops any previous instance of the store and miner, calls set_up_environment,
         and starts a new instance of the store and miner-fs
         """
-        self.set_up_environment(confdir, None)
+        self._create_dirs()
+        self._setup_dconf()
 
         # Start also the store. DBus autoactivation ignores the env variables.
         self.store = trackertestutils.helpers.StoreHelper(cfg.TRACKER_STORE_PATH)
-        self.store.start()
+        self.store.start(extra_env=self.environment())
 
         self.extractor = ExtractorHelper(cfg.TRACKER_EXTRACT_PATH)
-        self.extractor.start()
+        self.extractor.start(extra_env=self.environment())
 
         self.miner_fs = MinerFsHelper(cfg.TRACKER_MINER_FS_PATH)
-        self.miner_fs.start()
+        self.miner_fs.start(extra_env=self.environment())
 
-    def tracker_writeback_testing_start(self, confdir=None):
+    def tracker_writeback_testing_start(self):
         # Start the miner-fs (and store) and then the writeback process
-        self.tracker_miner_fs_testing_start(confdir)
+        self.tracker_miner_fs_testing_start()
         self.writeback = WritebackHelper(cfg.TRACKER_WRITEBACK_PATH)
         self.writeback.start()
 
-    def tracker_all_testing_start(self, confdir=None):
+    def tracker_all_testing_start(self):
         # This will start all miner-fs, store and writeback
-        self.tracker_writeback_testing_start(confdir)
+        self.tracker_writeback_testing_start()
 
     def finish(self):
         """

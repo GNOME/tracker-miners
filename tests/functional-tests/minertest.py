@@ -60,21 +60,18 @@ class CommonTrackerMinerTest (ut.TestCase):
                 'org.freedesktop.Tracker.Store': {
                     'graphupdated-delay': GLib.Variant('i', 100)
                 }
+                'org.freedesktop.Tracker.Miner.Files': {
+                    'index-recursive-directories': GLib.Variant.new_strv([self.indexed_dir]),
+                    'index-single-directories': GLib.Variant.new_strv([]),
+                    'index-optical-discs': GLib.Variant.new_boolean(False),
+                    'index-removable-devices': GLib.Variant.new_boolean(False),
+                    'throttle': GLib.Variant.new_int32(5),
+                }
             }
         )
 
-        config = {
-            'org.freedesktop.Tracker.Miner.Files': {
-                'index-recursive-directories': GLib.Variant.new_strv([self.indexed_dir]),
-                'index-single-directories': GLib.Variant.new_strv([]),
-                'index-optical-discs': GLib.Variant.new_boolean(False),
-                'index-removable-devices': GLib.Variant.new_boolean(False),
-                'throttle': GLib.Variant.new_int32(5),
-            }
-        }
-
         try:
-            self.system.tracker_miner_fs_testing_start(config)
+            self.system.tracker_miner_fs_testing_start()
         except RuntimeError as e:
             self.fail(e)
 
