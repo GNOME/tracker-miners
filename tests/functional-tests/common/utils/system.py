@@ -4,10 +4,12 @@ import os
 import shutil
 import tempfile
 
+from gi.repository import Gio
 from gi.repository import GLib
 
-from common.utils.dconf import DConfClient
-from common.utils import helpers
+import trackertestutils.dconf
+import trackertestutils.helpers
+from . import configuration as cfg
 
 TEST_ENV_VARS = {"LC_COLLATE": "en_GB.utf8"}
 
@@ -16,8 +18,119 @@ REASONABLE_TIMEOUT = 5
 log = logging.getLogger(__name__)
 
 
+class WakeupCycleTimeoutException(RuntimeError):
+    pass
+
+
 class UnableToBootException (Exception):
     pass
+
+
+class MinerFsHelper (trackertestutils.helpers.Helper):
+
+    MINERFS_BUSNAME = "org.freedesktop.Tracker1.Miner.Files"
+    MINERFS_OBJ_PATH = "/org/freedesktop/Tracker1/Miner/Files"
+    MINER_IFACE = "org.freedesktop.Tracker1.Miner"
+    MINERFS_INDEX_OBJ_PATH = "/org/freedesktop/Tracker1/Miner/Files/Index"
+    MINER_INDEX_IFACE = "org.freedesktop.Tracker1.Miner.Files.Index"
+
+    def __init__(self, process_path):
+        trackertestutils.helpers.Helper.__init__(self, "tracker-miner-fs", self.MINERFS_BUSNAME, process_path)
+        self._progress_handler_id = 0
+        self._wakeup_count = 0
+        self._previous_status = None
+        self._target_wakeup_count = None
+
+    def start(self):
+        trackertestutils.helpers.Helper.start(self, ['--initial-sleep=0'])
+
+        self.miner_fs = Gio.DBusProxy.new_sync(
+            self.bus, Gio.DBusProxyFlags.DO_NOT_AUTO_START, None,
+            self.MINERFS_BUSNAME, self.MINERFS_OBJ_PATH, self.MINER_IFACE)
+        self.index = Gio.DBusProxy.new_sync(
+            self.bus, Gio.DBusProxyFlags.DO_NOT_AUTO_START, None,
+            self.MINERFS_BUSNAME, self.MINERFS_INDEX_OBJ_PATH, self.MINER_INDEX_IFACE)
+
+        def signal_handler(proxy, sender_name, signal_name, parameters):
+            if signal_name == 'Progress':
+                self._progress_cb(*parameters.unpack())
+
+        self._progress_handler_id = self.miner_fs.connect('g-signal', signal_handler)
+
+    def stop(self):
+        trackertestutils.helpers.Helper.stop(self)
+
+        if self._progress_handler_id != 0:
+            self.miner_fs.disconnect(self._progress_handler_id)
+
+    def _progress_cb(self, status, progress, remaining_time):
+        if self._previous_status is None:
+            self._previous_status = status
+        if self._previous_status != 'Idle' and status == 'Idle':
+            self._wakeup_count += 1
+
+        if self._target_wakeup_count is not None and self._wakeup_count >= self._target_wakeup_count:
+            self.loop.quit()
+
+    def wakeup_count(self):
+        """Return the number of wakeup-to-idle cycles the miner-fs completed."""
+        return self._wakeup_count
+
+    def await_wakeup_count(self, target_wakeup_count, timeout=REASONABLE_TIMEOUT):
+        """Block until the miner has completed N wakeup-and-idle cycles.
+
+        This function is for use by miner-fs tests that should trigger an
+        operation in the miner, but which do not cause a new resource to be
+        inserted. These tests can instead wait for the status to change from
+        Idle to Processing... and then back to Idle.
+
+        The miner may change its status any number of times, but you can use
+        this function reliably as follows:
+
+            wakeup_count = miner_fs.wakeup_count()
+            # Trigger a miner-fs operation somehow ...
+            miner_fs.await_wakeup_count(wakeup_count + 1)
+            # The miner has probably finished processing the operation now.
+
+        If the timeout is reached before enough wakeup cycles complete, an
+        exception will be raised.
+
+        """
+
+        assert self._target_wakeup_count is None
+
+        if self._wakeup_count >= target_wakeup_count:
+            log.debug("miner-fs wakeup count is at %s (target is %s). No need to wait", self._wakeup_count, target_wakeup_count)
+        else:
+            def _timeout_cb():
+                raise WakeupCycleTimeoutException()
+            timeout_id = GLib.timeout_add_seconds(timeout, _timeout_cb)
+
+            log.debug("Waiting for miner-fs wakeup count of %s (currently %s)", target_wakeup_count, self._wakeup_count)
+            self._target_wakeup_count = target_wakeup_count
+            self.loop.run_checked()
+
+            self._target_wakeup_count = None
+            GLib.source_remove(timeout_id)
+
+    def index_file(self, uri):
+        return self.index.IndexFile('(s)', uri)
+
+
+class ExtractorHelper (trackertestutils.helpers.Helper):
+
+    BUSNAME = "org.freedesktop.Tracker1.Miner.Extract"
+
+    def __init__(self, process_path):
+        trackertestutils.helpers.Helper.__init__(self, "tracker-extract", self.BUSNAME, process_path)
+
+
+class WritebackHelper (trackertestutils.helpers.Helper):
+
+    BUSNAME = "org.freedesktop.Tracker1.Writeback"
+
+    def __init__(self, process_path):
+        trackertestutils.helpers.Helper.__init__(self, "tracker-writeback", self.BUSNAME, process_path)
 
 
 class TrackerSystemAbstraction (object):
@@ -72,7 +185,7 @@ class TrackerSystemAbstraction (object):
 
     def _apply_settings(self, settings):
         for schema_name, contents in settings.items():
-            dconf = DConfClient(schema_name)
+            dconf = trackertestutils.dconf.DConfClient(schema_name)
             dconf.reset()
             for key, value in contents.items():
                 dconf.write(key, value)
@@ -84,7 +197,7 @@ class TrackerSystemAbstraction (object):
         """
         self.set_up_environment(confdir, ontodir)
 
-        self.store = helpers.StoreHelper()
+        self.store = trackertestutils.helpers.StoreHelper(cfg.TRACKER_STORE_PATH)
         self.store.start()
 
     def tracker_store_start(self):
@@ -135,19 +248,19 @@ class TrackerSystemAbstraction (object):
         self.set_up_environment(confdir, None)
 
         # Start also the store. DBus autoactivation ignores the env variables.
-        self.store = helpers.StoreHelper()
+        self.store = trackertestutils.helpers.StoreHelper(cfg.TRACKER_STORE_PATH)
         self.store.start()
 
-        self.extractor = helpers.ExtractorHelper()
+        self.extractor = ExtractorHelper(cfg.TRACKER_EXTRACT_PATH)
         self.extractor.start()
 
-        self.miner_fs = helpers.MinerFsHelper()
+        self.miner_fs = MinerFsHelper(cfg.TRACKER_MINER_FS_PATH)
         self.miner_fs.start()
 
     def tracker_writeback_testing_start(self, confdir=None):
         # Start the miner-fs (and store) and then the writeback process
         self.tracker_miner_fs_testing_start(confdir)
-        self.writeback = helpers.WritebackHelper()
+        self.writeback = WritebackHelper(cfg.TRACKER_WRITEBACK_PATH)
         self.writeback.start()
 
     def tracker_all_testing_start(self, confdir=None):
