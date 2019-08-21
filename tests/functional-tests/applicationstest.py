@@ -17,8 +17,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 # 02110-1301, USA.
 #
-from common.utils import configuration as cfg
-from common.utils.system import TrackerSystemAbstraction
+import configuration as cfg
+from system import TrackerSystemAbstraction
 import unittest as ut
 
 from gi.repository import GLib

@@ -32,8 +32,8 @@ import locale
 import time
 
 import unittest as ut
-from common.utils.minertest import CommonTrackerMinerFTSTest, DEFAULT_TEXT
-from common.utils import configuration as cfg
+from minertest import CommonTrackerMinerFTSTest, DEFAULT_TEXT
+import configuration as cfg
 
 
 NFO_DOCUMENT = 'http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#Document'

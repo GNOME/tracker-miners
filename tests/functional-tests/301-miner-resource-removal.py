@@ -22,8 +22,8 @@ Test that resource removal does not leave debris or clobber too much,
 especially in the case where nie:InformationElement != nie:DataObject
 """
 
-from common.utils import configuration as cfg
-from common.utils.minertest import CommonTrackerMinerTest
+import configuration as cfg
+from minertest import CommonTrackerMinerTest
 
 from gi.repository import GLib
 

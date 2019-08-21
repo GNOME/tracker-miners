@@ -27,8 +27,8 @@ import shutil
 import tempfile
 import unittest as ut
 
-import common.utils.configuration as cfg
-from common.utils.extractor import get_tracker_extract_jsonld_output, create_test_flac, TrackerExtractTestCase
+import configuration as cfg
+from extractor import get_tracker_extract_jsonld_output, create_test_flac, TrackerExtractTestCase
 
 
 class FlacCuesheetTest(TrackerExtractTestCase):

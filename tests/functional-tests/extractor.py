@@ -19,7 +19,7 @@
 # 02110-1301, USA.
 #
 
-from common.utils import configuration as cfg
+import configuration as cfg
 import errno
 import json
 import logging

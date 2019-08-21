@@ -18,8 +18,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 # 02110-1301, USA.
 #
-from common.utils import configuration as cfg
-from common.utils.system import TrackerSystemAbstraction
+import configuration as cfg
+from system import TrackerSystemAbstraction
 import unittest as ut
 
 from gi.repository import GLib
@@ -186,7 +186,7 @@ class CommonTrackerMinerFTSTest (CommonTrackerMinerTest):
         and assert the testfile is only result.
 
         Be careful with the default contents of the text files
-        ( see common/utils/minertest.py DEFAULT_TEXT )
+        ( see minertest.py DEFAULT_TEXT )
         """
         self.set_text(text)
         results = self.search_word(word)

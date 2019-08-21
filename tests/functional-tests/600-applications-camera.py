@@ -27,7 +27,7 @@ import os
 import random
 
 import unittest as ut
-from common.utils.applicationstest import CommonTrackerApplicationTest as CommonTrackerApplicationTest
+from applicationstest import CommonTrackerApplicationTest as CommonTrackerApplicationTest
 
 
 log = logging.getLogger(__name__)

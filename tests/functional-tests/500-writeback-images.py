@@ -26,8 +26,8 @@ import os
 import sys
 import time
 
-from common.utils.extractor import get_tracker_extract_jsonld_output
-from common.utils.writebacktest import CommonTrackerWritebackTest
+from extractor import get_tracker_extract_jsonld_output
+from writebacktest import CommonTrackerWritebackTest
 import unittest as ut
 
 log = logging.getLogger(__name__)

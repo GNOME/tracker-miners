@@ -24,8 +24,8 @@ metadata is extracted. Load dynamically the test information from a data
 directory (containing xxx.expected files)
 """
 
-from common.utils import configuration as cfg
-from common.utils.extractor import get_tracker_extract_jsonld_output, TrackerExtractTestCase
+import configuration as cfg
+from extractor import get_tracker_extract_jsonld_output, TrackerExtractTestCase
 import unittest as ut
 import json
 import os

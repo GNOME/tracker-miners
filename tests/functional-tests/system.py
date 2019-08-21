@@ -9,7 +9,7 @@ from gi.repository import GLib
 
 import trackertestutils.dconf
 import trackertestutils.helpers
-from . import configuration as cfg
+import configuration as cfg
 
 TEST_ENV_VARS = {"LC_COLLATE": "en_GB.utf8"}
 

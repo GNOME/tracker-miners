@@ -31,7 +31,7 @@ import shutil
 import time
 
 import unittest as ut
-from common.utils.minertest import CommonTrackerMinerTest
+from minertest import CommonTrackerMinerTest
 
 log = logging.getLogger(__name__)
 

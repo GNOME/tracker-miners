@@ -20,8 +20,8 @@
 
 import unittest
 
-from common.utils.extractor import get_tracker_extract_jsonld_output
-from common.utils.writebacktest import CommonTrackerWritebackTest
+from extractor import get_tracker_extract_jsonld_output
+from writebacktest import CommonTrackerWritebackTest
 
 
 class WritebackAudioTest(CommonTrackerWritebackTest):

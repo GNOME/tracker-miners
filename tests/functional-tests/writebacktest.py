@@ -27,8 +27,8 @@ import shutil
 import time
 import unittest as ut
 
-from common.utils.system import TrackerSystemAbstraction
-from common.utils import configuration as cfg
+from system import TrackerSystemAbstraction
+import configuration as cfg
 
 TEST_FILE_JPEG = "writeback-test-1.jpeg"
 TEST_FILE_TIFF = "writeback-test-2.tif"
@@ -75,7 +75,7 @@ class CommonTrackerWritebackTest (ut.TestCase):
 
     def datadir_path(self, filename):
         """Returns the full path to a writeback test file."""
-        datadir = os.path.join(os.path.dirname(__file__), '..', '..', 'test-writeback-data')
+        datadir = os.path.join(os.path.dirname(__file__), 'test-writeback-data')
         return pathlib.Path(os.path.join(datadir, filename))
 
     def prepare_test_file(self, path, expect_mime_type, expect_property):

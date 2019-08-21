@@ -30,8 +30,8 @@ import shutil
 import tempfile
 import time
 
-import common.utils.configuration as cfg
-from common.utils.system import TrackerSystemAbstraction
+import configuration as cfg
+from system import TrackerSystemAbstraction
 
 
 CORRUPT_FILE = os.path.join(
