@@ -64,7 +64,7 @@ class CommonTrackerMinerTest (ut.TestCase):
         )
 
         config = {
-            cfg.DCONF_MINER_SCHEMA: {
+            'org.freedesktop.Tracker.Miner.Files': {
                 'index-recursive-directories': GLib.Variant.new_strv([self.indexed_dir]),
                 'index-single-directories': GLib.Variant.new_strv([]),
                 'index-optical-discs': GLib.Variant.new_boolean(False),

@@ -48,7 +48,7 @@ class CommonTrackerWritebackTest (ut.TestCase):
         index_dirs = [self.workdir]
 
         CONF_OPTIONS = {
-            cfg.DCONF_MINER_SCHEMA: {
+            'org.freedesktop.Tracker.Miner.Files': {
                 'index-recursive-directories': GLib.Variant.new_strv(index_dirs),
                 'index-single-directories': GLib.Variant.new_strv([]),
                 'index-optical-discs': GLib.Variant.new_boolean(False),

@@ -53,7 +53,7 @@ class ExtractorDecoratorTest(ut.TestCase):
         self.datadir = cfg.create_monitored_test_dir()
 
         config = {
-            cfg.DCONF_MINER_SCHEMA: {
+            'org.freedesktop.Tracker.Miner.Files': {
                 'enable-writeback': GLib.Variant.new_boolean(False),
                 'index-recursive-directories': GLib.Variant.new_strv([]),
                 'index-single-directories': GLib.Variant.new_strv([self.datadir]),

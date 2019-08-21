@@ -36,8 +36,6 @@ with open(os.environ['TRACKER_FUNCTIONAL_TEST_CONFIG']) as f:
     config = json.load(f)
 
 
-DCONF_MINER_SCHEMA = "org.freedesktop.Tracker.Miner.Files"
-
 TOP_BUILDDIR = os.environ['TRACKER_FUNCTIONAL_TEST_BUILD_DIR']
 DATADIR = config['RAW_DATAROOT_DIR']
 
