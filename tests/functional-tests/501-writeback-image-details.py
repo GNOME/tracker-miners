@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 # Copyright (C) 2011, Nokia (ivan.frade@nokia.com)
+# Copyright (C) 2019, Sam Thursfield (sam@afuera.me.uk)
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
