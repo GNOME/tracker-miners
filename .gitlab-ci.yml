@@ -32,4 +32,4 @@ test-fedora-latest:
   artifacts:
     when: always
     paths:
-    - build/meson-logs/testlog.txt
+    - build/meson-logs
