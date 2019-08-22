@@ -20,13 +20,12 @@ libtracker_extract_test_deps = [
 foreach base_name: libtracker_extract_tests
     source = 'tracker-@0@-test.c'.format(base_name)
     binary_name = 'tracker-@0@-test'.format(base_name)
-    test_name = 'extract-@0@'.format(base_name)
 
     binary = executable(binary_name, source,
       dependencies: libtracker_extract_test_deps,
       c_args: test_c_args)
 
-    test(test_name, binary)
+    test(base_name, binary, suite: 'extract')
 endforeach
 
 if libiptcdata.found() and libjpeg.found()
@@ -35,5 +34,5 @@ if libiptcdata.found() and libjpeg.found()
     dependencies: libtracker_extract_test_deps + [libjpeg],
     c_args: test_c_args,
   )
-  test('extract-iptc', iptc_test)
+  test('extract-iptc', iptc_test, suite: 'extract')
 endif
