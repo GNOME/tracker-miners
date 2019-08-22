@@ -1,0 +1,12 @@
+{
+    "test": {
+        "Filename": "test-image-1.jpg",
+        "Comment": "Basic jpeg example, ISO image tags checks"
+    },
+    "metadata": {
+        "nao:hasTag": [
+            { "nao:prefLabel": "test" },
+            { "nao:prefLabel": "tracker" }
+        ]
+    }
+}
