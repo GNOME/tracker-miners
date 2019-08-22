@@ -140,14 +140,23 @@ test_env.set('TRACKER_TESTS_VERBOSE', '1')
 
 foreach t: extractor_tests
   data = join_paths('test-extraction-data', t) + '.expected.json'
-  test('functional/extract/' + t, test_runner,
+  test_name = t
+  test_parts = t.split('/')
+  test_suite = []
+  if test_parts.length() == 2
+    test_name = test_parts[1]
+    test_suite = [test_parts[0]]
+  endif
+  test(test_name, test_runner,
+    suite: ['functional', 'extractor'] + test_suite,
     args: ['./400-extractor-metadata.py', data],
     env: test_env,
     workdir: meson.current_source_dir())
 endforeach
 
 foreach t: functional_tests
-  test('functional-' + t, test_runner,
+  test(t, test_runner,
+    suite: 'functional',
     args: './' + t + '.py',
     env: test_env,
     workdir: meson.current_source_dir(),
