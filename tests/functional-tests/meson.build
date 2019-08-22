@@ -31,6 +31,10 @@ if get_option('unzip_ps_gz_files')
   extractor_tests += 'office/psgz-doc'
 endif
 
+if libosinfo.found()
+  extractor_tests += 'images/test-image-1-iso-tags'
+endif
+
 functional_tests = [
   '300-miner-basic-ops',
   '301-miner-resource-removal',
