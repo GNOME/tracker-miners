@@ -8,32 +8,70 @@ extractor_tests = [
   'audio/audio-test-1',
   'audio/empty_albumi_song3',
   'audio/audio-test-2',
-  'audio/audio-test-vorbis-extractor',
-  'images/test-image-1',
-  'images/xmp-loaded-1',
-  'images/test-image-3',
-  'images/corrupted-image',
-  'images/test-iptcdata-records',
-  'images/roi2',
-  'images/test-image-4',
-  'images/test-image-2',
-  'images/comment-extension-block',
-  'images/roi',
-  'playlists/playlist-test-1',
-  'office/oasis-doc',
-  'office/office-doc',
-  'office/powerpoint',
-  'office/pdf-doc',
-  'office/ps-doc',
-  'office/ps-doc-atend'
 ]
 
 if get_option('unzip_ps_gz_files')
   extractor_tests += 'office/psgz-doc'
 endif
 
-if libosinfo.found()
-  extractor_tests += 'images/test-image-1-iso-tags'
+if libvorbis.found()
+  extractor_tests += 'audio/audio-test-vorbis-extractor'
+endif
+
+if libjpeg.found() and exempi.found() and libexif.found()
+  extractor_tests += [
+    'images/test-image-1',
+    'images/roi'
+  ]
+
+  if libosinfo.found()
+    extractor_tests += 'images/test-image-1-iso-tags'
+  endif
+
+  if libiptcdata.found()
+    extractor_tests += 'images/test-iptcdata-records'
+  endif
+endif
+
+if libgif.found()
+  extractor_tests += [
+    'images/corrupted-image',
+    'images/comment-extension-block',
+  ]
+
+  if exempi.found()
+    extractor_tests += 'images/xmp-loaded-1'
+  endif
+endif
+
+if libpng.found()
+  extractor_tests += [
+    'images/roi2',
+    'images/test-image-2',
+  ]
+endif
+
+if libtiff.found()
+  extractor_tests += 'images/test-image-3'
+endif
+
+if gexiv2.found()
+  extractor_tests += 'images/test-image-4'
+endif
+
+if totem_plparser.found()
+  extractor_tests += 'playlists/playlist-test-1'
+endif
+
+if libgsf.found()
+  extractor_tests += [
+    'office/oasis-doc',
+    'office/office-doc',
+    'office/powerpoint',
+    'office/pdf-doc',
+    'office/ps-doc',
+    'office/ps-doc-atend'
+  ]
 endif
 
 functional_tests = [
@@ -42,14 +80,25 @@ functional_tests = [
   '310-fts-basic',
   '311-fts-file-operations',
   '312-fts-stopwords',
-  '401-extractor-flac-cuesheet',
   '410-extractor-decorator',
-  '500-writeback-images',
-  '501-writeback-image-details',
-  '502-writeback-audio',
   '600-applications-camera',
   '601-applications-sync',
 ]
+
+if libcue.found()
+  functional_tests += '401-extractor-flac-cuesheet'
+endif
+
+if libjpeg.found() and libgif.found() and libpng.found() and libtiff.found() and exempi.found() and libexif.found()
+  functional_tests += [
+    '500-writeback-images',
+    '501-writeback-image-details',
+  ]
+endif
+
+if libvorbis.found() and flac.found() and generic_media_handler_name != 'none'
+  functional_tests += '502-writeback-audio'
+endif
 
 config_json = configure_file(
   input: 'configuration.json.in',
