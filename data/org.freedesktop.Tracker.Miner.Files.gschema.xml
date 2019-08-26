@@ -126,7 +126,7 @@ Boston, MA  02110-1301, USA.
 
 	See /etc/xdg/user-dirs.defaults and $HOME/.config/user-dirs.default
       </description>
-      <default>[ '&amp;DESKTOP', '&amp;DOCUMENTS', '&amp;DOWNLOAD', '&amp;MUSIC', '&amp;PICTURES', '&amp;VIDEOS' ]</default>
+      <default>[ '&amp;DESKTOP', '&amp;DOCUMENTS', '&amp;MUSIC', '&amp;PICTURES', '&amp;VIDEOS' ]</default>
     </key>
 
     <key name="index-single-directories" type="as">
@@ -138,7 +138,7 @@ Boston, MA  02110-1301, USA.
 
 	See /etc/xdg/user-dirs.defaults and $HOME/.config/user-dirs.default
       </description>
-      <default>[ '$HOME' ]</default>
+      <default>[ '$HOME', '&amp;DOWNLOAD' ]</default>
     </key>
 
     <key name="ignored-files" type="as">

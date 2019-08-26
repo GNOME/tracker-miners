@@ -422,7 +422,8 @@ miner_finished_cb (TrackerMinerFS *fs,
 	 * the mainloop and exit.
 	 */
 	if (no_daemon && main_loop) {
-		g_main_loop_quit (main_loop);
+		// FIXME: wait for extractor to finish
+/*		g_main_loop_quit (main_loop);*/
 	}
 }
 
