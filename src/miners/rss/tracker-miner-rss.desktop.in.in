@@ -12,7 +12,3 @@ X-KDE-StartupNotify=false
 X-KDE-UniqueApplet=true
 NoDisplay=true
 OnlyShowIn=GNOME;KDE;XFCE;Unity;
-X-GNOME-Bugzilla-Bugzilla=GNOME
-X-GNOME-Bugzilla-Product=tracker
-X-GNOME-Bugzilla-Component=Miners
-X-GNOME-Bugzilla-Version=@VERSION@
