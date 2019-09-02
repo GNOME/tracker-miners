@@ -1,5 +1,8 @@
-NEW in 2.2.99.1 - unreleased
-============================
+Changelog
+=========
+
+2.2.99.1 - unreleased
+----------------------------
 
   * The ~/Downloads folder is now indexed non-recursively by default.
       - This reduces the risk of Tracker unnecessarily crawling large
@@ -8,10 +11,10 @@ NEW in 2.2.99.1 - unreleased
         Downloads folder, they will need to move it to an appropriate place
         (~/Music, ~/Pictures, etc.) so that it is still indexed.
 
-Translations:
+**Translations:**
 
-NEW in 2.2.99.0 - 2019-08-07
-============================
+2.2.99.0 - 2019-08-07
+----------------------------
 
   * Support for reading Musicbrainz metadata from audio files.
   * Tracker Writeback now uses GStreamer to write metadata to audio files,
@@ -21,8 +24,8 @@ NEW in 2.2.99.0 - 2019-08-07
     brings us in line with Android.
   * Removed obsolete 'max-media-art-width' setting.
 
-NEW in 2.2.2 - 2019-05-02
-=========================
+2.2.2 - 2019-05-02
+-------------------------
 
   * Multiple leak fixes
   * Functional tests now use python3
@@ -30,26 +33,26 @@ NEW in 2.2.2 - 2019-05-02
   * Fix indexing of tracks in FLAC files
   * Added new tests for file formats
 
-Translations: hr
+**Translations:** hr
 
-NEW in 2.2.1 - 2019-03-06
-=========================
+2.2.1 - 2019-03-06
+-------------------------
 
   * Whitelist syscall fadvise64_64
   * Many fixes to functional tests
   * Fix failed functional tests being reported as successful
 
-Translations: eo, fur, fr, it, ko, lv, nl, ru, sr
+**Translations:** eo, fur, fr, it, ko, lv, nl, ru, sr
 
-NEW in 2.2.0 - 2019-02-20
-=========================
+2.2.0 - 2019-02-20
+-------------------------
 
   * Disable guarantee_metadata by default. It was the case on autotools
   * Stop merging translations to schema files
   * Test suite improvements
   * Meson build improvements
 
-Translations: cs, da, de, es, gl, hu, id, lt, pl, pt_BR, ro, sl, sv, tr, zh_TW
+**Translations:** cs, da, de, es, gl, hu, id, lt, pl, pt_BR, ro, sl, sv, tr, zh_TW
 
   Highlighted changes since 2.1.x:
   --------------------------------
@@ -58,16 +61,16 @@ Translations: cs, da, de, es, gl, hu, id, lt, pl, pt_BR, ro, sl, sv, tr, zh_TW
     tracker-miner-fs/tracker-extract.
   * All usage of deprecated TrackerSparqlBuilder is gone.
 
-NEW in 2.2.0-alpha2 - 2019-02-06
-================================
+2.2.0-alpha2 - 2019-02-06
+--------------------------------
   * Fixes to desktop file indexing
   * Multiple build and compile warning fixes
   * Many test improvements and cleanups
 
-Translations: fr
+**Translations:** fr
 
-NEW in 2.2.0-alpha1 - 2018-11-13
-================================
+2.2.0-alpha1 - 2018-11-13
+--------------------------------
 
   * The functionality of tracker-miner-apps has been adopted by
     tracker-miner-fs/tracker-extract.
@@ -76,20 +79,20 @@ NEW in 2.2.0-alpha1 - 2018-11-13
   * Plugged several leaks
   * Other many build and code cleanups and fixes
 
-Translations: ru, sk, sr
+**Translations:** ru, sk, sr
 
-NEW in 2.1.4 - 2018-09-04
-=========================
+2.1.4 - 2018-09-04
+-------------------------
 
-Translations: da, hr, lv
+**Translations:** da, hr, lv
 
-NEW in 2.1.3 - 2018-08-30
-=========================
+2.1.3 - 2018-08-30
+-------------------------
 
   * Unbreak watch on domain ontology owner. Fixes miners spuriously exiting.
 
-NEW in 2.1.2 - 2018-08-30
-=========================
+2.1.2 - 2018-08-30
+-------------------------
 
   * Allow use of domain rules outside prefix
   * Add core-as-subproject as explicit meson option
@@ -97,10 +100,10 @@ NEW in 2.1.2 - 2018-08-30
   * Fix multiple cardinality issues in different extractors/properties
   * Other minor SPARQL correctness fixes
 
-Translations: gl, id, ko
+**Translations:** gl, id, ko
 
-NEW in 2.1.1 - 2018-08-15
-=========================
+2.1.1 - 2018-08-15
+-------------------------
 
   * tracker-miner-fs: Ignore mercurial repositories
   * build: Fix build with -Werror=format-security
@@ -109,10 +112,10 @@ NEW in 2.1.1 - 2018-08-15
   * tracker-extract: Ignore XMP image metadata on PDFs
   * tracker-extract: Fix ISO 8601 date string generation on gstreamer extractor
 
-Translations: cs, el, fr, fur, hu, lt, sl, tr, zh_TW
+**Translations:** cs, el, fr, fur, hu, lt, sl, tr, zh_TW
 
-NEW in 2.1.0 - 2018-07-23
-=========================
+2.1.0 - 2018-07-23
+-------------------------
 
   * tests: Many updates and fixes to functional tests
   * tracker-extract: Better infrastructure for tests, based on JSON-LD
@@ -120,20 +123,20 @@ NEW in 2.1.0 - 2018-07-23
   * tracker-extract: Persistently avoid files that trigger recoverable
     errors, to avoid log spamming on restarts.
 
-Translations: de, es, it, pl, pt_BR, ro, sv
+**Translations:** de, es, it, pl, pt_BR, ro, sv
 
-NEW in 2.0.5 - 2018-06-25
-=========================
+2.0.5 - 2018-06-25
+-------------------------
 
   * tracker-extract: Made daemon able to shutdown on inactivity, lifetime
     will be managed by tracker-miner-fs
   * tracker-stract: Fixes in generated SPARQL for geolocation data
   * build: Multiple improvements and library detection fixes
 
-Translations: el, en_GB, hr, ro, ru
+**Translations:** el, en_GB, hr, ro, ru
 
-NEW in 2.0.4 - 2018-02-07
-=========================
+2.0.4 - 2018-02-07
+-------------------------
 
   * build: Allow building tracker repo as a meson subproject
   * libtracker-common: Rename to libtracker-miners-common
@@ -146,24 +149,24 @@ NEW in 2.0.4 - 2018-02-07
   * tracker-miner-fs: Avoid setting rdf:types on empty files
   * meson: dependency check fixes
 
-Translations: nb
+**Translations:** nb
 
-NEW in 2.0.3 - 2017-11-14
-=========================
+2.0.3 - 2017-11-14
+-------------------------
 
   * meson: Multiple cleanups and fixes
   * tracker-extract: Do not overwrite nie:dataSource
 
-NEW in 2.0.2 - 2017-10-05
-=========================
+2.0.2 - 2017-10-05
+-------------------------
 
   * tracker-miner-fs: Fix initialization when there's a startup timeout.
   * tracker-extract: Don't store 0-length strings on MSOffice metadata.
 
-Translations: ca@valencia
+**Translations:** ca@valencia
 
-NEW in 2.0.1 - 2017-10-04
-=========================
+2.0.1 - 2017-10-04
+-------------------------
 
   * tracker-miner-apps: Ignore broken .desktop file symlinks
   * tracker-miner-fs: Ignore non-native mounts
@@ -171,15 +174,15 @@ NEW in 2.0.1 - 2017-10-04
   * Compile warnings and Coverity issue fixes
   * Fix srcdir!=builddir builds
 
-Translations: fr, sl
+**Translations:** fr, sl
 
-NEW in 2.0.0 - 2017-09-12
-==========================
+2.0.0 - 2017-09-12
+--------------------------
 
   * Tracker shall from now on use semantic versioning
   * autotools/meson cleanups
 
-  Translations: ca, da, de, eu, es, fur, hu, it, ko, lt, lv, nl, pt_BR, sk,
+  **Translations:** ca, da, de, eu, es, fur, hu, it, ko, lt, lv, nl, pt_BR, sk,
                 sv, tr, zh_TW
 
   Overview of changes since 1.12:
@@ -194,8 +197,8 @@ NEW in 2.0.0 - 2017-09-12
     state of maintenance and visually outdated. The reasons to keep those
     are dubious with more capable UIs using Tracker out there.
 
-NEW in 1.99.3 - 2017-08-22
-==========================
+1.99.3 - 2017-08-22
+--------------------------
 
   WARNING: This is unstable development towards 2.0. There are API and
            ABI incompatibilities that might affect you.
@@ -204,10 +207,10 @@ NEW in 1.99.3 - 2017-08-22
   * Protect further the MP3 parser against out-of-bounds reads (CID #162187)
   * Fixed typos, and other code and build improvements.
 
-Translations: cs, gl, id, ne, pl, sr, sr@latin
+**Translations:** cs, gl, id, ne, pl, sr, sr@latin
 
-NEW in 1.99.2 - 2017-08-07
-==========================
+1.99.2 - 2017-08-07
+--------------------------
 
   WARNING: This is unstable development towards 2.0. There are API and
            ABI incompatibilities that might affect you.
@@ -216,8 +219,8 @@ NEW in 1.99.2 - 2017-08-07
     and infrastructure remain at: https://git.gnome.org/browse/tracker
   * Support for RSS enclosures have been added to the RSS miner.
 
-NEW in 1.99.1 - 2017-07-19
-==========================
+1.99.1 - 2017-07-19
+--------------------------
 
   WARNING: This is unstable development towards 2.0. There are API and
            ABI incompatibilities that might affect you.
@@ -250,10 +253,10 @@ NEW in 1.99.1 - 2017-07-19
     spurious integrity checks on startup.
   * Misc code and build fixes.
 
-Translations: fur, id, sk
+**Translations:** fur, id, sk
 
-NEW in 1.99.0 - 2017-07-06
-==========================
+1.99.0 - 2017-07-06
+--------------------------
 
   WARNING: This is unstable development towards 2.0. There are API and
            ABI incompatibilities that might affect you.
@@ -283,10 +286,10 @@ NEW in 1.99.0 - 2017-07-06
   * libtracker-sparql: Protect sqlite3_bind* with interface lock
   * Improvements to meson build
 
-Translations: ca, sr
+**Translations:** ca, sr
 
-NEW in 1.13.0 - 2017-05-23
-==========================
+1.13.0 - 2017-05-23
+--------------------------
 
   * Added support for the Meson build system, autotools will be eventually
     discontinued.
@@ -296,10 +299,10 @@ NEW in 1.13.0 - 2017-05-23
   * Fix possible source of stale files in TrackerFileSystem
   * Whitelist some more syscalls
 
-Translations: fur, ru
+**Translations:** fur, ru
 
-NEW in 1.12.0 - 2017-03-20
-==========================
+1.12.0 - 2017-03-20
+--------------------------
 
   * Multiple compile warning fixes
   * Fix compilation on older vala
@@ -313,10 +316,10 @@ NEW in 1.12.0 - 2017-03-20
     eliminated, concurrent queries are now significantly faster.
   * Many small fixes all over the place.
 
-Translations: da, id, it, ko, lt, lv
+**Translations:** da, id, it, ko, lt, lv
 
-NEW in 1.11.4 - 2017-02-23
-==========================
+1.11.4 - 2017-02-23
+--------------------------
 
   * tracker-extract: More sandboxing stability fixes, more whitelisted
     inocuous syscalls. Compile fixes for any older kernel not providing
@@ -326,10 +329,10 @@ NEW in 1.11.4 - 2017-02-23
   * drop libgee dependency
   * Coverity fixes all over the place
 
-Translations: da, de, eu, fi, fr, gl, nb, pl, sk, sr, sr@latin, sv, zh_TW
+**Translations:** da, de, eu, fi, fr, gl, nb, pl, sk, sr, sr@latin, sv, zh_TW
 
-NEW in 1.11.3 - 2017-01-02
-==========================
+1.11.3 - 2017-01-02
+--------------------------
 
   * tracker-extract: Whitelist multiple inocuous syscalls that were
     reported to raise false positives in the extraction sandbox.
@@ -339,8 +342,8 @@ NEW in 1.11.3 - 2017-01-02
   * Fixed TrackerResource SPARQL generation of rdfs:Resource properties
     with cardinality>1
 
-NEW in 1.11.2 - 2016-12-08
-==========================
+1.11.2 - 2016-12-08
+--------------------------
 
   * tracker-extract: Sandbox extractor threads. Filesystem and network
     access are limited to being read and local only.
@@ -349,16 +352,16 @@ NEW in 1.11.2 - 2016-12-08
   * tracker-extract, libtracker-sparql, libtracker-miner: plug leaks
   * tests: cleanups and improvements
 
-Translations: hu
+**Translations:** hu
 
-NEW in 1.11.1 - 2016-11-21
-==========================
+1.11.1 - 2016-11-21
+--------------------------
 
   Brown paper bag release, revert BIND() fix as it breaks other legit
   cases.
 
-NEW in 1.11.0 - 2016-11-21
-==========================
+1.11.0 - 2016-11-21
+--------------------------
 
   * libtracker-sparql: Added TrackerNotifier, helper object to receive
     notifications of changes to the Tracker database. All users of the
@@ -374,23 +377,23 @@ NEW in 1.11.0 - 2016-11-21
   * libtracker-data: Fixed possible overflows in tracker:normalize/unaccent
   * Other fixes and cleanups.
 
-Translations: ca, cs, de, es, eu, hu, lt, fur, pl, sv, zh_CN
+**Translations:** ca, cs, de, es, eu, hu, lt, fur, pl, sv, zh_CN
 
-NEW in 1.10.0 - 2016-09-19
-=========================
+1.10.0 - 2016-09-19
+-------------------------
 
-Translations: da, el, en_GB
+**Translations:** da, el, en_GB
 
-NEW in 1.9.2 - 2016-09-14
-=========================
+1.9.2 - 2016-09-14
+-------------------------
 
   * Restore trailing colon in nfo:Equipment URIs
   * Add new mime-types for comic books
 
-Translations: da, fur, fr, gl, kk, ko, lv, pl, pt_BR, sr, sr@latin, sv, vi
+**Translations:** da, fur, fr, gl, kk, ko, lv, pl, pt_BR, sr, sr@latin, sv, vi
 
-NEW in 1.9.1 - 2016-08-23
-=========================
+1.9.1 - 2016-08-23
+-------------------------
 
   * Tracker-resource: New API to describe RDF resources that can be serialized
       into SPARQL updates and various data formats. TrackerSparqlBuilder will
@@ -408,10 +411,10 @@ NEW in 1.9.1 - 2016-08-23
   * Libtracker miner: Fix accounting in TrackerPriorityQueue when removing
        elements.
 
-Translations: cs, de, es, fr, hu, id, lt, pl, pt, sk
+**Translations:** cs, de, es, fr, hu, id, lt, pl, pt, sk
 
-NEW in 1.9.0 - 2016-06-21
-=========================
+1.9.0 - 2016-06-21
+-------------------------
 
   * Adapt to new GKqueue monitor mapping.
   * Remove build time dependency on gnome-common
@@ -441,14 +444,14 @@ NEW in 1.9.0 - 2016-06-21
   * miner-fs: Fix handling files moved soon after creating
   * Improved console output of tracker subcommands
 
-Translations: de, es, oc, pt, pt_BR, sk
+**Translations:** de, es, oc, pt, pt_BR, sk
 
-NEW in 1.8.0 - 2016-03-21
-=========================
+1.8.0 - 2016-03-21
+-------------------------
 
 Changes since 1.7.5:
   * libtracker-miner: Adapt to libcue 2.0
-  * translations: da
+  * **Translations:** da
 
 Overview of changes since 1.6.x:
   * Better support of the Sparql 1.1 syntax:
@@ -475,8 +478,8 @@ Overview of changes since 1.6.x:
     have been reported as "spamming journald".
   * Tracker now uses GTask, except for vala code.
 
-NEW in 1.7.5 - 2016-03-14
-=========================
+1.7.5 - 2016-03-14
+-------------------------
 
   * Add back .trackerignore match to ignored-directories-with-content
   * tracker-extract: Fix gstreamer module cuesheet handling
@@ -502,8 +505,8 @@ NEW in 1.7.5 - 2016-03-14
   * libtracker-miner: Initialize all NodeData memory
   * libtracker-miner: Ensure the directory root is removed when its indexing root is
 
-NEW in 1.7.4 - 2016-03-01
-=========================
+1.7.4 - 2016-03-01
+-------------------------
 
   * Update to FTS5.
   * libtracker-miner: Many fixes to TrackerFileNotifier cancellation
@@ -515,10 +518,10 @@ NEW in 1.7.4 - 2016-03-01
       setting if you found this convenient.
   * tracker-miner-fs: Ignore #*# vim backups
 
-Translations: oc
+**Translations:** oc
 
-NEW in 1.7.3 - 2016-02-16
-=========================
+1.7.3 - 2016-02-16
+-------------------------
 
   * libtracker-miner: Many indexing fixes leading to stale elements in the database.
       If "UNIQUE constraint failed: nie:DataObject.nie:url" errors are seen in
@@ -539,10 +542,10 @@ NEW in 1.7.3 - 2016-02-16
   * libtracker-data: Fix g_warning() missing argument
   * Update AppData to spec version 0.7+
 
-Translations: lv
+**Translations:** lv
 
-NEW in 1.7.2 - 2016-01-17
-=========================
+1.7.2 - 2016-01-17
+-------------------------
 
   * Many leak fixes.
   * libtracker-data: Reverted code to clean up stale Resources, can't just be done yet.
@@ -552,10 +555,10 @@ NEW in 1.7.2 - 2016-01-17
   * libtracker-miner: Add ::remove-file signal vfunc
   * libtracker-common: Return total available space if running as admin.
 
-Translations: lt
+**Translations:** lt
 
-NEW in 1.7.1 - 2015-12-17
-=========================
+1.7.1 - 2015-12-17
+-------------------------
 
   * libtracker-data: Support for Sparql 1.1 BIND and
     DELETE {...} INSERT {...} WHERE {...} syntax.
@@ -564,10 +567,10 @@ NEW in 1.7.1 - 2015-12-17
   * libtracker-data: Silence criticals on REGEX() with empty strings
   * libtracker-miner, libtracker-extract: Fix double frees
 
-Translations: sl, sv
+**Translations:** sl, sv
 
-NEW in 1.7.0 - 2015-11-25
-=========================
+1.7.0 - 2015-11-25
+-------------------------
 
   * libtracker-data: Support for Sparql 1.1 functions: CONCAT, CONTAINS, LCASE/UCASE, STRLEN,
     SUBSTR, STRSTARTS/STRENDS, ABS, ROUND, ENCODE_FOR_URI, STRBEFORE/STRAFTER, CEIL/FLOOR,
@@ -582,19 +585,19 @@ NEW in 1.7.0 - 2015-11-25
   * tracker-extract: Photo orientation extraction fixes (TIFF, XMP)
   * Many fixes to functional tests
 
-Translations: eu, it, sr, sr@latin, zh_CN
+**Translations:** eu, it, sr, sr@latin, zh_CN
 
-NEW in 1.6.0 - 2015-09-22
-=========================
+1.6.0 - 2015-09-22
+-------------------------
 
   * tracker-extract: Fix synchronization with tracker-miner-fs when wait-for-miner-fs=TRUE
   * tracker-miner-fs: Fix crash during startup
   * tracker-extract: Fix builtin dummy module struct
 
-Translations: da, de, el, fr, gl, id, ko, pl, pt_BR, nb, sl, sv, tr, ru, zh_TW
+**Translations:** da, de, el, fr, gl, id, ko, pl, pt_BR, nb, sl, sv, tr, ru, zh_TW
 
-NEW in 1.5.2 - 2015-08-20
-=========================
+1.5.2 - 2015-08-20
+-------------------------
 
   * libtracker-data: Fix printf string format
   * libtracker-miner: Fallback to basename checks on hidden files
@@ -612,10 +615,10 @@ NEW in 1.5.2 - 2015-08-20
   * libtracker-miner: Deprecate tracker_miner_fs_add_directory_without_parent
   * tracker-miner-fs: Keep cache of IndexFile requesters on directories
 
-Translations: ca, cz, lt, pl, pt_BR, pt, sk, tr
+**Translations:** ca, cz, lt, pl, pt_BR, pt, sk, tr
 
-NEW in 1.5.1 - 2015-07-21
-=========================
+1.5.1 - 2015-07-21
+-------------------------
 
   * Many fixes to RSS miner:
     - Dumps more complete data on tracker-store.
@@ -628,10 +631,10 @@ NEW in 1.5.1 - 2015-07-21
   * Fix main Resource table id/urn leaks
   * Fix unnecessary queries in tracker-extract
 
-Translations: es, hu, pt
+**Translations:** es, hu, pt
 
-NEW in 1.5.0 - 2015-07-13
-=========================
+1.5.0 - 2015-07-13
+-------------------------
 
   * Fix possible scenarios for high memory consumption in tracker-extract
   * Ontology documentation has been revamped
@@ -650,11 +653,11 @@ NEW in 1.5.0 - 2015-07-13
   * Fixed first index of gnome user docs (#751992)
   * Allow dummy .rule files for extractors (#735610)
 
-Translations: bg, ca, cs, de, es, hu, id, it, pl, pt, pt_BR, sk, sl, sv, tr, zh_TW
+**Translations:** bg, ca, cs, de, es, hu, id, it, pl, pt, pt_BR, sk, sl, sv, tr, zh_TW
 
 
-NEW in 1.3.6 - 2015-03-17
-=========================
+1.3.6 - 2015-03-17
+-------------------------
 
   * Fix spurious folder deletes/reindexes (#741852)
   * Fix nie:url UNIQUE constraint asserts on downloaded files (RH#1192224)
@@ -662,31 +665,31 @@ NEW in 1.3.6 - 2015-03-17
   * Support fn:replace (#745917)
   * Spam stderr less for not-so-uncommon error conditions (#746256)
 
-Translations: ko, bs, sr, sl, da
+**Translations:** ko, bs, sr, sl, da
 
 
-NEW in 1.3.5 - 2015-03-06
-=========================
+1.3.5 - 2015-03-06
+-------------------------
 
   * Fix major database migration bug, skip Tracker 1.3.4. (#745737)
   * Build only libiptc test if libjpeg is enabled (#745583)
   * Put absolute path in shell script (#743738)
 
-Translations: ru
+**Translations:** ru
 
 
-NEW in 1.3.4 - 2015-03-03
-=========================
+1.3.4 - 2015-03-03
+-------------------------
 
   * Fixed playlists being processed by tracker-extract
   * Fixes: #743727, Account for cardinality=0 on DB migration
   * Fixes: #745219, mp3 passes album instead of song title to libmediaart
 
-Translations: zh_TW, sk, eo, nb, lt, eu, po
+**Translations:** zh_TW, sk, eo, nb, lt, eu, po
 
 
-NEW in 1.3.3 - 2015-02-05
-=========================
+1.3.3 - 2015-02-05
+-------------------------
 
   * Fixes: GB#681698, Disc number may be incorrect for multi-disc vorbis / flac albums
   * Fixes: GB#741109, BMP extractor doesn't retrieve image height and width
@@ -700,7 +703,7 @@ NEW in 1.3.3 - 2015-02-05
   * Fixes: GB#678986, item_move() creates invalid SPARQL if source file does not exist
   * Reverted: GB#733536, Remove --enable-guarantee metadata, always guarantee nie:title and nie:contentCreated
 
-Translations:
+**Translations:**
 
   * Updated cs: Marek Černocký
   * Updated de: Christian Kirbach, Bernd Homuth
@@ -712,8 +715,8 @@ Translations:
   * Updated pt_BR: Rafael Ferreira
 
 
-NEW in 1.3.2 - 2014-12-11
-=========================
+1.3.2 - 2014-12-11
+-------------------------
 
   * New Feature: 'tracker' binary: All pre-existing tracker-* command line tools have been merged into this new binary. Man pages are shown for 'help' sub-commands. This brings more of a "git" feel to the tracker's command line tools. There is a backwards compatible 'tracker-command' script and compatibility layer provided to ensure existing commands still work for a limited time. The old 'tracker-control' actions are now part of 'tracker daemon', 'tracker reset' and 'tracker index'. Additionally, the 'tracker-sql' utility has been integrated to allow SQL operations directly on the DB.
   * Fixes: GB#741317, miner-fs: use GFile to check for homedir
@@ -729,13 +732,13 @@ NEW in 1.3.2 - 2014-12-11
   * tracker-extract: Fixed memory leak of MediaArt object for TrackerExtractInfo
   * clean-tracker-prefix: Should consider lib64 as well as lib directories
 
-Translations:
+**Translations:**
 
   * Updated pl: Piotr Drąg
 
 
-NEW in 1.3.1 - 2014-12-03
-=========================
+1.3.1 - 2014-12-03
+-------------------------
 
   * Fixes: GB#733536, Remove --enable-guarantee metadata, always guarantee nie:title and nie:contentCreated
   * Fixes: GB#739260, srcdir != builddir issue with latest git
@@ -743,7 +746,7 @@ NEW in 1.3.1 - 2014-12-03
   * Fixes: GB#740268, System tab - very ambiguous about what is being removed
   * Fixes: GB#740864, Symlink target for D-Bus service files includes DESTDIR
 
-Translations:
+**Translations:**
 
   * Updated cs: Marek Černocký
   * Updated es: Daniel Mustieles
@@ -752,8 +755,8 @@ Translations:
   * Updated pt: Duarte Loreto, Pedro Albuquerque
 
 
-NEW in 1.3.0 - 2014-11-06
-=========================
+1.3.0 - 2014-11-06
+-------------------------
 
 The main changes since 1.2.x are:
 
@@ -787,15 +790,15 @@ The main changes since 1.2.x are:
     * Waiting properly for resource addition / removal
   * Fixes GB#737663, Avoid the use of setrlimit() causing SIGABRT in tracker-extract
 
-Translations:
+**Translations:**
 
   * Updated fi: Timo Jyrinki, Jiri Grönroos
   * Updated hu: Gábor Kelemen, Gabor Kelemen
   * Updated it: Milo Casagrande
 
 
-NEW in 1.2.0 - 2014-09-22
-=========================
+1.2.0 - 2014-09-22
+-------------------------
 
 The main changes since 1.0.x are:
 
@@ -858,13 +861,13 @@ Bugs Fixed (31):
 
   https://bugzilla.gnome.org/buglist.cgi?quicksearch=737023,736328,735180,735645,735636,735460,735610,735567,735317,735339,733573,733317,734464,733857,734089,734144,733316,733948,733863,733536,733439,732839,730627,728370,730111,729253,729968,729708,728252,728546,725717
 
-Translations:
+**Translations:**
 
   Many, thank you to everyone involved.
 
 
-NEW in 1.1.4 - 2014-09-05
-=========================
+1.1.4 - 2014-09-05
+-------------------------
 
   * New Feature: Extractor now supports eBook and Comic book formats
   * Fixes: GB#735645, EPub extractor bug fixes
@@ -899,7 +902,7 @@ NEW in 1.1.4 - 2014-09-05
   * tracker-preferences: Removed fixed column for indexed locations, column header text was cut off
   * tracker-sandbox: Setup xdg-user-dirs too
 
-Translations:
+**Translations:**
 
   * Updated as: Nilamdyuti Goswami
   * Updated cs: Marek Černocký
@@ -914,8 +917,8 @@ Translations:
   * Updated zh_TW: Chao-Hsiung Liao
 
 
-NEW in 1.1.3 - 2014-08-19
-=========================
+1.1.3 - 2014-08-19
+-------------------------
 
   * New Feature: Extractor is now 'crash-aware' that being, we have a
     separate data source for content that can't be extracted to avoid
@@ -928,7 +931,7 @@ NEW in 1.1.3 - 2014-08-19
   * libtracker-miner: Add new API tracker_decorator_fs_prepend_file()
     as part of 'crash-aware' feature.
 
-Translations:
+**Translations:**
 
   * Updated el: Tom Tryfonidis
   * Updated es: Daniel Mustieles
@@ -936,8 +939,8 @@ Translations:
   * Updated lt: Aurimas Černius
 
 
-NEW in 1.1.2 - 2014-08-12
-=========================
+1.1.2 - 2014-08-12
+-------------------------
 
 The main changes since 1.1.1 are:
 
@@ -971,7 +974,7 @@ The main changes since 1.1.1 are:
   * tracker-preferences: Added suggestion to reindex OR restart depending on configuration changes applied
   * functional-tests: Improved and updated in places
 
-Translations:
+**Translations:**
 
   * Updated el: MarMav, Maria Mavridou
   * Updated es: Daniel Mustieles
@@ -980,8 +983,8 @@ Translations:
   * Updated zh_CN: YunQiang Su, Yunqiang Su
 
 
-NEW in 1.1.1 - 2014-07-10
-=========================
+1.1.1 - 2014-07-10
+-------------------------
 
 The main changes since 1.1.0 are:
 
@@ -992,8 +995,8 @@ The main changes since 1.1.0 are:
     planned originally.
 
 
-NEW in 1.1.0 - 2014-07-10
-=========================
+1.1.0 - 2014-07-10
+-------------------------
 
 The main changes since 1.0.0 are:
 
@@ -1013,7 +1016,7 @@ The main changes since 1.0.0 are:
   * tracker-preferences: Add AppData with screenshots for app stores
   * tracker-needle: Add AppData with screenshots for app stores
 
-Translations:
+**Translations:**
 
   * Updated ca: Gil Forcada, Pau Iranzo
   * Updated cs: Marek Černocký
@@ -1034,8 +1037,8 @@ Translations:
   * Updated zh_CN: YunQiang Su, Yunqiang Su
 
 
-NEW in 1.0.0 - 2014-03-24
-=========================
+1.0.0 - 2014-03-24
+-------------------------
 
 The main changes since 0.16.x are:
 
@@ -1102,13 +1105,13 @@ Bugs Fixed (29):
 
   https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=675198
 
-Translations:
+**Translations:**
 
   Many, thank you to everyone involved.
 
 
-NEW in 0.17.8 - 2014-03-21
-==========================
+0.17.8 - 2014-03-21
+--------------------------
 
 The main changes are:
 
@@ -1116,7 +1119,7 @@ The main changes are:
   * Fixes: GB#726419, tracker-extract reports sparql update errors for jpeg with dc:indenfitier
   * Fixes: DB#675198, tracker-store man page description needs minor cleanup
 
-Translations:
+**Translations:**
 
   * Updated cs: Marek Černocký
   * Updated da: Ask H. Larsen
@@ -1125,22 +1128,22 @@ Translations:
   * Updated lv: Rūdolfs Mazurs
 
 
-NEW in 0.17.7 - 2014-03-19
-==========================
+0.17.7 - 2014-03-19
+--------------------------
 
 The main changes are:
 
   * libtracker-sparql: Fix undefined reference to symbol 'tracker_ipc_bus'
 
-Translations:
+**Translations:**
 
   * Updated it: Milo Casagrande
   * Updated sr: Мирослав Николић
   * Updated sr@latin: Мирослав Николић
 
 
-NEW in 0.17.6 - 2014-03-18
-==========================
+0.17.6 - 2014-03-18
+--------------------------
 
 The main changes are:
 
@@ -1183,7 +1186,7 @@ The main changes are:
   * tracker-sparql: Support listing properties with --tree and make --search case insensitive
   * tracker-sandbox: Set the locale properly so queries don't fail due to locale mismatch to DB
 
-Translations:
+**Translations:**
 
   * Updated cs: Marek Černocký
   * Updated es: Daniel Mustieles
@@ -1201,8 +1204,8 @@ Translations:
   * Updated zh_TW: Chao-Hsiung Liao
 
 
-NEW in 0.17.5 - 2014-03-04
-==========================
+0.17.5 - 2014-03-04
+--------------------------
 
 The main changes are:
 
@@ -1226,7 +1229,7 @@ The main changes are:
   * functional-tests: Don't rely on just tracker-control -t to kill tests in time
   * functional-tests: Fix regression introduced in commit 690eecb1
 
-Translations:
+**Translations:**
 
   * Updated cs: Marek Černocký
   * Updated es: Daniel Mustieles
@@ -1237,20 +1240,20 @@ Translations:
   * Updated zh_CN: Wylmer Wang
 
 
-NEW in 0.17.4 - 2014-02-21
-==========================
+0.17.4 - 2014-02-21
+--------------------------
 
 The main changes are:
 
   * rss: compile fix with the RSS miner enabled
 
-Translations:
+**Translations:**
 
   * Updated br: Rafael Ferreira
   * Updated lt: Aurimas Černius
 
-NEW in 0.17.3 - 2014-02-20
-==========================
+0.17.3 - 2014-02-20
+--------------------------
 
 The main changes are:
 
@@ -1266,8 +1269,8 @@ The main changes are:
   * utils: tracker-sparql gained a --tree switch to print (partial) ontology trees, and longhands/shorthands for classes/properties
 
 
-NEW in 0.17.2 - 2014-02-14
-==========================
+0.17.2 - 2014-02-14
+--------------------------
 
 The main changes are:
 
@@ -1295,7 +1298,7 @@ The main changes are:
   * thunderbird: Port code to make sure it works for Thunderbird 24
   * thunderbird: Add and improve debug messages
 
-Translations:
+**Translations:**
 
   * Updated cs: Marek Černocký
   * Updated gl: Fran Diéguez
@@ -1306,8 +1309,8 @@ Translations:
   * Updated zh_TW: Chao-Hsiung Liao
 
 
-NEW in 0.17.1 - 2014-01-24
-==========================
+0.17.1 - 2014-01-24
+--------------------------
 
 The main changes are:
 
@@ -1351,7 +1354,7 @@ The main changes are:
   * utils/sandbox/tracker-sandbox: Use separate dirs for config and data because there may be file name conflicts
   * docs/tools/ttl2sgml: Don't GError on nao:deprecated namespaces in the ontology, errors for mlo which is entirely deprecated
 
-Translations:
+**Translations:**
 
   * Updated cs: Marek Černocký
   * Updated de: Christian Kirbach
@@ -1366,8 +1369,8 @@ Translations:
   * Updated zh_CN: Tong Hui, 甘露(Gan Lu)
 
 
-NEW in 0.17.0 - 2013-11-22
-==========================
+0.17.0 - 2013-11-22
+--------------------------
 
 The main changes since 0.16.x are:
 
@@ -1396,12 +1399,12 @@ The main changes since 0.16.x are:
   * libtracker-bus: allow cancellation when iterating cursor
   * libtracker-direct: don't allow connection if current and db locale mismatch
 
-Translations:
+**Translations:**
 
   Many, thank you to everyone involved.
 
-NEW in 0.16.0 - 2013-03-18
-==========================
+0.16.0 - 2013-03-18
+--------------------------
 
 The main changes since 0.14.x are:
 
@@ -1449,13 +1452,13 @@ Bugs Fixed (18):
 
   https://bugzilla.gnome.org/buglist.cgi?quicksearch=693889,694146,691847,692409,692603,691807,691804,679870,690170,695769,643388,643388,695444,693198,695061,695157,694783,660965,692210
 
-Translations:
+**Translations:**
 
   Many, thank you to everyone involved.
 
 
-NEW in 0.15.4 - 2013-03-12
-==========================
+0.15.4 - 2013-03-12
+--------------------------
 
 The changes are:
 
@@ -1464,11 +1467,11 @@ The changes are:
   * build: Switched out all uses of deprecated GStaticMutex for GMutex
   * Fixes: GB#643388, Sqlite constraint violation
 
-Translations:
+**Translations:**
 
   * Updated el: Dimitris Spingos
 
-Notes:
+**Notes:**
 
   * The 0.15.3 tarball uploaded was done using the wrong version of
     libgee for building the C sources from Vala. This is detailed in
@@ -1484,8 +1487,8 @@ Notes:
     fixes. Apologies for any inconvenience.
 
 
-NEW in 0.15.3 - 2013-03-08
-==========================
+0.15.3 - 2013-03-08
+--------------------------
 
 The changes are:
 
@@ -1505,7 +1508,7 @@ The changes are:
   * tracker-search: Added snippets for result hits
   * tracker-search: Added colored output for result hits
 
-Translations:
+**Translations:**
 
   * Updated cs: Marek Černocký
   * Updated de: Christian Kirbach
@@ -1516,8 +1519,8 @@ Translations:
   * Updated sl: Matej Urbančič
 
 
-NEW in 0.15.2 - 2013-02-11
-==========================
+0.15.2 - 2013-02-11
+--------------------------
 
 The changes are:
 
@@ -1537,11 +1540,11 @@ The changes are:
   * tracker-info: Fixed memory leak where urn wasn't freed.
   * tracker-info: Fixed memory leak when using prefixes for shorthand properties
 
-Translations:
+**Translations:**
 
   * None
 
-Notes:
+**Notes:**
 
   The database version has been incremented, this will force a
   reindex for any existing Tracker installation.
@@ -1553,8 +1556,8 @@ Notes:
   place.
 
 
-NEW in 0.15.1 - 2013-01-24
-==========================
+0.15.1 - 2013-01-24
+--------------------------
 
 The changes are:
 
@@ -1568,13 +1571,13 @@ The changes are:
   * libtracker-miner: Fix libsecret password provider get call using non-NULL GError
   * tracker-miner-fs, store: Add MeeGo keys to desktop files
 
-Translations:
+**Translations:**
 
   * Updated pt_BR: Henrique P. Machado
 
 
-NEW in 0.15.0 - 2012-11-23
-==========================
+0.15.0 - 2012-11-23
+--------------------------
 
 The changes are:
 
@@ -1583,14 +1586,14 @@ The changes are:
   * Removed: Dia dependency for producing documentation.
   * New Feature: Support GKqueueDirectoryMonitor API on BSD systems
 
-Translations:
+**Translations:**
 
   Many, thank you to everyone involved.
 
 
 
-NEW in 0.14.0 - 2012-03-08
-==========================
+0.14.0 - 2012-03-08
+--------------------------
 
 The changes are:
 
@@ -1617,13 +1620,13 @@ Nokia bugs fixed (4):
 
   https://projects.maemo.org/bugzilla/buglist.cgi?quicksearch=296488,289635,296009,290406
 
-Translations:
+**Translations:**
 
   Many, thank you to everyone involved.
 
 
-NEW in 0.13.1 - 2012-02-15
-==========================
+0.13.1 - 2012-02-15
+--------------------------
 
 The changes are:
 
@@ -1664,15 +1667,15 @@ The changes are:
   * tracker-needle: Fix build with GLib 2.31
   * ttl2sgml: Do not call fclose if file is NULL
 
-Translations:
+**Translations:**
 
   * Updated fr: Alexandre Franke
   * Updated ja: Jiro Matsuzawa
   * Updated nb: Kjartan Maraas
 
 
-NEW in 0.13.0 - 2011-12-15
-==========================
+0.13.0 - 2011-12-15
+--------------------------
 
 The changes are:
 
@@ -1690,13 +1693,13 @@ The changes are:
 
   Many other fixes
 
-Translations:
+**Translations:**
 
   Many, thank you to everyone involved.
 
 
-NEW in 0.12.0 - 2011-09-09
-==========================
+0.12.0 - 2011-09-09
+--------------------------
 
 The changes are:
 
@@ -1746,11 +1749,11 @@ Nokia bugs fixed (81):
 
 https://projects.maemo.org/bugzilla/buglist.cgi?quicksearch=281201,277052,281183,281540,271437,272441,279789,256958,276858,276830,242979,278806,277799,278171,246131,247468,259325,271389,254896,274498,274181,271747,273120,269986,270774,259942,269766,269931,268105,269359,266579,251032,263203,261635,258488,258459,254855,259000,252898,244556,254154,248873,253807,249338,250959,250455,249787,249028,244787,240681,238770,245998,244267,241302,245589,245373,213419,244536,242253,229461,237582,240272,241659,241833,235445,241206,240168,240582,237176,238447,238547,237150,236387,233828,232574,235118,229713,232981,231631,230255,228760
 
-Translations:
+**Translations:**
 
   Many, thank you to everyone involved.
 
-Notes:
+**Notes:**
 
   The database version has been incremented, this will force a
   reindex for any existing Tracker installation.
@@ -1765,8 +1768,8 @@ Notes:
   should have the m4 macros packaged).
 
 
-NEW in 0.11.2 - 2011-08-16
-==========================
+0.11.2 - 2011-08-16
+--------------------------
 
 The changes are:
 
@@ -1804,7 +1807,7 @@ The changes are:
   * firefox: Raise compatibility level to 5.0.*
   * firefox: Don't break on consecutive make installs, use -f with ln
 
-Translations:
+**Translations:**
 
   * Updated cs: Marek Černocký
   * Updated de: Christian Kirbach
@@ -1813,13 +1816,13 @@ Translations:
   * Updated sl: Andrej Žnidaršič
   * Updated sv: Daniel Nylander
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.11.1 - 2011-08-01
-==========================
+0.11.1 - 2011-08-01
+--------------------------
 
 The changes are:
 
@@ -1877,7 +1880,7 @@ The changes are:
   * tracker-search: Support bookmarks with -b or --bookmarks
   * tracker-preferences: Fix apply button
 
-Translations:
+**Translations:**
 
   * Updated cs: Marek Černocký
   * Updated es: Daniel Mustieles
@@ -1887,13 +1890,13 @@ Translations:
   * Updated sv: Daniel Nylander
   * Updated zh_CN: Yinghua Wang
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.11.0 - 2011-06-07
-==========================
+0.11.0 - 2011-06-07
+--------------------------
 
 The changes are:
 
@@ -1916,7 +1919,7 @@ The changes are:
   * tracker-extract: Added EPub extractor module
   * tracker-control: Report remaining estimated time for each miner's progress
 
-Translations:
+**Translations:**
 
   * Updated ca: Gil Forcada
   * Updated cs: Marek Černocký
@@ -1933,7 +1936,7 @@ Translations:
   * Updated sv: Daniel Nylander
   * Updated zh_CN: Yinghua Wang
 
-Notes:
+**Notes:**
 
   The database version has been incremented, this will force a
   reindex for any existing Tracker installation.
@@ -1948,8 +1951,8 @@ Notes:
   should have the m4 macros packaged).
 
 
-NEW in 0.10.0 - 2011-02-17
-==========================
+0.10.0 - 2011-02-17
+--------------------------
 
 The changes are:
 
@@ -2000,18 +2003,18 @@ Nokia bugs fixed (154):
 
 https://projects.maemo.org/bugzilla/buglist.cgi?quicksearch=227977,208621,223536,225910,221340,180770,217610,224993,222182,224760,218525,224763,197067,223938,185309,223622,223282,223133,223148,223161,222645,222494,222664,222578,221700,220373,218092,218332,217636,218125,219309,216582,218560,211147,218123,216329,217575,198003,216350,212736,214163,214478,214413,213419,211928,212116,210217,211926,198155,207918,208420,203538,204706,202291,206752,203540,203593,195787,203632,202275,199968,202627,202581,201122,200310,199131,194908,194548,186096,197546,197097,195394,196143,194677,195547,192790,193044,194746,193061,186055,190480,192326,188031,184220,187558,189896,188494,184505,187149,174794,185950,185070,182948,184882,184823,177663,181421,181112,183307,172390,179570,180803,182788,181538,179894,180236,180679,179434,179559,179798,176090,178599,178825,178808,174590,177447,176932,175723,170915,175957,175712,174591,174333,174162,173673,172818,174248,173589,173164,172414,161449,173206,172652,171657,167647,170142,168740,164822,169460,163155,169254,169105,169119,168742,167616,166767,166717,166684,166080,164958,161047,163544,163715,163480
 
-Translations:
+**Translations:**
 
   Many, thank you to everyone involved.
 
-Notes:
+**Notes:**
 
   The database version has been incremented, this will force a
   reindex for any existing Tracker installation.
 
 
-NEW in 0.9.38 - 2011-02-10
-==========================
+0.9.38 - 2011-02-10
+--------------------------
 
 The changes are:
 
@@ -2035,21 +2038,21 @@ The changes are:
   * tracker-store: Don't send unmapped errors in D-Bus replies
   * nautilus: Plugin has been updated to use libtracker-sparql (was libtracker-client)
 
-Translations:
+**Translations:**
 
   * Updated ar: Khaled Hosny
   * Updated cs: Marek Černocký
   * Updated es: Daniel Mustieles
   * Updated sv: Daniel Nylander
 
-Notes:
+**Notes:**
 
   The database version has been incremented, this will force a
   reindex for any existing Tracker installation.
 
 
-NEW in 0.9.37 - 2011-02-03
-==========================
+0.9.37 - 2011-02-03
+--------------------------
 
 The changes are:
 
@@ -2077,7 +2080,7 @@ The changes are:
   * libtrakcer-data: We now restore tracker:modified values after journal replay and backup restore
   * libtracker-data: Don't journal non-embedded data (e.g. nie:plainTextContent)
 
-Translations:
+**Translations:**
 
   * Updated cs: Marek Černocký
   * Updated es: Daniel Mustieles
@@ -2085,14 +2088,14 @@ Translations:
   * Updated fr: Bruno Brouard
   * Updated sl: Andrej Žnidaršič
 
-Notes:
+**Notes:**
 
   The command 'tracker-status' no longer exists, its command line
   features have been merged into 'tracker-control'.
 
 
-NEW in 0.9.36 - 2011-01-27
-==========================
+0.9.36 - 2011-01-27
+--------------------------
 
 The changes are:
 
@@ -2107,18 +2110,18 @@ The changes are:
   * libtracker-data: Fix transient properties
   * functional-tests: Ensure nfo:belongsToContainer is changed on file moves
 
-Translations:
+**Translations:**
 
   * Updated ar: Khaled Hosny
   * Updated cz: Marek Cernocky
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.35 - 2011-01-20
-==========================
+0.9.35 - 2011-01-20
+--------------------------
 
 The changes are:
 
@@ -2157,17 +2160,17 @@ The changes are:
   * tracker-needle: Add Ctrl+W to close window
   * tracker-needle: Use a meaningful window title "Desktop Search"
 
-Translations:
+**Translations:**
 
   * Updated id: Andika Triwidada
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.34 - 2011-01-13
-==========================
+0.9.34 - 2011-01-13
+--------------------------
 
 The changes are:
 
@@ -2195,20 +2198,20 @@ The changes are:
   * tracker-writeback: SLO ontology porting
   * tracker-needle: Use nco:publisher if nco:creator is not available for documents
 
-Translations:
+**Translations:**
   * Updated cz: Marek Cernocky
   * Updated de: Mario Blättermann
   * Updated pt_BR: Mateus Zenaide
   * Updated se: Daniel Nylander
   * Updated sl: Andrej Žnidaršič, Matej Urbančič
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.33 - 2010-12-29
-==========================
+0.9.33 - 2010-12-29
+--------------------------
 
 The changes are:
 
@@ -2241,7 +2244,7 @@ The changes are:
   * tracker-writeback, libtracker-miner: Don't writeback non-strict mined values
   * tracker-explorer: Port to GDBus
 
-Translations:
+**Translations:**
   * Updated cs: Marek Cernocky
   * Updated de: Mario Blättermann
   * Updated es: Daniel Mustieles
@@ -2251,13 +2254,13 @@ Translations:
   * Updated sl: Andrej Žnidaršič
   * Updated zh_CN: Aron Xu
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.32 - 2010-12-16
-==========================
+0.9.32 - 2010-12-16
+--------------------------
 
 The changes are:
 
@@ -2271,16 +2274,16 @@ The changes are:
   * libtracker-data: Sort function test results to avoid test failures
   * libtracker-sparql: Wait for tracker-store before loading plugins
 
-Translations:
+**Translations:**
   * Updated cs: Petr Kovar
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.31 - 2010-12-10
-==========================
+0.9.31 - 2010-12-10
+--------------------------
 
 The changes are:
 
@@ -2306,17 +2309,17 @@ The changes are:
   * tracker-extract: Fixed GUPNP-DLNA extractor, was using "nfo.channels" not "nfo:channels"
   * functional-tests: Don't hardcode python version in scripts
 
-Translations:
+**Translations:**
 
   None
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.30 - 2010-12-02
-==========================
+0.9.30 - 2010-12-02
+--------------------------
 
 The changes are:
 
@@ -2342,18 +2345,18 @@ The changes are:
   * tracker-miner-applications: Re-extract desktop files when locale change detected
   * tracker-status: Added more granularity to the tracker-store status reporting for the journal replay
 
-Translations:
+**Translations:**
 
   * fr: Bruno Brouard
   * pt_BR: Mateus Zenaide
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.29 - 2010-11-24
-==========================
+0.9.29 - 2010-11-24
+--------------------------
 
 The changes are:
 
@@ -2382,7 +2385,7 @@ The changes are:
   * tracker-miner-fs: Use low priority for update_async calls
   * tracker-search: New --software and --software-categories options
 
-Translations:
+**Translations:**
 
   * Updated cs: Marek Cernocky
   * Updated de: Mario Blättermann
@@ -2391,13 +2394,13 @@ Translations:
   * Updated pt_BR: Djavan Fagundes
   * Updated sl: Andrej Žnidaršič
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.28 - 2010-11-11
-==========================
+0.9.28 - 2010-11-11
+--------------------------
 
 The changes are:
 
@@ -2428,7 +2431,7 @@ The changes are:
   * libtracker-miner: Added documentation for _manager_reindex_by_mimetype() and _manager_index_file()
   * tracker-store: Queue queries while backup is taking place
 
-Translations:
+**Translations:**
 
   * Added pa: A S Alam
   * Updated cs: Marek Cernocky
@@ -2438,13 +2441,13 @@ Translations:
   * Updated de: Mario Blättermann
   * Updated fr: Bruno Brouard
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.27 - 2010-10-21
-==========================
+0.9.27 - 2010-10-21
+--------------------------
 
 The changes are:
 
@@ -2470,19 +2473,19 @@ The changes are:
   * tracker-miner-fs: Removed all tests, test source file was just a main()
   * tracker-control: Fix runtime critical when journal file doesn't exist
 
-Translations:
+**Translations:**
 
   * de: Mario Blättermann
   * sl: Andrej Žnidaršič
   * fr: Bruno Brouard
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.26 - 2010-10-21
-==========================
+0.9.26 - 2010-10-21
+--------------------------
 
 The changes are:
 
@@ -2508,20 +2511,20 @@ The changes are:
   * tracker-miner-fs: Fixed MeeGo app miner, missing include for GStrv and glib collators
   * utils, mtp-dummy: Fixed missing locale initialization
 
-Translations:
+**Translations:**
 
   * ja: Takayuki KUSANO
   * es: Jorge González
   * et: Mattias Põldaru
   * nb: Kjartan Maraas
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.25 - 2010-10-14
-==========================
+0.9.25 - 2010-10-14
+--------------------------
 
 The changes are:
 
@@ -2563,17 +2566,17 @@ The changes are:
   * coverage: Ignore coverage/ directory
   * utils: mtp-dummy: Implemented renaming of all files after batch copy finishes
 
-Translations:
+**Translations:**
 
   None
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.24 - 2010-10-07
-==========================
+0.9.24 - 2010-10-07
+--------------------------
 
 The changes are:
 
@@ -2605,18 +2608,18 @@ The changes are:
   * utils: mtp-dummy: Added a test case to synthesis an mtp daemon
   * plugins: Evolution: Fixed build error with updated tracker_sparql_connection*() API
 
-Translations:
+**Translations:**
 
   None
 
-Notes:
+**Notes:**
 
   The database version has been incremented, this will force a
   reindex for any existing Tracker installation.
 
 
-NEW in 0.9.23 - 2010-09-30
-==========================
+0.9.23 - 2010-09-30
+--------------------------
 
 The changes are:
 
@@ -2647,17 +2650,17 @@ The changes are:
   * tracker-search-tool: Fixed compilation error with the latest Vala
   * plugins: Evolution: Fixed the UID format of the URL
 
-Translations:
+**Translations:**
 
   * Updated pl: Piotr Drąg
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.22 - 2010-09-23
-==========================
+0.9.22 - 2010-09-23
+--------------------------
 
 The changes are:
 
@@ -2682,17 +2685,17 @@ The changes are:
   * tracker-extract: Fixed QUILLimagefilter support
   * tracker-miner-fs: Fixed use of uninitialized variable
 
-Translations:
+**Translations:**
 
   * Updated et: Mattias Põldaru
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.21 - 2010-09-16
-==========================
+0.9.21 - 2010-09-16
+--------------------------
 
 The changes are:
 
@@ -2719,18 +2722,18 @@ The changes are:
   * tracker-search: Do not use tracker:available for emails
   * tracker-status: Fixed memory leak when printing state
 
-Translations:
+**Translations:**
 
   * Updated hu: Gabor Kelemen
 
-Notes:
+**Notes:**
 
   The database version has been incremented, this will force a
   reindex for any existing Tracker installation.
 
 
-NEW in 0.9.20 - 2010-09-09
-==========================
+0.9.20 - 2010-09-09
+--------------------------
 
 The changes are:
 
@@ -2752,18 +2755,18 @@ The changes are:
   * tracker-miner-flickr: Fixed criticals for photos with no tags
   * tracker-miner-rss: Fixed so tracker-search-icon doesn't show constant polling
 
-Translations:
+**Translations:**
 
   * Updated de: Christian Kirbach
   * Updated se: Daniel Nylander
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.19 - 2010-09-02
-==========================
+0.9.19 - 2010-09-02
+--------------------------
 
 The changes are:
 
@@ -2788,12 +2791,12 @@ The changes are:
   * tracker-control: Avoid compiler warning
   * ttl_sgml: Avoid compiler warning
 
-Translations:
+**Translations:**
 
   * Updated cs: Marek Černocký
   * Updated sl: Andrej Žnidaršič
 
-Notes:
+**Notes:**
 
   The unicode parser will no longer default to GLib and configure will
   error if no libicu or libunistring is available. This is due to
@@ -2802,8 +2805,8 @@ Notes:
   --with-unicode-support=glib
 
 
-NEW in 0.9.18 - 2010-08-26
-==========================
+0.9.18 - 2010-08-26
+--------------------------
 
 The changes are:
 
@@ -2848,7 +2851,7 @@ The changes are:
   * tracker-control: Use TrackerMinerManager to reindex mimetypes
   * tracker-tag: Bail out if none of the passed files exist in the store
 
-Translations:
+**Translations:**
 
   * Updated es: Jorge González
   * Updated fr: Bruno Brouard
@@ -2856,13 +2859,13 @@ Translations:
   * Updated de: Mario Blättermann
   * Updated sl: Andrej Žnidaršič
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.17 - 2010-08-19
-==========================
+0.9.17 - 2010-08-19
+--------------------------
 
 The changes are:
 
@@ -2892,17 +2895,17 @@ The changes are:
   * tracker-search: Improved output for --contacts and --files
   * kmail: Removed this plugin, it was unmaintained
 
-Translations:
+**Translations:**
 
   * Updated es: Jorge González
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.16 - 2010-08-12
-==========================
+0.9.16 - 2010-08-12
+--------------------------
 
 The changes are:
 
@@ -2917,19 +2920,19 @@ The changes are:
   * libtracker-miner: If parent GFile being processed, serialise by waiting
   * libtracker-miner: Print URIs not paths for CREATE monitor event debugging
 
-Translations:
+**Translations:**
 
   * Updated zh_CN: Aron Xu
   * Updated nds: Nils-Christoph Fiedler
 
-Notes:
+**Notes:**
 
   The database version has been incremented, this will force a
   reindex for any existing Tracker installation.
 
 
-NEW in 0.9.15 - 2010-08-05
-==========================
+0.9.15 - 2010-08-05
+--------------------------
 
 The changes are:
 
@@ -2950,20 +2953,20 @@ The changes are:
   * Add first version of FTS functional test cases
   * Add functional test case for busy-handling
 
-Translations:
+**Translations:**
   * Updated hu: Gabor Kelemen
   * Updated nds: Nils-Christoph Fiedler
   * Updated se: Daniel Nylander
   * Updated sl: Andrej Žnidaršič
 
-Notes:
+**Notes:**
 
   The database version has been incremented, this will force a
   reindex for any existing Tracker installation.
 
 
-NEW in 0.9.14 - 2010-07-23
-==========================
+0.9.14 - 2010-07-23
+--------------------------
 
 The changes are:
 
@@ -3004,18 +3007,18 @@ The changes are:
   * tracker-miner-applications: Fix memleak in process_file_cb()
   * tracker-writeback: Fixed memleak in get_playlist_type()
 
-Translations:
+**Translations:**
   * Updated sl: Andrej Žnidaršič
   * Updated es: Jorge González
   * Updated zh_CN: Jessica Ban
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.13 - 2010-07-16
-==========================
+0.9.13 - 2010-07-16
+--------------------------
 
 The changes are:
 
@@ -3050,19 +3053,19 @@ The changes are:
   * tracker-extract: PDF: Avoid possible NULL dereference
   * tracker-extract: Avoid warnings when compiling C++ code with C-only warning flags
 
-Translations:
+**Translations:**
 
   * Updated de: Mario Blättermann
   * Updated pt: Nicolau Gonçalves
   * Updated cs: Marek Cernocky
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.12 - 2010-07-08
-==========================
+0.9.12 - 2010-07-08
+--------------------------
 
 The changes are:
 
@@ -3094,18 +3097,18 @@ The changes are:
  * tracker-extract: Implement tracker_dbus_send_and_splice() for miner/extractor communications
  * tracker-writeback: Avoid unused variable warning
 
-Translations:
+**Translations:**
 
   * Updated de: Mario Blättermann
   * Updated sl: Andrej Žnidaršič
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.11 - 2010-07-01
-==========================
+0.9.11 - 2010-07-01
+--------------------------
 
 The changes are:
 
@@ -3139,20 +3142,20 @@ The changes are:
  * evolution: Don't fail to add mails with spaces in the folder name
  * function-tests: added mass storage mode test cases
 
-Translations:
+**Translations:**
 
   * Updated et: Mattias Põldaru
   * Updated de: Mario Blättermann
   * Updated es: Jorge González
   * Updated sl: Andrej Žnidaršič
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.10 - 2010-06-24
-==========================
+0.9.10 - 2010-06-24
+--------------------------
 
 The changes are:
 
@@ -3180,19 +3183,19 @@ The changes are:
   * Revert index added for nfo:belongsToContainer
   * Revert "libtracker-data: Fixes NB#174591, Throw error on undefined variable in expressions"
 
-Translations:
+**Translations:**
 
   None
 
-Notes:
+**Notes:**
 
   Building Tracker from the git repository requires updated librest
   bindings not yet released. Building the Flickr miner requires master
   vala to be built. This can be disabled using --disable-miner-flickr.
 
 
-NEW in 0.9.9 - 2010-06-17
-=========================
+0.9.9 - 2010-06-17
+-------------------------
 
 The changes are:
 
@@ -3229,18 +3232,18 @@ The changes are:
   * tracker-miner-fs: Force re-check of mounted path ONLY if an indexed location
   * tracker-minre-fs: Fixed build when there is no DEVKIT or HAL
 
-Translations:
+**Translations:**
 
   None
 
-Notes:
+**Notes:**
 
   The database version up has been incremented, this will force a
   reindex for any existing Tracker installation.
 
 
-NEW in 0.9.8 - 2010-06-10
-=========================
+0.9.8 - 2010-06-10
+-------------------------
 
 The changes are:
 
@@ -3269,19 +3272,19 @@ The changes are:
   * libtracker-db: Renamed .firstindex to first-index.txt
   * libtracker-db: Set contents of first-index.txt to PACKAGE_VERSION
 
-Translations:
+**Translations:**
 
   * Updated sl: Andrej Žnidaršič
   * Updated hu: Gabor Kelemen
   * Updated es: Jorge González
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.7 - 2010-06-03
-=========================
+0.9.7 - 2010-06-03
+-------------------------
 
 Improvements / New:
 
@@ -3317,25 +3320,25 @@ Improvements / New:
   tracker-miner-rss:
   * Link against libtracker-client since we use the API
 
-Bugs:
+**Bugs:**
 
   * NB#167647 - Packages built from tracker depend on python2.5 but call /usr/bin/python
   * GB#619498 - Check if stop word before stemming, not after
   * GB#619929 - tracker-search shouldn't quit if stopword found
   * GB#619535 - MaxWords configuration in FTS config is not used
 
-Translations:
+**Translations:**
 
   * Updated de: Mario Blättermann
   * Updated ja: Takeshi AIHANA
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.6 - 2010-05-27
-=========================
+0.9.6 - 2010-05-27
+-------------------------
 
 Improvements / New:
 
@@ -3372,7 +3375,7 @@ Improvements / New:
   tracker-search:
   * Don't append "*" to all fts:match queries
 
-Bugs:
+**Bugs:**
 
   * GB#619826 - don't clean-up search terms before storing them in history
   * GB#526346 - please add option to disable stemming
@@ -3389,17 +3392,17 @@ Bugs:
   * NB#170142 - Same tags are extracted twice if found from DC:Subject and IPTC:keywords
   * NB#164822 - Need property to associate a video URL with a contact
 
-Translations:
+**Translations:**
 
   * Updated fr: Claude Paroz
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.5 - 2010-05-20
-=========================
+0.9.5 - 2010-05-20
+-------------------------
 
 Improvements / New:
 
@@ -3440,7 +3443,7 @@ Improvements / New:
   tracker-search-tool:
   * Fixed segfault when entering text while categories are selected
 
-Bugs:
+**Bugs:**
 
   * NB#163155 - tracker-extract is crashing while extracting album art of a mp3 file
   * NB#169254 - GLIB CRITICAL ** GLib - g_utf8_strdown: assertion `str != NULL' failed
@@ -3459,19 +3462,19 @@ Bugs:
   * GB#579756 - Unicode Normalization is broken in Indexer and/or Search
   * GB#616836 - Use libunistring's u8_normalize() instead of GLib's g_utf8_normalize()
 
-Translations:
+**Translations:**
 
   * Updated cs: Petr Kovar
   * Updated de: Mario Blättermann
   * Updated sl: Andrej Žnidaršič
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.4 - 2010-05-11
-=========================
+0.9.4 - 2010-05-11
+-------------------------
 
 Improvements / New:
 
@@ -3552,7 +3555,7 @@ Improvements / New:
   * Added "Folders" category
   * Renamed "Office Documents" category to "Documents"
 
-Bugs:
+**Bugs:**
 
   * GB#616548 - DIrectory lists and de-duplication in tracker-preferences
   * GB#617082 - RFE Useability - Learning How to Start the Miners was a Little Unintuitive
@@ -3561,12 +3564,12 @@ Bugs:
   * NB#167616 - Tracker's ISO 8601 timestamp implementation is not correct
   * NB#166717 - Only first DC:Subject and IPTC:Keywords tags are extracted
 
-Translations:
+**Translations:**
 
   * Updated cs: Petr Kovar
   * Updated de: Mario Blättermann
 
-Notes:
+**Notes:**
 
   Due to the HTML extractor changing the document type from
   nfo:Document to nfo:HtmlDocument, we would advise anyone with these
@@ -3577,8 +3580,8 @@ Notes:
   This should make sure all indexed files are correctly adjusted.
 
 
-NEW in 0.9.3 - 2010-04-29
-=========================
+0.9.3 - 2010-04-29
+-------------------------
 
 Improvements / New:
 
@@ -3646,7 +3649,7 @@ Improvements / New:
   * Removed --service (old 0.6 option which is unused)
   * Added support for starting queries using command line arguments
 
-Bugs:
+**Bugs:**
 
   * GB#615930 - crash in evolution caused by tracker plugin
   * GB#616493 - Remove unzip dependency from the OASIS extractor
@@ -3655,18 +3658,18 @@ Bugs:
   * NB#166080 - extraction of copyright for jpg image is partially correct
   * NB#164958 - tracker-search for a default song doesn't work for "beautif" and "beautifu"
 
-Translations:
+**Translations:**
 
   * Updated cs: Petr Kovar
   * Updated sl: Andrej Žnidaršič
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.2 - 2010-04-22
-=========================
+0.9.2 - 2010-04-22
+-------------------------
 
 Improvements / New:
 
@@ -3725,7 +3728,7 @@ Improvements / New:
   tracker-control:
   * Added --reindex-mime-type and --start options to man page docs
 
-Bugs:
+**Bugs:**
 
   * GB#615856 - add html content extraction
   * GB#615868 - Improved OASIS extractor
@@ -3736,19 +3739,19 @@ Bugs:
   * GB#616158 - Improve reading msoffice files
   * NB#161964 - Some special audio files are not displayed in the Music & Radio application after copying to device using USB networking.
 
-Translations:
+**Translations:**
 
   * Updated es: Jorge González
   * Updated sl: Andrej Žnidaršič
   * Updated de: Christian Kirbach
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.1 - 2010-04-15
-=========================
+0.9.1 - 2010-04-15
+-------------------------
 
 Improvements / New:
 
@@ -3799,7 +3802,7 @@ Improvements / New:
   tracker-tag:
   * Support nao:description with --description when using --add
 
-Bugs:
+**Bugs:**
 
   * GB#615182 - Avoid initializing priorities twice in tracker-miner-fs
   * GB#615313 - Avoid Invalid Read when iterating INotifyHandle list
@@ -3812,19 +3815,19 @@ Bugs:
   * NB#163715 - Tracker doesn't handle e.g. "11"^^<http://www.w3.org/2001/XMLSchema#int> correctly
   * NB#163480 - Tracker does not seem to be reading all the tags associated with an image
 
-Translations:
+**Translations:**
 
   * Updated cs: Petr Kovar
   * Updated lt: Gintautas Miliauskas
   * Updated sl: Andrej Žnidaršič
 
-Notes:
+**Notes:**
 
   None
 
 
-NEW in 0.9.0 - 2010-04-08
-=========================
+0.9.0 - 2010-04-08
+-------------------------
 
 Improvements / New:
 
@@ -3864,7 +3867,7 @@ Improvements / New:
   evolution:
   * Avoid e-d-s 2.28 #define causing compilation errors, see GB#613199
 
-Bugs:
+**Bugs:**
 
   * GB#614981, Make distcheck depend on important components
   * GB#614722, Strcasestr is defined on FreeBSD
@@ -3873,19 +3876,19 @@ Bugs:
   * NB#162546, tracker-miner-fs is emitting criticals after resuming...
   * NB#158962, tracker-miner-fs emits criticals for some desktop files
 
-Translations:
+**Translations:**
 
   * Updated de: Mario Blättermann
   * Updated es: Jorge González
 
-Notes:
+**Notes:**
 
   The database version up has been incremented, this will force a
   reindex for any existing Tracker installation.
 
 
-NEW in 0.8.0 - 2010-04-01
-=========================
+0.8.0 - 2010-04-01
+-------------------------
 
 Improvements / New:
 
@@ -3966,7 +3969,7 @@ Improvements / New:
   tracker-search:
   * Sort results for documents, images, videos, files and folders
 
-Bugs:
+**Bugs:**
 
   * GB#613819, Indexing Limitations section is confusing
   * GB#613977, many text mime types are not fully extracted
@@ -3977,7 +3980,7 @@ Bugs:
   * NB#162028, writeback not done for nie:contentCreated
   * GB#613792, tracker-miner-fs critical log messages for jpeg extraction
 
-Translations:
+**Translations:**
 
   * Updated lt: Aurimas Černius, Gintautas Miliauskas
   * Updated de: Mario Blättermann
@@ -3986,14 +3989,14 @@ Translations:
   * Updated es: Jorge González
   * Updated cs: Marek Černocký
 
-Notes:
+**Notes:**
 
   The database version up has been incremented, this will force a
   reindex for any existing Tracker installation.
 
 
-NEW in 0.7.28 - 2010-03-25
-==========================
+0.7.28 - 2010-03-25
+--------------------------
 
 Improvements / New:
 
@@ -4073,17 +4076,17 @@ Improvements / New:
   * Use GAppInfo to launch default applications
   * Set search entry's label mnemonic to focus search entry
 
-Bugs:
+**Bugs:**
 
   * GB#613562, tracker-search displays results for unavailable data
 
-Translations:
+**Translations:**
 
   * Updated de: Mario Blättermann
   * Updated sl: Andrej Žnidaršič
   * Updated es: Jorge González
 
-Notes:
+**Notes:**
 
   This release is considered a Release Candidate for 0.8. Assuming no
   major regressions are found with it, the next release is likely to
@@ -4095,8 +4098,8 @@ Notes:
   The Deskbar applet has now been removed from Tracker.
 
 
-NEW in 0.7.27 - 2010-03-19
-==========================
+0.7.27 - 2010-03-19
+--------------------------
 
 Improvements / New:
 
@@ -4111,23 +4114,23 @@ Improvements / New:
   * Fixed miner-web introspection, "association" was enum, now bool
   * Renamed "association" to "associated"
 
-Bugs:
+**Bugs:**
 
   * GB#613268, missing file in tarball
 
-Translations:
+**Translations:**
 
   None
 
-Notes:
+**Notes:**
 
   The Deskbar applet packaged with Tracker is currently out of date
   and needs some love to get it working with the new APIs. It is in
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.26 - 2010-03-18
-==========================
+0.7.26 - 2010-03-18
+--------------------------
 
 Improvements / New:
 
@@ -4199,7 +4202,7 @@ Improvements / New:
   tracker-miner-rss:
   * Added new RSS feed miner thanks to the work from Michele Tameni & Roberto Guido
 
-Bugs:
+**Bugs:**
 
   * GB#609607, Make tracker build without assuming implicit DSO linking
   * GB#612749, Fix include of libtracker-client/tracker-client.h in libtracker-miner/tracker-miner.h
@@ -4213,22 +4216,22 @@ Bugs:
   * GB#606443, Help kill libegg
   * GB#613114, Date string is leaked in MSOffice extractor
 
-Translations:
+**Translations:**
 
   * Updated sv: Daniel Nylander
   * Updated sl: Andrej Žnidaršič
   * Updated es: Jorge González
   * Updated lt: Gintautas Miliauskas
 
-Notes:
+**Notes:**
 
   The Deskbar applet packaged with Tracker is currently out of date
   and needs some love to get it working with the new APIs. It is in
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.25 - 2010-03-11
-==========================
+0.7.25 - 2010-03-11
+--------------------------
 
 Improvements / New:
 
@@ -4294,7 +4297,7 @@ Improvements / New:
   tracker-sparql:
   * Added --notifies to list classes which notify changes
 
-Bugs:
+**Bugs:**
 
   * GB#612171, Add support for excel extractor to extract the plain text from the excel files
   * GB#609850, tracker-store segfault in tracker_parser_process_word
@@ -4304,7 +4307,7 @@ Bugs:
   * NB#158450, Tracker doesn't remove song from database when deleting song from device
   * NB#159333, wrong stats for nmo:CommunicationChannel
 
-Translations:
+**Translations:**
 
   * Updated et: Mattias Põldaru
   * Updated sl: Andrej Žnidaršič
@@ -4312,7 +4315,7 @@ Translations:
   * Updated es: Jorge González
   * Updated cz: Marek Černocký
 
-Notes:
+**Notes:**
 
   The default tracker-miner-fs.cfg ignore files and directories have
   been changed to avoid duplicate checks which adds to the indexing
@@ -4323,8 +4326,8 @@ Notes:
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.24
-=============
+0.7.24
+-------------
 
 Improvements / New:
 
@@ -4386,7 +4389,7 @@ Improvements / New:
   nautilus:
   * Fixed the tags widget for the Nautilus integration
 
-Bugs:
+**Bugs:**
 
   * GB#611271, Preferences throttle only goes to 15/2
   * GB#611455, PPT extractor is not working is not extracting plainText
@@ -4400,11 +4403,11 @@ Bugs:
   * NB#158864, tracker-store crashes when the file system is full
   * NB#158450, Tracker doesn't remove song from database when deleting song from device
 
-Translations:
+**Translations:**
 
   * Updated pl: Piotr Drąg
 
-Notes:
+**Notes:**
 
   There is a new config option called IndexOpticalDiscs in:
 
@@ -4419,8 +4422,8 @@ Notes:
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.23
-=============
+0.7.23
+-------------
 
 Improvements / New:
 
@@ -4433,23 +4436,23 @@ Improvements / New:
   * Fixed gstreamer GDate free of uninitialised pointer
   * Fixed gstreamer GDate validity checks
 
-Bugs:
+**Bugs:**
 
   * NB#156562, execute mode not available for executables after installation
 
-Translations:
+**Translations:**
 
   * Updated et: Mattias Põldaru
 
-Notes:
+**Notes:**
 
   The Deskbar applet packaged with Tracker is currently out of date
   and needs some love to get it working with the new APIs. It is in
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.22
-=============
+0.7.22
+-------------
 
 Improvements / New:
 
@@ -4516,7 +4519,7 @@ Improvements / New:
   * Fixed headers for panel applet
   * Used correct panel_applet_ functions not panel_applet_gconf_*
 
-Bugs:
+**Bugs:**
 
   * GB#610609, libtracker-client: Don't include a file between G_{BEGIN,END}_DECLS
   * GB#609075, Adding support for pdf extractor to extract the index data from the pdf files
@@ -4529,12 +4532,12 @@ Bugs:
   * NB#157286, tracker-search is case sensitive for stopwords
   * NB#157899, incorrect value set for dates without TZD part or TZD with minutes
 
-Translations:
+**Translations:**
 
   * Updated sl: Andrej Žnidaršič
   * Updated nb: Kjartan Maraas
 
-Notes:
+**Notes:**
 
   The database version up has been incremented, this will force a
   reindex for any existing Tracker installation.
@@ -4544,8 +4547,8 @@ Notes:
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.21
-=============
+0.7.21
+-------------
 
 Improvements / New:
 
@@ -4603,7 +4606,7 @@ Improvements / New:
   kmail:
   * Fixed linking so we include libtracker-client
 
-Bugs:
+**Bugs:**
 
   * GB#610026, Nautilus Tagging Extension does not work at all.
   * GB#610318, Bump GTK+ dep to 2.18 due to gtk_widget_set_can_default()
@@ -4611,13 +4614,13 @@ Bugs:
   * NB#157277, Not able to search for files based on a particular tag
   * NB#149503, ClassUpdateSignaler for MusicPiece doesn't signal subjectsChanged signals
 
-Translations:
+**Translations:**
 
   * Updated de: Mario Blättermann
   * Updated cs: Petr Kovar
   * Updated es: Jorge González
 
-Notes:
+**Notes:**
 
   The database version up has been incremented, this will force a
   reindex for any existing Tracker installation.
@@ -4627,8 +4630,8 @@ Notes:
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.20
-=============
+0.7.20
+-------------
 
 Improvements / New:
 
@@ -4697,7 +4700,7 @@ Improvements / New:
   tracker-search-bar:
   * Use the tracker icon for the tracker-search-bar applet
 
-Bugs:
+**Bugs:**
 
   * GB#609532, Expand search for album coverart
   * GB#609327, Remove libtracker-gtk
@@ -4705,13 +4708,13 @@ Bugs:
   * NB#155064, Height and width are not extracted for images of GIF formats
   * NB#156571, Aspect ratio are not extracted for video files
 
-Translations:
+**Translations:**
 
   * Updated sv: Daniel Nylander
   * Updated es: Jorge González
   * Updated nb: Kjartan Maraas
 
-Notes:
+**Notes:**
 
   The database version up has been incremented, this will force a
   reindex for any existing Tracker installation.
@@ -4721,8 +4724,8 @@ Notes:
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.19
-=============
+0.7.19
+-------------
 
 Improvements / New:
 
@@ -4771,7 +4774,7 @@ Improvements / New:
   examples:
   * Removed "translatable" property from UI files.
 
-Bugs:
+**Bugs:**
 
   * GB#608395, Flac extractor
   * GB#607576, Nautilus extension: A tag might be a nie:InformationElement too
@@ -4779,19 +4782,19 @@ Bugs:
   * NB#155435, tracker is not extracting all the metadata details for MP4 Video files
   * NB#152635, nfo:isContentEncrypted is not populated for DRM protected files
 
-Translations:
+**Translations:**
 
   * Updated zh_CN: Aron Xu
 
-Notes:
+**Notes:**
 
   The Deskbar applet packaged with Tracker is currently out of date
   and needs some love to get it working with the new APIs. It is in
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.18
-=============
+0.7.18
+-------------
 
 Improvements / New:
 
@@ -4825,26 +4828,26 @@ Improvements / New:
   evolution:
   * Timed waiting on the GCond.
 
-Bugs:
+**Bugs:**
 
   * NB#153866, Removing and selecting a resource right afterwards...
 
-Translations:
+**Translations:**
 
   * Updated es: Jorge González
   * Updated et: Mattias Põldaru
   * Updated hu: Gabor Kelemen
   * Updated sl: Andrej Žnidaršič
 
-Notes:
+**Notes:**
 
   The Deskbar applet packaged with Tracker is currently out of date
   and needs some love to get it working with the new APIs. It is in
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.17
-=============
+0.7.17
+-------------
 
 Improvements / New:
 
@@ -4928,22 +4931,22 @@ Improvements / New:
   kmail:
   * Fixed dist tarball by including the missing registrar.xml file.
 
-Bugs:
+**Bugs:**
 
   * NB#144725, Tracker doesn't add ontologies/tracker#added prop...
   * NB#149100, nmm::MusicAlbum does not update when music album...
   * NB#153444, tracker-stats giving incorrect results for contacts...
   * NB#153335, tracker-search -a not returning actual album count
 
-Notes:
+**Notes:**
 
   The Deskbar applet packaged with Tracker is currently out of date
   and needs some love to get it working with the new APIs. It is in
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.16
-=============
+0.7.16
+-------------
 
 Improvements / New:
 
@@ -5003,11 +5006,11 @@ Improvements / New:
   * Fixed reference leak on TrackerMiner.
   * Fixed exit() call when enabling/disabling plugin.
 
-Bugs:
+**Bugs:**
 
   * NB#151295, Tracker goes to error state with certain sparql updates
 
-Notes:
+**Notes:**
 
   The fix for the exit() in Evolution when enabling/disabling the
   plugin is not completely fixed. If you start with the plugin
@@ -5021,8 +5024,8 @@ Notes:
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.15
-=============
+0.7.15
+-------------
 
 Improvements / New:
 
@@ -5044,21 +5047,21 @@ Improvements / New:
   * Added nmm:length for audio files from GStreamer extractor.
   * Fixed nfo:channels and nfo:sampleRate, uint vs int error.
 
-Bugs:
+**Bugs:**
 
   * Fixes GB#572237, Remove deprecated Glib symbols
   * Fixes GB#604655, Fix detection of ioprio
   * Fixes NB#132761, Tracker does not extract metadata from WMA files
 
-Notes:
+**Notes:**
 
   The Deskbar applet packaged with Tracker is currently out of date
   and needs some love to get it working with the new APIs. It is in
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.14
-=============
+0.7.14
+-------------
 
 Improvements / New:
 
@@ -5073,19 +5076,19 @@ Improvements / New:
   tracker-writeback:
   * Added support for CountryName in XMP writeback.
 
-Bugs:
+**Bugs:**
 
   None.
 
-Notes:
+**Notes:**
 
   The Deskbar applet packaged with Tracker is currently out of date
   and needs some love to get it working with the new APIs. It is in
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.13
-=============
+0.7.13
+-------------
 
 Improvements / New:
 
@@ -5126,11 +5129,11 @@ Improvements / New:
   kmail:
   * Fixed nie:url property to be a string, not a resource.
 
-Bugs:
+**Bugs:**
 
   None.
 
-Notes:
+**Notes:**
 
   The database version up has been incremented, this will force a
   reindex for any existing Tracker installation.
@@ -5140,8 +5143,8 @@ Notes:
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.12
-=============
+0.7.12
+-------------
 
 Improvements / New:
 
@@ -5166,12 +5169,12 @@ Improvements / New:
   * Support functions with non-prefixed IRI.
   * Do not support AS outside of select expressions.
 
-Bugs:
+**Bugs:**
 
   * Fixes: GB#603054, fails to build on missing tracker-explorer
   * Fixes: NB#150158, tracker-store memory usage grows a lot dur...
 
-Notes:
+**Notes:**
 
   The database version up has been incremented, this will force a
   reindex for any existing Tracker installation.
@@ -5181,8 +5184,8 @@ Notes:
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.11
-=============
+0.7.11
+-------------
 
 Improvements / New:
 
@@ -5232,19 +5235,19 @@ Improvements / New:
   tracker-search-bar:
   * Fixed results window to hide if text is empty, show if not.
 
-Bugs:
+**Bugs:**
 
   GB#604152, tracker-miner-fs crashes after initial startup
 
-Notes:
+**Notes:**
 
   The Deskbar applet packaged with Tracker is currently out of date
   and needs some love to get it working with the new APIs. It is in
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.10
-=============
+0.7.10
+-------------
 
 Improvements / New:
 
@@ -5296,19 +5299,19 @@ Improvements / New:
   * Updated to show 10 items per category not 5 by default.
   * Added support for tags, bookmarks, contacts and websites.
 
-Bugs:
+**Bugs:**
 
   None.
 
-Notes:
+**Notes:**
 
   The Deskbar applet packaged with Tracker is currently out of date
   and needs some love to get it working with the new APIs. It is in
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.9
-============
+0.7.9
+------------
 
 Improvements / New:
 
@@ -5371,21 +5374,21 @@ Improvements / New:
   rss_reader:
   * Fixed exception handling on import.
 
-Bugs:
+**Bugs:**
 
   * Fixes NB#135360, Images from all memory location are not disp...
   * Fixes GB#598470, Search entry icons grayed out
   * Fixes GB#600973, tracker-control: don't use "-h" to remove th...
 
-Notes:
+**Notes:**
 
   The Deskbar applet packaged with Tracker is currently out of date
   and needs some love to get it working with the new APIs. It is in
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.8
-============
+0.7.8
+------------
 
 Improvements / New:
 
@@ -5413,15 +5416,15 @@ Improvements / New:
   RSS Reader:
   * Add some Zeitgeist interaction to the RSS Reader example.
 
-Notes:
+**Notes:**
 
   The Deskbar applet packaged with Tracker is currently out of date
   and needs some love to get it working with the new APIs. It is in
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.7
-============
+0.7.7
+------------
 
 Improvements / New:
 
@@ -5440,8 +5443,8 @@ Improvements / New:
   * Handle errors when moving items recursively.
 
 
-NEW in 0.7.6
-============
+0.7.6
+------------
 
 Improvements / New:
 
@@ -5516,19 +5519,19 @@ Improvements / New:
   tracker-search-tool:
   * Added interactive searching.
 
-Bugs:
+**Bugs:**
 
   * Fixes GB#600081, Get rid of Bonobo
 
-Notes:
+**Notes:**
 
   The Deskbar applet packaged with Tracker is currently out of date
   and needs some love to get it working with the new APIs. It is in
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.5
-============
+0.7.5
+------------
 
 Improvements / New:
 
@@ -5616,19 +5619,19 @@ Improvements / New:
   tracker-search-tool:
   * Fixed mimetype query.
 
-Bugs:
+**Bugs:**
 
   * Fixes NB#120255, Tracker doesn't read "year" tag from the mp3...
 
-Notes:
+**Notes:**
 
   The Deskbar applet packaged with Tracker is currently out of date
   and needs some love to get it working with the new APIs. It is in
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.4
-============
+0.7.4
+------------
 
 Improvements / New:
 
@@ -5675,20 +5678,20 @@ Improvements / New:
   * Fixed memory leak when processing folders.
   * Fixed progress reporting to go forward not jump around.
 
-Bugs:
+**Bugs:**
 
   * Fixes GB#570608, Translation of firefox-extension
   * Fixes NB#135969, Artist and Album query returns reults other than...
 
-Notes:
+**Notes:**
 
   The Deskbar applet packaged with Tracker is currently out of date
   and needs some love to get it working with the new APIs. It is in
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.3
-============
+0.7.3
+------------
 
 Improvements / New:
 
@@ -5738,22 +5741,22 @@ Improvements / New:
   tracker-search-tool:
   * Fixed UI to be more HIG compliant.
 
-Bugs:
+**Bugs:**
 
   * Fixes GB#590501, Album art heuristic always fails
   * Fixes NB#137046, Properties Are Not Retained Upon File Modific...
   * Fixes NB#141698, List of saved playlist has names of albums too
   * Fixes NB#134107, Optional properties with orderby causes signi...
 
-Notes:
+**Notes:**
 
   The Deskbar applet packaged with Tracker is currently out of date
   and needs some love to get it working with the new APIs. It is in
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.2
-============
+0.7.2
+------------
 
 Improvements / New:
 
@@ -5841,7 +5844,7 @@ Improvements / New:
     for all content.
   * Fixed return value
 
-Bugs:
+**Bugs:**
 
   * Fixes GB#570608 - Translation of firefox-extension
   * Fixes GB#592400 - String translation issues
@@ -5851,15 +5854,15 @@ Bugs:
   * Fixes GB#595752 - Minor string fixes
   * Fixes NB#142257 - Query from QtTracker causes error
 
-Notes:
+**Notes:**
 
   The Deskbar applet packaged with Tracker is currently out of date
   and needs some love to get it working with the new APIs. It is in
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7.1
-============
+0.7.1
+------------
 
 Improvements / New:
 
@@ -5945,7 +5948,7 @@ Improvements / New:
   * Fixed category selector.
   * Fixed crasher when selecting categories.
 
-Bugs:
+**Bugs:**
 
   * Fixes NB#141309, Remove nco:hasPostalAddress cardinality limitation
   * Fixes NB#132655, Tracker-import error handling jams
@@ -5953,15 +5956,15 @@ Bugs:
   * Fixes GB#592400, String translation issues
   * Fixes GB#595752, Minor string fixes
 
-Notes:
+**Notes:**
 
   The Deskbar applet packaged with Tracker is currently out of date
   and needs some love to get it working with the new APIs. It is in
   the same state as it was for 0.6. As such it isn't expected to work.
 
 
-NEW in 0.7
-==========
+0.7
+----------
 
 Improvements / New:
 
@@ -6025,11 +6028,11 @@ Improvements / New:
     These are currently submitted upstream to support the new APIs for
     continued integration between Tracker and GNOME.
 
-Bugs:
+**Bugs:**
 
   Too many to list here and so much development some are even obsolete.
 
-Notes:
+**Notes:**
 
   There is currently no migration path from 0.6. to 0.7. So all
   configurations will have to be re-set up for now. This is planned to
@@ -6039,8 +6042,8 @@ Notes:
   commands too.
 
 
-NEW in 0.6.93:
-==============
+0.6.93:
+-------------=
 Improvements:
   * Fixes tracker-preferences so it mangages removable-devices option.
   * Fixes tracker config typo.
@@ -6073,7 +6076,7 @@ Improvements:
   * Improved performance by sending items to thumbailer AFTER indexing
   * Improves performance/mem of GFile->GQueue in tracker-monitor.c
 
-Bugs:
+**Bugs:**
   * Fixes GB#577656, tracker doesn't build on non-linux platforms
   * Fixes GB#577655, tracker-indexer.c fails to compile when...
   * Fixes LP#355982, crash in tracker-turtle.c with fclose()
@@ -6087,17 +6090,17 @@ Bugs:
   * Fixes NB#106085, Tracked database is not updated when images were...
   * Fixes NB#100642, tracker is still listing the removed tags.
 
-Translations:
+**Translations:**
 - Updated es: Jorge González, Jorge Gonzalez
 - Updated it: Milo Casagrande
 - Updated nl: Reinout van Schouwen
 
-Help Manual Translations:
+**Help Manual Translations:**
 None
 
 
-NEW in 0.6.92:
-==============
+0.6.92:
+-------------=
 Improvements:
 - Fixed memmove error in QDBM when updating a word
 - Fixed GValues leak in _result_set_to_metadata()
@@ -6129,7 +6132,7 @@ Improvements:
 - Updated help strings for configure options of mail push modules
 - Updated GetStats SQL stored procedure call to also include super classes like "Files"
 
-Bugs:
+**Bugs:**
 - Fixed NB#106201, tracker-extract is crashing when extracting the details of a mp3 file (Mikael Ottela)
 - Fixed NB#105133, Mafw-tracker-source does not emit container-changed signal (Martyn Russell)
 - Fixed NB#90455,  Tracker doesn't index Geotags metadata Iptc4xmpCore:Location, photoshop:Country, photoshop:City of JPEG and PNG pictures (Mikael Ottela)
@@ -6143,17 +6146,17 @@ Bugs:
 - Fixed GB#573834, g_timeout_add_seconds should be preferred to g_timeout_add (Marcel Stimberg)
 - Fixed GB#575271, Confusion and error with deskbar-applet module dir detection (Deji Akingunola)
 
-Translations:
+**Translations:**
 - Updated da: Mads Lundby
 - Updated es: Jorge González, Jorge Gonzalez
 - Updated gl: Suso Baleato
 - Updated sv: Daniel Nylander
 
-Help Manual Translations:
+**Help Manual Translations:**
 None
 
-NEW in 0.6.91:
-==============
+0.6.91:
+-------------=
 
 Improvements:
 - Fixed trackerd 'ServiceStatisticsUpdated' signal.
@@ -6236,7 +6239,7 @@ Improvements:
 - Updated extractors to use decodebin not playbin for speed.
 - Updated project wide calls for mtime/size to use GIO not g_lstat().
 
-Bugs:
+**Bugs:**
 - Fixed NB#105133, Mafw-tracker-source does not emit container-...
 - Fixed NB#94201, NP-Audio:Album art not displayed.
 - Fixed NB#96314, libexempi adds Creator in three different locations...
@@ -6255,7 +6258,7 @@ Bugs:
 - Fixed NB#101593, images created from sketch application are listed...
 - Fixed NB#101142, Sorting by Image:Date is incorrect
 - Fixed NB#95573, Keep quiet, we're in a call
-- Fixed GB#102606, [patch] NetBSD: gconf-internals.c: `AF_INET' undeclared (Mikael Ottela)
+- Fixed GB#102606, [patch] NetBSD: gconf-internals.c: `AF_INET` undeclared (Mikael Ottela)
 - Fixed GB#105133, With a 3-monitor xinerama, window placement bad (Martyn Russell)
 - Fixed GB#103260, Session script setup that works with multiple *dm and supports a switchdesk-type feature etc. (Mikael Ottela)
 - Fixed GB#101593, FSF copyright notice wrong in gnome-panel panel (Mikael Ottela)
@@ -6274,7 +6277,7 @@ Bugs:
 - Fixed GB#571736, Get rid of deprecated libart_lgpl
 
 
-Translations:
+**Translations:**
 - Updated da: Mads Lundby
 - Updated es: Jorge González, Jorge Gonzalez
 - Updated hu: Gabor Kelemen
@@ -6282,15 +6285,15 @@ Translations:
 - Updated pt: Nicolau Gonçalves, Nicolau Gonçalves <excentriko@gmail
 - Updated sv: Daniel Nylander
 
-Help Manual Translations:
+**Help Manual Translations:**
 None
 
 
 
-NEW in 0.6.90:
-==============
+0.6.90:
+-------------=
 
-Features:
+**Features:**
 - Major re-factoring over the last 12 months for cleaner code.
 - Modular approach with:
   - libtracker-common
@@ -6343,14 +6346,14 @@ Features:
   - libtracker-common
   - libtracker-module
 
-Missing Support:
+**Missing Support:**
 - Index merging has been removed in this release due to lack of
   time to implementing it and with plans to redesign. SQLite FTS has
   the feature internally and will be used in future releases. This
   is noticeable only for very large data sets where a slowdown can be
   observed.
 
-Bugs:
+**Bugs:**
 - Fixed GB#486733, crash in Deskbar: Trying to launch the Tra... (Carlos Garnacho)
 - Fixed GB#474131, crash in Deskbar: Deskbar search applet --... (Carlos Garnacho)
 - Fixed NB#97029, Typos in the italian translation of the About box (Mikael Ottela)
@@ -6418,7 +6421,7 @@ Bugs:
 - Fixed GB#503725, check/uncheck "Index mounted directories" needs trackerd reindex (Martyn Russell)
 - Fixed NB#98896, ru.po still in KOI8 (Martyn Russell)
 
-Translations:
+**Translations:**
 - Updated ar: Khaled Hosny
 - Updated be: Alexander Nyakhaychyk
 - Updated be@latin: Ihar Hrachyshka
@@ -6445,13 +6448,13 @@ Translations:
 - Updated th: Manatsawin Hanmongkolchai, Isriya Paireepairit
 - Updated zh_CN: Martyn Russell, YangZhang
 
-Help Manual Translations:
+**Help Manual Translations:**
 None
 
 
 
-Tracker 0.6.6
-============= (03 Mar 2008)
+Tracker 0.6.6 (03 Mar 2008)
+-------------
 
   Applet
   * HIG fix for preference window.
@@ -6463,8 +6466,8 @@ Tracker 0.6.6
 
 
 
-Tracker 0.6.5
-============= (27 Feb 2008)
+Tracker 0.6.5 (27 Feb 2008)
+-------------
 
   Applet
   * Removed popup window and replaced with tooltip displaying status
@@ -6498,8 +6501,8 @@ Tracker 0.6.5
 
 
 
-Tracker 0.6.4
-============= (11 Dec 2007)
+Tracker 0.6.4 (11 Dec 2007)
+-------------
 
   * Made indexing more robust by pausing if disk space is low or
     index grows too big.
@@ -6522,8 +6525,8 @@ Tracker 0.6.4
 
 
 
-Tracker 0.6.3
-============= (25 Sep 2007)
+Tracker 0.6.3 (25 Sep 2007)
+-------------
 
   * Fixed memory leaks.
   * New index merging which allows for much better performance and
@@ -6542,8 +6545,8 @@ Tracker 0.6.3
 
 
 
-Tracker 0.6.2
-============= (25 Sep 2007)
+Tracker 0.6.2 (25 Sep 2007)
+-------------
 
   * New Sqlite-based indexer which utilises the new incremental blob
     I/O in sqlite 3.4.
@@ -6571,14 +6574,14 @@ Tracker 0.6.2
     the new Sqlite indexer backend.
 
 
-Tracker 0.6.1
-============= (08 Aug 2007)
+Tracker 0.6.1 (08 Aug 2007)
+-------------
 
   * translations and bugfixes
 
 
-Tracker 0.6.0 "better late than never"
-============= (24 Jul 2007)
+Tracker 0.6.0 "better late than never" (24 Jul 2007)
+-------------
 
   * Evolution Emails (mbox/pop/imap) now indexed.
   * Gaim/Pidgin chat logs now indexed.
@@ -6605,8 +6608,8 @@ Tracker 0.6.0 "better late than never"
      compiling).
 
 
-Tracker 0.5.4 "Speed Daemon"
-============= (26 Jan 2007)
+Tracker 0.5.4 "Speed Daemon" (26 Jan 2007)
+-------------
 
   * Indexing at ludicrous speed - massively optimised indexing so
     its now 10x faster than previous version. Indexing speeds are
@@ -6629,8 +6632,8 @@ Tracker 0.5.4 "Speed Daemon"
   * Got Tracker to run nicely on FUSE based filesystems.
 
 
-Tracker 0.5.3
-============= (24 Dec 2006)
+Tracker 0.5.3 (24 Dec 2006)
+-------------
 
   * Fixed memory leaks when indexing (typical mem usage should now
     be ~6MB RSS when indexing large numbers of files).
@@ -6651,8 +6654,8 @@ Tracker 0.5.3
     possible.
 
 
-Tracker 0.5.2
-============= (21 Nov 2006)
+Tracker 0.5.2 (21 Nov 2006)
+-------------
 
   * Now has l10n/i18n support.
   * Added timeout to all external processes and metadata extractors
@@ -6669,8 +6672,8 @@ Tracker 0.5.2
   * Added desktop files for tracker-search-tool.
 
 
-Tracker 0.5.1
-============= (07 Nov 2006)
+Tracker 0.5.1 (07 Nov 2006)
+-------------
 
   * Inlined a threadsafe version of sqlite to prevent common errors
     like content not being indexed. This can be overriden for those
@@ -6683,8 +6686,8 @@ Tracker 0.5.1
   * Imporved IOprio detection.
 
 
-Tracker 0.5.0
-============= (25 Oct 2006)
+Tracker 0.5.0 (25 Oct 2006)
+-------------
 
   * Completely new backend that has been moved from Mysql to the
     nimble Sqlite database and QDBM inverted word index.
@@ -6708,8 +6711,8 @@ Tracker 0.5.0
     internationalisation support.
 
 
-Tracker 0.0.4 "Now indexing at Warp speed"
-============= (16 May 2006)
+Tracker 0.0.4 "Now indexing at Warp speed" (16 May 2006)
+-------------
 
   * Hugely optimised indexing when many files are waiting to be
     indexed (especially when you first run trackerd).
@@ -6739,8 +6742,8 @@ Tracker 0.0.4 "Now indexing at Warp speed"
   * Fixed build issue for Fedora Core 5.
 
 
-Tracker 0.0.3
-============= (29 Mar 2006)
+Tracker 0.0.3 (29 Mar 2006)
+-------------
 
   * Made D-Bus interface more generic
   * Corrected search results of hyphenated search terms.
@@ -6754,8 +6757,8 @@ Tracker 0.0.3
     compilation of the inlined version.
 
 
-Tracker 0.0.2
-============= (27 Feb 2006)
+Tracker 0.0.2 (27 Feb 2006)
+-------------
 
   * Full inotify support (only compatible with Linux kernels 2.6.13
     or higher) with optimisations for detected moves.
@@ -6783,5 +6786,3 @@ Tracker 0.0.2
 
 15 Sep 2005
   * Tracker project started.
-
-
