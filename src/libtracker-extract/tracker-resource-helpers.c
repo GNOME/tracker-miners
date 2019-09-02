@@ -161,7 +161,7 @@ tracker_extract_new_external_reference (const char *source_uri,
 
 	g_return_val_if_fail (source_uri != NULL && identifier != NULL, NULL);
 
-	uri = tracker_sparql_escape_uri_printf ("tracker:ExternalReference:%s", source_uri);
+	uri = tracker_sparql_escape_uri_printf ("urn:ExternalReference:%s:%s", source_uri, identifier);
 
 	external_reference = tracker_resource_new (uri);
 	tracker_resource_set_uri (external_reference, "rdf:type", "tracker:ExternalReference");

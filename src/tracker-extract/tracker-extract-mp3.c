@@ -2740,7 +2740,7 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 			mb_release_group_id = tracker_extract_new_external_reference("https://musicbrainz.org/doc/Release_Group",
 			                                                             md.mb_release_group_id);
 
-			tracker_resource_set_take_relation (md.album, "tracker:hasExternalReference", mb_release_group_id);
+			tracker_resource_add_take_relation (md.album, "tracker:hasExternalReference", mb_release_group_id);
 		}
 
 		if (md.track_count > 0) {
@@ -2770,7 +2770,7 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 			TrackerResource *mb_artist_id = tracker_extract_new_external_reference("https://musicbrainz.org/doc/Artist",
 											       md.mb_artist_id);
 
-			tracker_resource_set_relation (md.performer, "tracker:hasExternalReference", mb_artist_id);
+			tracker_resource_add_relation (md.performer, "tracker:hasExternalReference", mb_artist_id);
 			g_object_unref (mb_artist_id);
 		}
 	}
@@ -2818,7 +2818,7 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 		TrackerResource *mb_recording_id = tracker_extract_new_external_reference("https://musicbrainz.org/doc/Recording",
 											  md.mb_recording_id);
 
-		tracker_resource_set_relation (main_resource, "tracker:hasExternalReference", mb_recording_id);
+		tracker_resource_add_relation (main_resource, "tracker:hasExternalReference", mb_recording_id);
 		g_object_unref (mb_recording_id);
 	}
 
@@ -2826,12 +2826,7 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 		TrackerResource *mb_track_id = tracker_extract_new_external_reference("https://musicbrainz.org/doc/Track",
 										      md.mb_track_id);
 
-		if (md.mb_recording_id) {
-			tracker_resource_add_relation (main_resource, "tracker:hasExternalReference", mb_track_id);
-		} else {
-			tracker_resource_set_relation (main_resource, "tracker:hasExternalReference", mb_track_id);
-		}
-
+		tracker_resource_add_relation (main_resource, "tracker:hasExternalReference", mb_track_id);
 		g_object_unref (mb_track_id);
 	}
 
