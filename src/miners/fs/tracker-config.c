@@ -44,6 +44,7 @@
 #define DEFAULT_THROTTLE                         0        /* 0->20 */
 #define DEFAULT_INDEX_REMOVABLE_DEVICES          FALSE
 #define DEFAULT_INDEX_OPTICAL_DISCS              FALSE
+#define DEFAULT_INDEX_APPLICATIONS               TRUE
 #define DEFAULT_INDEX_ON_BATTERY                 FALSE
 #define DEFAULT_INDEX_ON_BATTERY_FIRST_TIME      TRUE
 #define DEFAULT_LOW_DISK_SPACE_LIMIT             1        /* 0->100 / -1 */
@@ -819,6 +820,14 @@ tracker_config_get_index_optical_discs (TrackerConfig *config)
 	g_return_val_if_fail (TRACKER_IS_CONFIG (config), DEFAULT_INDEX_OPTICAL_DISCS);
 
 	return g_settings_get_boolean (G_SETTINGS (config), "index-optical-discs");
+}
+
+gboolean
+tracker_config_get_index_applications (TrackerConfig *config)
+{
+	g_return_val_if_fail (TRACKER_IS_CONFIG (config), DEFAULT_INDEX_APPLICATIONS);
+
+	return g_settings_get_boolean (G_SETTINGS (config), "index-applications");
 }
 
 gint
