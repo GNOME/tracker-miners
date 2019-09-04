@@ -56,6 +56,7 @@ gboolean       tracker_config_get_index_on_battery_first_time      (TrackerConfi
 gboolean       tracker_config_get_index_removable_devices          (TrackerConfig *config);
 gboolean       tracker_config_get_index_optical_discs              (TrackerConfig *config);
 gboolean       tracker_config_get_index_mounted_directories        (TrackerConfig *config);
+gboolean       tracker_config_get_index_applications               (TrackerConfig *config);
 gint           tracker_config_get_low_disk_space_limit             (TrackerConfig *config);
 GSList *       tracker_config_get_index_recursive_directories      (TrackerConfig *config);
 GSList *       tracker_config_get_index_single_directories         (TrackerConfig *config);

@@ -141,6 +141,15 @@ Boston, MA  02110-1301, USA.
       <default>[ '$HOME', '&amp;DOWNLOAD' ]</default>
     </key>
 
+    <key name="index-applications" type="b">
+      <summary>Index applications installed on the system</summary>
+      <description>
+          If this option is enabled, the filesystem miner will look for .desktop
+          files in the standard XDG system and user data directories.
+      </description>
+      <default>true</default>
+    </key>
+
     <key name="ignored-files" type="as">
       <summary>Ignored files</summary>
       <description>List of file patterns to avoid</description>
