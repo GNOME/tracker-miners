@@ -38,6 +38,7 @@ if get_option('tracker_core') == 'system'
   tracker_uninstalled_domain_rule = join_paths (tracker_sparql.get_pkgconfig_variable('domain_ontologies_dir'), 'default.rule')
   tracker_uninstalled_nepomuk_ontologies_dir = join_paths(tracker_sparql.get_pkgconfig_variable('ontologies_dir'), 'nepomuk')
   tracker_uninstalled_stop_words_dir = join_paths(tracker_sparql.get_pkgconfig_variable('datadir'), 'tracker', 'stop-words')
+  tracker_uninstalled_testutils_dir = join_paths(tracker_sparql.get_pkgconfig_variable('libdir', 'tracker-2.0', 'trackertestutils'))
 else
   tracker_subproject = subproject('tracker',
     default_options: [
@@ -55,6 +56,7 @@ else
   tracker_uninstalled_domain_rule = tracker_subproject.get_variable('tracker_uninstalled_domain_rule')
   tracker_uninstalled_nepomuk_ontologies_dir = tracker_subproject.get_variable('tracker_uninstalled_nepomuk_ontologies_dir')
   tracker_uninstalled_stop_words_dir = tracker_subproject.get_variable('tracker_uninstalled_stop_words_dir')
+  tracker_uninstalled_testutils_dir = tracker_subproject.get_variable('tracker_uninstalled_testutils_dir')
 
   tracker_common_enums_header = tracker_subproject.get_variable('tracker_common_enums_header')
   tracker_gsettings_schemas = tracker_subproject.get_variable('tracker_gsettings_schemas')
@@ -422,6 +424,13 @@ subdir('tests')
 subdir('po')
 
 meson.add_install_script('meson_integration_commands.sh', glib_compile_schemas.path(), gsettings_schema_dir)
+
+run_uninstalled_conf = configuration_data()
+run_uninstalled_conf.set('tracker_uninstalled_testutils_dir', tracker_uninstalled_testutils_dir)
+configure_file(
+  input: 'run-uninstalled.in',
+  output: 'run-uninstalled',
+  configuration: run_uninstalled_conf)
 
 summary = [
   '\nBuild Configuration:',
