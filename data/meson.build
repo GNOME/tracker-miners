@@ -5,7 +5,7 @@ schemas = [
 ]
 
 foreach schema : schemas
-  schemas = configure_file(
+  configure_file(
     input: schema,
     output: schema,
     copy: true,
@@ -32,6 +32,7 @@ tracker_miners_settings_enums = custom_target('tracker-miners-common-settings-en
 # them being installed into /usr.
 #
 compile_schemas_deps = [tracker_miners_settings_enums]
+
 if get_option('tracker_core') == 'subproject'
   # Here we do an ugly dance to place GSettings schemas from tracker
   # and tracker-miners into the same directory. The `glib-compile-schemas`
@@ -64,6 +65,7 @@ custom_target('tracker-miners-compile-schemas',
   output: 'gschemas.compiled',
   command: [glib_compile_schemas, meson.current_build_dir()],
   build_by_default: true,
-  depends: compile_schemas_deps)
+  depends: compile_schemas_deps,
+  depend_files: schemas)
 
 tracker_miners_uninstalled_gsettings_schema_dir = meson.current_build_dir()
