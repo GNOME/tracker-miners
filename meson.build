@@ -423,6 +423,13 @@ subdir('po')
 
 meson.add_install_script('meson_integration_commands.sh', glib_compile_schemas.path(), gsettings_schema_dir)
 
+run_uninstalled_conf = configuration_data()
+run_uninstalled_conf.set('tracker_uninstalled_testutils_dir', tracker_uninstalled_testutils_dir)
+configure_file(
+  input: 'run-uninstalled.in',
+  output: 'run-uninstalled',
+  configuration: run_uninstalled_conf)
+
 summary = [
   '\nBuild Configuration:',
   '    Prefix:                                 ' + get_option('prefix'),
