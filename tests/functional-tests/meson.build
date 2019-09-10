@@ -20,6 +20,7 @@ extractor_tests = [
   'images/comment-extension-block',
   'images/roi',
   'playlists/playlist-test-1',
+  'office/oasis-doc',
   'office/office-doc',
   'office/powerpoint',
   'office/pdf-doc',

@@ -41,6 +41,7 @@ typedef enum {
 	ODT_TAG_TYPE_CREATED,
 	ODT_TAG_TYPE_GENERATOR,
 	ODT_TAG_TYPE_WORD_TEXT,
+	ODT_TAG_TYPE_WORD_TABLE_CELL,
 	ODT_TAG_TYPE_SLIDE_TEXT,
 	ODT_TAG_TYPE_SPREADSHEET_TEXT,
 	ODT_TAG_TYPE_GRAPHICS_TEXT
@@ -56,7 +57,7 @@ typedef enum {
 
 typedef struct {
 	TrackerResource *metadata;
-	ODTTagType current;
+	GQueue *tag_stack;            /* (element-type: ODTTagType) */
 	const gchar *uri;
 	guint has_title           : 1;
 	guint has_subject         : 1;
@@ -69,7 +70,7 @@ typedef struct {
 } ODTMetadataParseInfo;
 
 typedef struct {
-	ODTTagType current;
+	GQueue *tag_stack;            /* (element-type: ODTTagType) */
 	ODTFileType file_type;
 	GString *content;
 	gulong bytes_pending;
@@ -136,7 +137,7 @@ extract_oasis_content (const gchar     *uri,
 	}
 
 	/* Create parse info */
-	info.current = ODT_TAG_TYPE_UNKNOWN;
+	info.tag_stack = g_queue_new ();
 	info.file_type = file_type;
 	info.content = g_string_new ("");
 	info.bytes_pending = total_bytes;
@@ -162,6 +163,7 @@ extract_oasis_content (const gchar     *uri,
 
 	g_free (content);
 	g_markup_parse_context_free (context);
+	g_queue_free (info.tag_stack);
 }
 
 G_MODULE_EXPORT gboolean
@@ -204,7 +206,7 @@ tracker_extract_get_metadata (TrackerExtractInfo *extract_info)
 
 	/* Create parse info */
 	info.metadata = metadata;
-	info.current = ODT_TAG_TYPE_UNKNOWN;
+	info.tag_stack = g_queue_new ();
 	info.uri = uri;
 
 	/* Create parsing context */
@@ -234,6 +236,8 @@ tracker_extract_get_metadata (TrackerExtractInfo *extract_info)
 	                       file_type,
 	                       metadata);
 
+	g_queue_free (info.tag_stack);
+
 	g_free (uri);
 
 	tracker_extract_info_set_resource (extract_info, metadata);
@@ -252,17 +256,24 @@ xml_start_element_handler_metadata (GMarkupParseContext  *context,
 {
 	ODTMetadataParseInfo *data = user_data;
 
-	if (g_ascii_strcasecmp (element_name, "dc:title") == 0) {
-		data->current = ODT_TAG_TYPE_TITLE;
-	} else if (g_ascii_strcasecmp (element_name, "dc:subject") == 0) {
-		data->current = ODT_TAG_TYPE_SUBJECT;
-	} else if (g_ascii_strcasecmp (element_name, "dc:creator") == 0) {
-		data->current = ODT_TAG_TYPE_AUTHOR;
-	} else if (g_ascii_strcasecmp (element_name, "meta:keyword") == 0) {
-		data->current = ODT_TAG_TYPE_KEYWORDS;
-	} else if (g_ascii_strcasecmp (element_name, "dc:description") == 0) {
-		data->current = ODT_TAG_TYPE_COMMENTS;
-	} else if (g_ascii_strcasecmp (element_name, "meta:document-statistic") == 0) {
+	#define push_tag(id)                                                             \
+		g_queue_push_head (data->tag_stack, GINT_TO_POINTER(id));
+
+	#define handle_tag_and_return(name, id)                                          \
+		if (g_ascii_strcasecmp (element_name, name) == 0) {                          \
+			push_tag (id);                                                           \
+			return;                                                                  \
+		};
+
+	handle_tag_and_return ("dc:title", ODT_TAG_TYPE_TITLE);
+	handle_tag_and_return ("dc:subject", ODT_TAG_TYPE_SUBJECT);
+	handle_tag_and_return ("dc:creator", ODT_TAG_TYPE_AUTHOR);
+	handle_tag_and_return ("meta:keyword", ODT_TAG_TYPE_KEYWORDS);
+	handle_tag_and_return ("dc:description", ODT_TAG_TYPE_COMMENTS);
+	handle_tag_and_return ("meta:creation-date", ODT_TAG_TYPE_CREATED);
+	handle_tag_and_return ("meta:generator", ODT_TAG_TYPE_GENERATOR);
+
+	if (g_ascii_strcasecmp (element_name, "meta:document-statistic") == 0) {
 		TrackerResource *metadata;
 		const gchar **a, **v;
 
@@ -288,14 +299,15 @@ xml_start_element_handler_metadata (GMarkupParseContext  *context,
 			}
 		}
 
-		data->current = ODT_TAG_TYPE_STATS;
-	} else if (g_ascii_strcasecmp (element_name, "meta:creation-date") == 0) {
-		data->current = ODT_TAG_TYPE_CREATED;
-	} else if (g_ascii_strcasecmp (element_name, "meta:generator") == 0) {
-		data->current = ODT_TAG_TYPE_GENERATOR;
-	} else {
-		data->current = -1;
+		push_tag (ODT_TAG_TYPE_STATS);
+
+		return;
 	}
+
+	push_tag (ODT_TAG_TYPE_UNKNOWN);
+
+	#undef push_tag
+	#undef handle_tag
 }
 
 static void
@@ -304,7 +316,9 @@ xml_end_element_handler_metadata (GMarkupParseContext  *context,
                                   gpointer              user_data,
                                   GError              **error)
 {
-	((ODTMetadataParseInfo*) user_data)->current = -1;
+	ODTMetadataParseInfo *data = user_data;
+
+	g_queue_pop_head (data->tag_stack);
 }
 
 static void
@@ -315,6 +329,7 @@ xml_text_handler_metadata (GMarkupParseContext  *context,
                            GError              **error)
 {
 	ODTMetadataParseInfo *data;
+	ODTTagType current;
 	TrackerResource *metadata;
 	gchar *date;
 
@@ -326,7 +341,8 @@ xml_text_handler_metadata (GMarkupParseContext  *context,
 		return;
 	}
 
-	switch (data->current) {
+	current = GPOINTER_TO_INT (g_queue_peek_head (data->tag_stack));
+	switch (current) {
 	case ODT_TAG_TYPE_TITLE:
 		if (data->has_title) {
 			g_warning ("Avoiding additional title (%s) in OASIS document '%s'",
@@ -431,46 +447,51 @@ xml_start_element_handler_content (GMarkupParseContext  *context,
 {
 	ODTContentParseInfo *data = user_data;
 
+	#define push_tag(id)                                                             \
+		g_queue_push_head (data->tag_stack, GINT_TO_POINTER(id));
+
+	#define handle_tag_and_return(name, id)                                          \
+		if (g_ascii_strcasecmp (element_name, name) == 0) {                          \
+			push_tag (id);                                                           \
+			return;                                                                  \
+		};
+
 	switch (data->file_type) {
 	case FILE_TYPE_ODT:
-		if ((g_ascii_strcasecmp (element_name, "text:p") == 0) ||
-		    (g_ascii_strcasecmp (element_name, "text:h") == 0) ||
-		    (g_ascii_strcasecmp (element_name, "text:a") == 0) ||
-		    (g_ascii_strcasecmp (element_name, "text:span") == 0) ||
-		    (g_ascii_strcasecmp (element_name, "table:table-cell") == 0) ||
-		    (g_ascii_strcasecmp (element_name, "text:s") == 0) ||
-		    (g_ascii_strcasecmp (element_name, "text:tab") == 0) ||
-		    (g_ascii_strcasecmp (element_name, "text:line-break") == 0)) {
-			data->current = ODT_TAG_TYPE_WORD_TEXT;
-		} else {
-			data->current = -1;
-		}
-		break;
+		handle_tag_and_return ("text:p", ODT_TAG_TYPE_WORD_TEXT);
+		handle_tag_and_return ("text:h", ODT_TAG_TYPE_WORD_TEXT);
+		handle_tag_and_return ("text:a", ODT_TAG_TYPE_WORD_TEXT);
+		handle_tag_and_return ("text:span", ODT_TAG_TYPE_WORD_TEXT);
+		handle_tag_and_return ("text:s", ODT_TAG_TYPE_WORD_TEXT);
+		handle_tag_and_return ("text:tab", ODT_TAG_TYPE_WORD_TEXT);
+		handle_tag_and_return ("text:line-break", ODT_TAG_TYPE_WORD_TEXT);
+		handle_tag_and_return ("table:table-cell", ODT_TAG_TYPE_WORD_TABLE_CELL);
+
+		push_tag (ODT_TAG_TYPE_UNKNOWN);
+		return;
 
 	case FILE_TYPE_ODP:
-		data->current = ODT_TAG_TYPE_SLIDE_TEXT;
-		break;
+		push_tag (ODT_TAG_TYPE_SLIDE_TEXT);
+		return;
 
 	case FILE_TYPE_ODS:
-		if (g_ascii_strncasecmp (element_name, "text", 4) == 0) {
-			data->current = ODT_TAG_TYPE_SPREADSHEET_TEXT;
-		} else {
-			data->current = -1;
-		}
-		break;
+		handle_tag_and_return ("text", ODT_TAG_TYPE_SPREADSHEET_TEXT);
+		push_tag (ODT_TAG_TYPE_UNKNOWN);
+		return;
 
 	case FILE_TYPE_ODG:
-		if (g_ascii_strncasecmp (element_name, "text", 4) == 0) {
-			data->current = ODT_TAG_TYPE_GRAPHICS_TEXT;
-		} else {
-			data->current = -1;
-		}
-		break;
+		handle_tag_and_return ("text", ODT_TAG_TYPE_GRAPHICS_TEXT);
+		push_tag (ODT_TAG_TYPE_UNKNOWN);
+		return;
 
 	case FILE_TYPE_INVALID:
 		g_message ("Open Office Document type: %d invalid", data->file_type);
-		break;
+		push_tag (ODT_TAG_TYPE_UNKNOWN);
+		return;
 	}
+
+	#undef push_tag
+	#undef handle_tag
 }
 
 static void
@@ -481,13 +502,7 @@ xml_end_element_handler_content (GMarkupParseContext  *context,
 {
 	ODTContentParseInfo *data = user_data;
 
-	/* Don't stop processing if it was a so-called 'empty' tag (e.g. <text:tab/>) */
-	if (!((g_ascii_strcasecmp (element_name, "text:s") == 0)   ||
-	      (g_ascii_strcasecmp (element_name, "text:tab") == 0) ||
-	      (g_ascii_strcasecmp (element_name, "text:line-break") == 0))) {
-		data->current = -1;
-	}
-
+	g_queue_pop_head (data->tag_stack);
 }
 
 static void
@@ -498,10 +513,13 @@ xml_text_handler_content (GMarkupParseContext  *context,
                           GError              **error)
 {
 	ODTContentParseInfo *data = user_data;
+	ODTTagType current;
 	gsize written_bytes = 0;
 
-	switch (data->current) {
+	current = GPOINTER_TO_INT (g_queue_peek_head (data->tag_stack));
+	switch (current) {
 	case ODT_TAG_TYPE_WORD_TEXT:
+	case ODT_TAG_TYPE_WORD_TABLE_CELL:
 	case ODT_TAG_TYPE_SLIDE_TEXT:
 	case ODT_TAG_TYPE_SPREADSHEET_TEXT:
 	case ODT_TAG_TYPE_GRAPHICS_TEXT:
@@ -517,10 +535,21 @@ xml_text_handler_content (GMarkupParseContext  *context,
 		                                MIN (text_len, data->bytes_pending),
 		                                &data->content,
 		                                &written_bytes)) {
+			/* We found valid text! */
+
 			if (data->content->str[data->content->len - 1] != ' ') {
-				/* If some bytes found to be valid, append an extra whitespace
-				 * as separator */
-				g_string_append_c (data->content, ' ');
+				if (current == ODT_TAG_TYPE_WORD_TEXT) {
+					/* We're inside a text field in a word document, so trust
+					 * the spacing given. Tag boundries mark things like bold
+					 * and italic spans.
+					 */
+				} else {
+					/* We don't know the context, we may be combining text from
+					 * multiple spreadsheet cells for example, so make sure the
+					 * text ends with a space.
+					 */
+					g_string_append_c (data->content, ' ');
+				}
 			}
 		}
 
