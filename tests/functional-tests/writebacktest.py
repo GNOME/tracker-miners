@@ -65,6 +65,7 @@ class CommonTrackerWritebackTest (ut.TestCase):
 
         try:
             self.extra_env = cfg.test_environment(self.workdir)
+            self.extra_env['LANG'] = 'en_GB.utf8'
 
             self.sandbox = trackertestutils.helpers.TrackerDBusSandbox(
                 dbus_daemon_config_file=cfg.TEST_DBUS_DAEMON_CONFIG_FILE, extra_env=self.extra_env)
