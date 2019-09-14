@@ -83,4 +83,4 @@ class MinerFTSStopwordsTest (CommonTrackerMinerFTSTest):
 
 
 if __name__ == "__main__":
-    ut.main(failfast=True)
+    ut.main(failfast=True, verbosity=2)

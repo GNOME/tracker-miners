@@ -77,4 +77,4 @@ class ExtractorDecoratorTest(minertest.CommonTrackerMinerTest):
 
 
 if __name__ == '__main__':
-    ut.main()
+    ut.main(verbosity=2)

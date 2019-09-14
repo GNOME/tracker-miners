@@ -290,4 +290,4 @@ if __name__ == "__main__":
     import sys
     sys.exit(77)
 
-    ut.main()
+    ut.main(verbosity=2)
