@@ -1,0 +1,48 @@
+#!/usr/bin/python3
+#
+# Copyright (C) 2019 Sam Thursfield <sam@afuera.me.uk>
+#
+# This is a tool for running development versions of Tracker the build tree.
+#
+# See README.md in tracker.git for usage information.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+#
+
+import os
+import pathlib
+import sys
+
+TRACKER_UNINSTALLED_CLI_DIR = "@tracker_uninstalled_cli_dir@"
+TRACKER_UNINSTALLED_TESTUTILS_DIR = "@tracker_uninstalled_testutils_dir@"
+
+cli_dir = TRACKER_UNINSTALLED_CLI_DIR
+testutils_dir = TRACKER_UNINSTALLED_TESTUTILS_DIR
+
+build_directory = pathlib.Path(__file__).parent
+dbus_config = build_directory.joinpath('tests/test-bus.conf')
+
+env = os.environ
+
+# Add the `tracker` CLI to PATH.
+path = env.get('PATH', '').split(':')
+env['PATH'] = ':'.join([cli_dir] + path)
+
+# Add trackertestutils module to PYTHONPATH
+pythonpath = env.get('PYTHONPATH', '').split(':')
+env['PYTHONPATH'] = ':'.join([testutils_dir] + pythonpath)
+
+args = [sys.executable, '-m', 'trackertestutils', '--dbus-config', dbus_config] + sys.argv[1:]
+os.execve(sys.executable, args, env)
