@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # Copyright (C) 2019, Sam Thursfield (sam@afuera.me.uk)
 #
 # This library is free software; you can redistribute it and/or
@@ -20,9 +18,8 @@
 
 import unittest
 
-from common.utils.extractor import get_tracker_extract_jsonld_output
-from common.utils.helpers import log
-from common.utils.writebacktest import CommonTrackerWritebackTest
+from extractor import get_tracker_extract_jsonld_output
+from writebacktest import CommonTrackerWritebackTest
 
 
 class WritebackAudioTest(CommonTrackerWritebackTest):
@@ -42,7 +39,7 @@ class WritebackAudioTest(CommonTrackerWritebackTest):
 
         self.wait_for_file_change(path, initial_mtime)
 
-        results = get_tracker_extract_jsonld_output(path)
+        results = get_tracker_extract_jsonld_output(self.extra_env, path)
         self.assertIn(TEST_VALUE, results[prop])
 
     def test_writeback_mp3(self):
@@ -58,4 +55,4 @@ class WritebackAudioTest(CommonTrackerWritebackTest):
         self._writeback_test(self.datadir_path('writeback-test-8.mp4'))
 
 if __name__ == "__main__":
-    unittest.main(failfast=True)
+    unittest.main(failfast=True, verbosity=2)

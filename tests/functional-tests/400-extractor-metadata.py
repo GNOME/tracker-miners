@@ -1,7 +1,6 @@
-#!/usr/bin/env python3
 #
 # Copyright (C) 2010, Nokia <ivan.frade@nokia.com>
-# Copyright (C) 2018, Sam Thursfield <sam@afuera.me.uk>
+# Copyright (C) 2018-2019, Sam Thursfield <sam@afuera.me.uk>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -24,12 +23,14 @@ metadata is extracted. Load dynamically the test information from a data
 directory (containing xxx.expected files)
 """
 
-from common.utils import configuration as cfg
-from common.utils.extractor import get_tracker_extract_jsonld_output, TrackerExtractTestCase
+import configuration as cfg
+from extractor import get_tracker_extract_jsonld_output, TrackerExtractTestCase
 import unittest as ut
 import json
 import os
+import shutil
 import sys
+import tempfile
 
 
 class GenericExtractionTestCase(TrackerExtractTestCase):
@@ -82,8 +83,13 @@ class GenericExtractionTestCase(TrackerExtractTestCase):
         filename_to_extract = self.spec['test']['Filename']
         self.file_to_extract = os.path.join(desc_root, filename_to_extract)
 
-        result = get_tracker_extract_jsonld_output(self.file_to_extract)
-        self.__assert_extraction_ok(result)
+        tmpdir = tempfile.mkdtemp(prefix='tracker-extract-test-')
+        try:
+            extra_env = cfg.test_environment(tmpdir)
+            result = get_tracker_extract_jsonld_output(extra_env, self.file_to_extract)
+            self.__assert_extraction_ok(result)
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
 
     @ut.expectedFailure
     def expected_failure_test_extraction(self):
@@ -97,7 +103,7 @@ class GenericExtractionTestCase(TrackerExtractTestCase):
     def __assert_extraction_ok(self, result):
         try:
             self.assert_extract_result_matches_spec(self.spec['metadata'], result, self.file_to_extract, self.descfile)
-        except AssertionError as e:
+        except AssertionError:
             print("\ntracker-extract returned: %s" % json.dumps(result, indent=4))
             raise
 

@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
-
 # Copyright (C) 2010, Nokia (ivan.frade@nokia.com)
+# Copyright (C) 2019, Sam Thursfield (sam@afuera.me.uk)
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -21,14 +20,16 @@
 """Tests for Tracker writeback daemon."""
 
 
+import logging
 import os
 import sys
 import time
 
-from common.utils.extractor import get_tracker_extract_jsonld_output
-from common.utils.helpers import log
-from common.utils.writebacktest import CommonTrackerWritebackTest
+from extractor import get_tracker_extract_jsonld_output
+from writebacktest import CommonTrackerWritebackTest
 import unittest as ut
+
+log = logging.getLogger(__name__)
 
 REASONABLE_TIMEOUT = 5  # Seconds we wait for tracker-writeback to do the work
 
@@ -61,11 +62,11 @@ class WritebackImagesTest (CommonTrackerWritebackTest):
         """
         self.tracker.update(SPARQL_TMPL % (prop, path.as_uri(), prop, prop, TEST_VALUE, path.as_uri()))
 
-        log("Waiting for change on %s" % path)
+        log.debug("Waiting for change on %s", path)
         self.wait_for_file_change(path, initial_mtime)
-        log("Got the change")
+        log.debug("Got the change")
 
-        results = get_tracker_extract_jsonld_output(path, mimetype)
+        results = get_tracker_extract_jsonld_output(self.extra_env, path, mimetype)
         keyDict = expectedKey or prop
         self.assertIn(TEST_VALUE, results[keyDict])
 
@@ -95,7 +96,7 @@ class WritebackImagesTest (CommonTrackerWritebackTest):
 
         time.sleep(REASONABLE_TIMEOUT)
 
-        results = get_tracker_extract_jsonld_output(filename, mimetype)
+        results = get_tracker_extract_jsonld_output(self.extra_env, filename, mimetype)
         self.assertIn("testTag", results["nao:hasTag"])
 
     # JPEG test
@@ -150,4 +151,4 @@ class WritebackImagesTest (CommonTrackerWritebackTest):
 
 
 if __name__ == "__main__":
-    ut.main(failfast=True)
+    ut.main(failfast=True, verbosity=2)

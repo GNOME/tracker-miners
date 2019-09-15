@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
-
 # Copyright (C) 2016, Sam Thursfield (sam@afuera.me.uk)
+# Copyright (C) 2019, Sam Thursfield (sam@afuera.me.uk)
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -21,18 +20,11 @@
 Tests failure cases of tracker-extract.
 """
 
-import unittest as ut
-
-from gi.repository import GLib
-
 import os
 import shutil
-import tempfile
-import time
+import unittest as ut
 
-import common.utils.configuration as cfg
-from common.utils.helpers import log
-from common.utils.system import TrackerSystemAbstraction
+import minertest
 
 
 CORRUPT_FILE = os.path.join(
@@ -48,38 +40,14 @@ VALID_FILE_TITLE = 'Simply Juvenile'
 TRACKER_EXTRACT_FAILURE_DATA_SOURCE = 'tracker:extractor-failure-data-source'
 
 
-class ExtractorDecoratorTest(ut.TestCase):
-    def setUp(self):
-        self.datadir = cfg.create_monitored_test_dir()
-
-        config = {
-            cfg.DCONF_MINER_SCHEMA: {
-                'enable-writeback': GLib.Variant.new_boolean(False),
-                'index-recursive-directories': GLib.Variant.new_strv([]),
-                'index-single-directories': GLib.Variant.new_strv([self.datadir]),
-                'index-optical-discs': GLib.Variant.new_boolean(False),
-                'index-removable-devices': GLib.Variant.new_boolean(False),
-            },
-            'org.freedesktop.Tracker.Store': {
-                'graphupdated-delay': GLib.Variant('i', 100)
-            }
-        }
-
-        self.system = TrackerSystemAbstraction(config)
-        self.system.tracker_miner_fs_testing_start()
-
-    def tearDown(self):
-        self.system.finish()
-
-        cfg.remove_monitored_test_dir(self.datadir)
-
+class ExtractorDecoratorTest(minertest.CommonTrackerMinerTest):
     def test_reextraction(self):
         """Tests whether known files are still re-extracted on user request."""
-        miner_fs = self.system.miner_fs
-        store = self.system.store
+        miner_fs = self.miner_fs
+        store = self.tracker
 
         # Insert a valid file and wait extraction of its metadata.
-        file_path = os.path.join(self.datadir, os.path.basename(VALID_FILE))
+        file_path = os.path.join(self.indexed_dir, os.path.basename(VALID_FILE))
         shutil.copy(VALID_FILE, file_path)
         try:
             file_id, file_urn = store.await_resource_inserted(
@@ -94,9 +62,8 @@ class ExtractorDecoratorTest(ut.TestCase):
             store.await_property_changed(VALID_FILE_CLASS, file_id, 'nie:title')
             assert not store.ask('ASK { <%s> nie:title ?title }' % file_urn)
 
-            log("Sending re-index request")
             # Request re-indexing (same as `tracker index --file ...`)
-            miner_fs.index_file('file://' + os.path.join(self.datadir, file_path))
+            miner_fs.index_file('file://' + os.path.join(self.indexed_dir, file_path))
 
             # The extractor should reindex the file and re-add the metadata that we
             # deleted, so we should see the nie:title property change.
@@ -110,4 +77,4 @@ class ExtractorDecoratorTest(ut.TestCase):
 
 
 if __name__ == '__main__':
-    ut.main()
+    ut.main(verbosity=2)

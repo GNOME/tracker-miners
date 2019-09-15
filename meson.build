@@ -35,6 +35,7 @@ if get_option('tracker_core') == 'system'
   # If we are building against an installed version of tracker core rather than
   # having it as a subproject, these 'uninstalled' locations point to the actual
   # installed locations.
+  tracker_test_dbus_services_dir = join_paths(tracker_sparql.get_pkgconfig_variable('dbus_services_dir'))
   tracker_uninstalled_cli_dir = join_paths (tracker_sparql.get_pkgconfig_variable('exec_prefix'), 'bin')
   tracker_uninstalled_domain_rule = join_paths (tracker_sparql.get_pkgconfig_variable('domain_ontologies_dir'), 'default.rule')
   tracker_uninstalled_nepomuk_ontologies_dir = join_paths(tracker_sparql.get_pkgconfig_variable('ontologies_dir'), 'nepomuk')
@@ -54,6 +55,7 @@ else
   tracker_store = tracker_subproject.get_variable('tracker_store')
   tracker_store_path = tracker_store.full_path()
 
+  tracker_test_dbus_services_dir = tracker_subproject.get_variable('tracker_test_dbus_services_dir')
   tracker_uninstalled_cli_dir = tracker_subproject.get_variable('tracker_uninstalled_cli_dir')
   tracker_uninstalled_domain_rule = tracker_subproject.get_variable('tracker_uninstalled_domain_rule')
   tracker_uninstalled_nepomuk_ontologies_dir = tracker_subproject.get_variable('tracker_uninstalled_nepomuk_ontologies_dir')
@@ -364,15 +366,9 @@ conf.set('includedir', join_paths(get_option('prefix'), get_option('includedir')
 conf.set('libdir', libdir)
 conf.set('libexecdir', join_paths(get_option('prefix'), get_option('libexecdir')))
 conf.set('prefix', get_option('prefix'))
+conf.set('tracker_test_dbus_services_dir', tracker_test_dbus_services_dir)
 conf.set('TRACKER_API_VERSION', '1.0')
 conf.set('VERSION', meson.project_version())
-
-# Configure functional tests to run completely from source tree.
-conf.set('FUNCTIONAL_TESTS_TRACKER_EXTRACT_PATH', join_paths(meson.current_build_dir(), 'src', 'tracker-extract', 'tracker-extract'))
-conf.set('FUNCTIONAL_TESTS_TRACKER_MINER_FS_PATH', join_paths(meson.current_build_dir(), 'src', 'miners', 'fs', 'tracker-miner-fs'))
-conf.set('FUNCTIONAL_TESTS_TRACKER_WRITEBACK_PATH', join_paths(meson.current_build_dir(), 'src', 'tracker-writeback', 'tracker-writeback'))
-
-conf.set('FUNCTIONAL_TESTS_TRACKER_STORE_PATH', tracker_store_path)
 
 configure_file(input: 'config-miners.h.meson.in',
                output: 'config-miners.h',
@@ -391,6 +387,8 @@ tracker_c_args = [
 configinc = include_directories('./')
 srcinc = include_directories('src/')
 
+build_root = meson.current_build_dir()
+
 tracker_internal_libs_dir = join_paths(get_option('prefix'), get_option('libdir'), 'tracker-miners-' + tracker_api_version)
 tracker_install_rpath = ':'.join([tracker_internal_libs_dir, libdir])
 
@@ -403,6 +401,7 @@ tracker_writeback_modules_dir = join_paths(get_option('prefix'), get_option('lib
 
 tracker_uninstalled_extract_rules_dir = join_paths(meson.current_build_dir(), 'src', 'tracker-extract', 'uninstalled-rules')
 tracker_uninstalled_writeback_modules_dir = join_paths(meson.current_build_dir(), 'src', 'tracker-writeback')
+uninstalled_tracker_extract_path = join_paths(meson.current_build_dir(), 'src', 'tracker-extract', 'tracker-extract')
 
 gsettings_schema_dir = join_paths(get_option('prefix'), get_option('datadir'), 'glib-2.0', 'schemas')
 

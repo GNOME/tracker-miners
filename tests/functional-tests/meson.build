@@ -1,8 +1,28 @@
-test_runner = configure_file(
-    input: 'test-runner.sh.in',
-    output: 'test-runner.sh',
-    configuration: conf)
-test_runner = find_program(test_runner)
+python = find_program('python3')
+
+# Configure functional tests to run completely from source tree.
+testconf = configuration_data()
+
+config_json_full_path = join_paths(meson.current_build_dir(), 'configuration.json')
+dconf_profile_full_path = join_paths(meson.current_source_dir(), 'trackertest')
+tracker_extractors_dir = join_paths(meson.current_build_dir(), '..', '..', 'src', 'tracker-extract')
+
+testconf.set('TEST_DBUS_DAEMON_CONFIG_FILE', join_paths(build_root, 'tests', 'test-bus.conf'))
+testconf.set('TEST_DCONF_PROFILE', dconf_profile_full_path)
+testconf.set('TEST_DOMAIN_ONTOLOGY_RULE', tracker_uninstalled_domain_rule)
+testconf.set('TEST_EXTRACTOR_RULES_DIR', tracker_uninstalled_extract_rules_dir)
+testconf.set('TEST_EXTRACTORS_DIR', tracker_extractors_dir)
+testconf.set('TEST_GSETTINGS_SCHEMA_DIR', tracker_miners_uninstalled_gsettings_schema_dir)
+testconf.set('TEST_LANGUAGE_STOP_WORDS_DIR', tracker_uninstalled_stop_words_dir)
+testconf.set('TEST_ONTOLOGIES_DIR', tracker_uninstalled_nepomuk_ontologies_dir)
+testconf.set('TEST_WRITEBACK_MODULES_DIR', tracker_uninstalled_writeback_modules_dir)
+testconf.set('TRACKER_EXTRACT_PATH', uninstalled_tracker_extract_path)
+
+config_json = configure_file(
+  input: 'configuration.json.in',
+  output: 'configuration.json',
+  configuration: testconf
+)
 
 extractor_tests = [
   'audio/audio-test-1',
@@ -47,12 +67,6 @@ functional_tests = [
   '601-applications-sync',
 ]
 
-config_json = configure_file(
-  input: 'configuration.json.in',
-  output: 'configuration.json',
-  configuration: conf
-)
-
 detect_h264_codec = join_paths(meson.current_source_dir(), 'detect-h264-codec.sh')
 detect_h264_codec_result = run_command(detect_h264_codec)
 
@@ -68,35 +82,22 @@ else
   warning('No GStreamer h264 codec was detected. Some extractor tests will be disabled.')
 endif
 
-config_json_full_path = join_paths(meson.current_build_dir(), 'configuration.json')
-dconf_profile_full_path = join_paths(meson.current_source_dir(), 'trackertest')
-tracker_extractors_dir = join_paths(meson.current_build_dir(), '..', '..', 'src', 'tracker-extract')
-
 test_env = environment()
-test_env.set('DCONF_PROFILE', dconf_profile_full_path)
-test_env.set('GSETTINGS_SCHEMA_DIR', tracker_miners_uninstalled_gsettings_schema_dir)
-
-test_env.set('TRACKER_DB_ONTOLOGIES_DIR', tracker_uninstalled_nepomuk_ontologies_dir)
-test_env.set('TRACKER_EXTRACTORS_DIR', tracker_extractors_dir)
-test_env.set('TRACKER_EXTRACTOR_RULES_DIR', tracker_uninstalled_extract_rules_dir)
-test_env.set('TRACKER_LANGUAGE_STOP_WORDS_DIR', tracker_uninstalled_stop_words_dir)
-test_env.set('TRACKER_FUNCTIONAL_TEST_BUILD_DIR', meson.build_root())
+test_env.prepend('PYTHONPATH', tracker_uninstalled_testutils_dir)
 test_env.set('TRACKER_FUNCTIONAL_TEST_CONFIG', config_json_full_path)
-test_env.set('TRACKER_TEST_DOMAIN_ONTOLOGY_RULE', tracker_uninstalled_domain_rule)
-test_env.set('TRACKER_WRITEBACK_MODULES_DIR', tracker_uninstalled_writeback_modules_dir)
-test_env.set('TRACKER_TESTS_VERBOSE', '1')
 
 foreach t: extractor_tests
   data = join_paths('test-extraction-data', t) + '.expected.json'
-  test('functional/extract/' + t, test_runner,
-    args: ['./400-extractor-metadata.py', data],
+  test('functional/extract/' + t, python,
+    args: ['400-extractor-metadata.py', data],
     env: test_env,
     workdir: meson.current_source_dir())
 endforeach
 
 foreach t: functional_tests
-  test('functional-' + t, test_runner,
-    args: './' + t + '.py',
+  file = '@0@.py'.format(t)
+  test('functional-' + t, python,
+    args: [file],
     env: test_env,
     workdir: meson.current_source_dir(),
     timeout: 120)

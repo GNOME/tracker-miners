@@ -1,6 +1,6 @@
-#!/usr/bin/env python3
 #
 # Copyright (C) 2010, Nokia <ivan.frade@nokia.com>
+# Copyright (C) 2019, Sam Thursfield (sam@afuera.me.uk)
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -17,22 +17,21 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 # 02110-1301, USA.
 #
-from common.utils import configuration as cfg
-from common.utils.system import TrackerSystemAbstraction
-from common.utils.helpers import log
-import unittest as ut
 
-from gi.repository import GLib
-
-import shutil
+import logging
 import os
 import time
+
+import configuration as cfg
+from writebacktest import CommonTrackerWritebackTest
 
 # Copy rate, 10KBps (1024b/100ms)
 SLOWCOPY_RATE = 1024
 
+log = logging.getLogger(__name__)
 
-class CommonTrackerApplicationTest (ut.TestCase):
+
+class CommonTrackerApplicationTest (CommonTrackerWritebackTest):
 
     def get_urn_count_by_url(self, url):
         select = """
@@ -56,13 +55,13 @@ class CommonTrackerApplicationTest (ut.TestCase):
         return self.datadir
 
     def get_dest_dir(self):
-        return self.workdir
+        return self.indexed_dir
 
     def slowcopy_file_fd(self, src, fdest, rate=SLOWCOPY_RATE):
         """
         @rate: bytes per 100ms
         """
-        log("Copying slowly\n '%s' to\n '%s'" % (src, fdest.name))
+        log.debug("Copying slowly\n '%s' to\n '%s'", src, fdest.name)
         fsrc = open(src, 'rb')
         buffer_ = fsrc.read(rate)
         while (buffer_ != b""):
@@ -79,21 +78,7 @@ class CommonTrackerApplicationTest (ut.TestCase):
         self.slowcopy_file_fd(src, fdest, rate)
         fdest.close()
 
-    @classmethod
     def setUp(self):
-        self.workdir = cfg.create_monitored_test_dir()
-
-        index_dirs = [self.workdir]
-
-        CONF_OPTIONS = {
-            cfg.DCONF_MINER_SCHEMA: {
-                'index-recursive-directories': GLib.Variant.new_strv(index_dirs),
-                'index-single-directories': GLib.Variant.new_strv([]),
-                'index-optical-discs': GLib.Variant.new_boolean(False),
-                'index-removable-devices': GLib.Variant.new_boolean(False),
-            }
-        }
-
         # Use local directory if available. Installation otherwise.
         if os.path.exists(os.path.join(os.getcwd(),
                                        "test-apps-data")):
@@ -104,12 +89,5 @@ class CommonTrackerApplicationTest (ut.TestCase):
                                         "tracker-tests",
                                         "test-apps-data")
 
-        self.system = TrackerSystemAbstraction()
-        self.system.tracker_all_testing_start(CONF_OPTIONS)
-        self.tracker = self.system.store
 
-    @classmethod
-    def tearDown(self):
-        self.system.finish()
-
-        cfg.remove_monitored_test_dir(self.workdir)
+        super(CommonTrackerApplicationTest, self).setUp()
