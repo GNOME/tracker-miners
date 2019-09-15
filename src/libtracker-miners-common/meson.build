@@ -28,6 +28,10 @@ if libseccomp.found()
   tracker_miners_common_private_dependencies += [libseccomp]
 endif
 
+if build_machine.system() == 'openbsd'
+  libkvm = meson.get_compiler('c').find_library('kvm')
+  tracker_miners_common_dependencies += libkvm
+endif
 
 libtracker_miners_common = static_library('tracker-miners-common',
   tracker_miners_common_sources,
