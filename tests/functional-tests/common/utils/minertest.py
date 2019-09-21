@@ -71,6 +71,11 @@ class CommonTrackerMinerTest (ut.TestCase):
             }
         }
 
+        # We must create the test data before the miner does its
+        # initial crawl, or it may miss some files due
+        # https://gitlab.gnome.org/GNOME/tracker-miners/issues/79.
+        monitored_files = self.create_test_data()
+
         try:
             self.system.tracker_miner_fs_testing_start(config)
         except RuntimeError as e:
@@ -79,7 +84,11 @@ class CommonTrackerMinerTest (ut.TestCase):
         self.tracker = self.system.store
 
         try:
-            self.create_test_data()
+            for tf in monitored_files:
+                self.tracker.await_resource_inserted(NFO_DOCUMENT, url=self.uri(tf))
+
+            # We reset update-tracking, so that updates for data created in the
+            # fixture can't be mixed up with updates created by the test case.
             self.tracker.reset_graph_updates_tracking()
         except Exception as e:
             self.tearDown()
@@ -113,8 +122,7 @@ class CommonTrackerMinerTest (ut.TestCase):
             with open(testfile, 'w') as f:
                 f.write(DEFAULT_TEXT)
 
-        for tf in monitored_files:
-            self.tracker.await_resource_inserted(NFO_DOCUMENT, url=self.uri(tf))
+        return monitored_files
 
     def remove_test_data(self):
         try:
