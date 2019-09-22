@@ -1,5 +1,14 @@
 # The container images used in this pipeline are built from this
-# GitLab project: https://gitlab.gnome.org/sthursfield/tracker-oci-images/
+# GitLab project: https://gitlab.gnome.org/GNOME/tracker-oci-images
+
+variables:
+  # These can be used to see verbose log output from the functional-tests.
+  # See HACKING.md for more information.
+  TRACKER_VERBOSITY: "1"
+  TRACKER_TESTS_VERBOSE: "no"
+
+  # This can be used when debugging test failures that only occur within GitLab CI.
+  MESON_TEST_EXTRA_ARGS: ""
 
 stages:
   - test
