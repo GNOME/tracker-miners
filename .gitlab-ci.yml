@@ -27,7 +27,10 @@ test-fedora-latest:
       # screenful of junk each time unless we strip these.
       unset $(env|grep -o '^CI_[^=]*')
 
-      su tracker -c 'cd build; dbus-run-session -- env LANG=en_US.UTF8 meson test --suite tracker-miners --print-errorlogs'
+      # We limit `meson test` to 4 parallel test processes. The default is to
+      # have one test process per CPU, but our tests are mostly IO bound
+      # and we get timeouts and failures if we try to run 32 of them at once.
+      su tracker -c 'cd build; dbus-run-session -- env LANG=en_US.UTF8 meson test --suite tracker-miners --num-processes=4 --print-errorlogs'
 
   artifacts:
     when: always
