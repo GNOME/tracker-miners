@@ -78,6 +78,7 @@ class CommonTrackerMinerTest(ut.TestCase):
                         'index-single-directories': GLib.Variant.new_strv([]),
                         'index-optical-discs': GLib.Variant.new_boolean(False),
                         'index-removable-devices': GLib.Variant.new_boolean(False),
+                        'index-applications': GLib.Variant.new_boolean(False),
                         'throttle': GLib.Variant.new_int32(5),
                     }
                 }
