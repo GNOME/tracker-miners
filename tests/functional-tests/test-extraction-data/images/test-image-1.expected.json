@@ -7,10 +7,6 @@
         "@type": "nmm:Photo",
         "nfo:width": "699",
         "nfo:height": "464",
-        "nao:hasTag": [
-            { "nao:prefLabel": "test" },
-            { "nao:prefLabel": "tracker" }
-        ],
         "nie:title": "Kid",
         "nmm:fnumber": "5.0",
         "nmm:focalLength": "5.0",
