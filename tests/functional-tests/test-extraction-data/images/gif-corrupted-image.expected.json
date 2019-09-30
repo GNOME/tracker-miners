@@ -1,0 +1,11 @@
+{
+  "test": {
+    "Filename": "gif-corrupted-image.gif",
+    "Bugzilla": "NB#184882",
+    "Comment": "This image make the extractor crash",
+    "ExpectedFailure": true
+  },
+  "metadata": {
+    "@type": "nmm:Photo"
+  }
+}

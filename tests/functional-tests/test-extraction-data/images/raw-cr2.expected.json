@@ -1,0 +1,24 @@
+{
+  "test": {
+    "Filename": "raw-cr2.cr2",
+    "Bugzilla": "",
+    "Comment": "Basic RAW example"
+  },
+  "metadata": {
+    "@type": "nmm:Photo",
+    "nfo:equipment": {
+      "nfo:manufacturer": "Canon",
+      "nfo:model": "Canon EOS 70D",
+      "@type": "nfo:Equipment"
+    },
+    "nfo:width": "5472",
+    "nfo:height": "3648",
+    "nfo:orientation": "nfo:orientation-left",
+    "nmm:flash": "nmm:flash-off",
+    "nmm:fnumber": "4.0",
+    "nmm:focalLength": "18.0",
+    "nmm:isoSpeed": "1250.0",
+    "nmm:meteringMode": "nmm:metering-mode-pattern",
+    "nmm:whiteBalance": "nmm:white-balance-auto"
+  }
+}

@@ -27,13 +27,9 @@ import unittest as ut
 import minertest
 
 
-CORRUPT_FILE = os.path.join(
-    os.path.dirname(__file__), 'test-extraction-data', 'audio',
-    'audio-corrupt.mp3')
-
 VALID_FILE = os.path.join(
     os.path.dirname(__file__), 'test-extraction-data', 'audio',
-    'audio-test-1.mp3')
+    'mp3-id3v2.4-1.mp3')
 VALID_FILE_CLASS = 'http://www.tracker-project.org/temp/nmm#MusicPiece'
 VALID_FILE_TITLE = 'Simply Juvenile'
 

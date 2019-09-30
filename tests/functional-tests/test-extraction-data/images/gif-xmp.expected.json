@@ -1,0 +1,23 @@
+{
+  "test": {
+    "Filename": "gif-xmp.gif",
+    "Comment": "GIF with XMP metadata (injected with exiftool)"
+  },
+  "metadata": {
+    "@type": [
+      "nfo:Image",
+      "nmm:Photo"
+    ],
+    "nie:description": "Test file for the tracker XMP extraction",
+    "nie:title": "A random GIF",
+    "nao:hasTag": {
+      "nao:prefLabel": "nice"
+    },
+    "dc:identifier": "test-file-01-world-domination-path",
+    "dc:source": "http://www.fotonatura.org/revista/articulos/293/3/",
+    "dc:language": "es_ES",
+    "dc:coverage": "from Helsinki all around the world",
+    "nfo:width": "165",
+    "nfo:height": "66"
+  }
+}

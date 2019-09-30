@@ -1,6 +1,6 @@
 {
     "test": {
-        "Filename": "test-image-1.jpg",
+        "Filename": "jpeg-basic.jpg",
         "Comment": "Basic jpeg example"
     },
     "metadata": {

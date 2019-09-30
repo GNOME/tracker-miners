@@ -25,9 +25,9 @@ config_json = configure_file(
 )
 
 extractor_tests = [
-  'audio/audio-test-1',
-  'audio/empty_albumi_song3',
-  'audio/audio-test-2',
+  'audio/mp3-id3v2.4-1',
+  'audio/mp3-id3v2.3-empty-artist-album',
+  'audio/mp3-id3v2.4-2',
 ]
 
 if get_option('unzip_ps_gz_files')
@@ -35,47 +35,47 @@ if get_option('unzip_ps_gz_files')
 endif
 
 if libvorbis.found()
-  extractor_tests += 'audio/audio-test-vorbis-extractor'
+  extractor_tests += 'audio/vorbis'
 endif
 
 if libjpeg.found() and exempi.found() and libexif.found()
   extractor_tests += [
-    'images/test-image-1',
-    'images/roi',
+    'images/jpeg-basic',
+    'images/jpeg-region-of-interest',
   ]
 
   if libiptcdata.found()
     extractor_tests += [
-      'images/test-image-1-iptc-tags',
-      'images/test-iptcdata-records',
+      'images/jpeg-iptc-tags',
+      'images/jpeg-iptcdata-records',
     ]
   endif
 endif
 
 if libgif.found()
   extractor_tests += [
-    'images/corrupted-image',
-    'images/comment-extension-block',
+    'images/gif-comment-extension-block',
+    'images/gif-corrupted-image',
   ]
 
   if exempi.found()
-    extractor_tests += 'images/xmp-loaded-1'
+    extractor_tests += 'images/gif-xmp'
   endif
 endif
 
 if libpng.found()
   extractor_tests += [
-    'images/roi2',
-    'images/test-image-2',
+    'images/png-basic',
+    'images/png-region-of-interest',
   ]
 endif
 
 if libtiff.found()
-  extractor_tests += 'images/test-image-3'
+  extractor_tests += 'images/tiff-basic'
 endif
 
 if gexiv2.found()
-  extractor_tests += 'images/test-image-4'
+  extractor_tests += 'images/raw-cr2'
 endif
 
 if totem_plparser.found()
@@ -124,9 +124,9 @@ detect_h264_codec_result = run_command(detect_h264_codec)
 
 if detect_h264_codec_result.returncode() == 0
   extractor_tests += [
-    'video/184505',
-    'video/video-1',
-    'video/video-2',
+    'video/mov-basic',
+    'video/mp4-basic',
+    'video/mp4-video-without-audio',
   ]
 else
   # FIXME: it would be nicer to visibly mark the tests as 'skipped', but the Meson
