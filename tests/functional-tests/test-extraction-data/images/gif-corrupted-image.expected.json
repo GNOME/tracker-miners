@@ -1,6 +1,6 @@
 {
     "test": {
-        "Filename": "corrupted-image.gif",
+        "Filename": "gif-corrupted-image.gif",
         "Bugzilla": "NB#184882",
         "Comment": "This image make the extractor crash",
         "ExpectedFailure": true

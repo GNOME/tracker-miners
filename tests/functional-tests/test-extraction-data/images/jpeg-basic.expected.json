@@ -1,6 +1,6 @@
 {
     "test": {
-        "Filename": "test-image-1.jpg",
+        "Filename": "jpeg-basic.jpg",
         "Comment": "Basic jpeg example"
     },
     "metadata": {
@@ -11,13 +11,12 @@
         "nmm:fnumber": "5.0",
         "nmm:focalLength": "5.0",
         "nie:comment": "This is a for tracker test",
-        "slo:location":
-            {
-                "slo:postalAddress": {
-                    "nco:locality": "Tig",
-                    "nco:country": "Banglore"
-                }
-            },
+        "slo:location": {
+            "slo:postalAddress": {
+                "nco:locality": "Tig",
+                "nco:country": "Banglore"
+            }
+        },
         "nfo:horizontalResolution": "20.0",
         "nfo:verticalResolution": "20.0"
     }

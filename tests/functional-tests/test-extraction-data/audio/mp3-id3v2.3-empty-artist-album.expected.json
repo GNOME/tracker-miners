@@ -1,6 +1,6 @@
 {
     "test": {
-        "Filename": "empty_albumi_song3.mp3",
+        "Filename": "mp3-id3v2.3-empty-artist-album.mp3",
         "Bugzilla": "NB#223536, NB#223148",
         "Comment": "Mp3 with empty Artist and album. Made extractor crash."
     },

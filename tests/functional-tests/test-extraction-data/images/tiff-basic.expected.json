@@ -1,6 +1,6 @@
 {
     "test": {
-        "Filename": "test-image-3.tif",
+        "Filename": "tiff-basic.tiff",
         "Bugzilla": "",
         "Comment": "Basic TIFF example"
     },

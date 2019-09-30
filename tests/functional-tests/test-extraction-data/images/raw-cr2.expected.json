@@ -1,17 +1,16 @@
 {
     "test": {
-        "Filename": "test-image-4.CR2",
+        "Filename": "raw-cr2.cr2",
         "Bugzilla": "",
         "Comment": "Basic RAW example"
     },
     "metadata": {
         "@type": "nmm:Photo",
-        "nfo:equipment":
-            {
-                "nfo:manufacturer": "Canon",
-                "nfo:model": "Canon EOS 70D",
-                "@type": "nfo:Equipment"
-            },
+        "nfo:equipment": {
+            "nfo:manufacturer": "Canon",
+            "nfo:model": "Canon EOS 70D",
+            "@type": "nfo:Equipment"
+        },
         "nfo:width": "5472",
         "nfo:height": "3648",
         "nfo:orientation": "nfo:orientation-left",

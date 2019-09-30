@@ -1,11 +1,14 @@
 {
     "test": {
-        "Filename": "comment-extension-block.gif",
+        "Filename": "gif-comment-extension-block.gif",
         "Bugzilla": "GB#633118",
         "Comment": "In GIF comments can come in a special block that needs to be handled manually"
     },
     "metadata": {
-        "@type": [ "nfo:Image ", "nmm:Photo" ],
+        "@type": [
+            "nfo:Image ",
+            "nmm:Photo"
+        ],
         "nfo:width": "600",
         "nfo:height": "450",
         "nie:comment": "GIF image format only supports comments in 7-bit ASCII encoding!"

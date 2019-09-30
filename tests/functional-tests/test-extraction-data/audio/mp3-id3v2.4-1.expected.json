@@ -1,6 +1,6 @@
 {
     "test": {
-        "Filename": "audio-test-1.mp3",
+        "Filename": "mp3-id3v2.4-1.mp3",
         "Bugzilla": "",
         "Comment": "Basic MP3 example"
     },
@@ -19,27 +19,25 @@
         "nmm:performer": {
             "@type": "nmm:Artist",
             "nmm:artistName": "AbBaby",
-            "tracker:hasExternalReference": [
-                {
-                    "@id": "urn:ExternalReference:https:%2F%2Fmusicbrainz.org%2Fdoc%2FArtist:234561",
-                    "@type": "tracker:ExternalReference",
-                    "tracker:referenceSource": "https://musicbrainz.org/doc/Artist",
-                    "tracker:referenceIdentifier": "234561"
-                }
-            ]
+            "tracker:hasExternalReference": {
+                "@id": "tracker:ExternalReference:https:%2F%2Fmusicbrainz.org%2Fdoc%2FArtist",
+                "@type": "tracker:ExternalReference",
+                "tracker:referenceSource": "https://musicbrainz.org/doc/Artist",
+                "tracker:referenceIdentifier": "234561"
+            }
         },
         "nmm:musicAlbum": {
             "@type": "nmm:MusicAlbum",
             "nie:title": "SinCos",
             "tracker:hasExternalReference": [
                 {
-                    "@id": "urn:ExternalReference:https:%2F%2Fmusicbrainz.org%2Fdoc%2FRelease:345612",
+                    "@id": "tracker:ExternalReference:https:%2F%2Fmusicbrainz.org%2Fdoc%2FRelease",
                     "@type": "tracker:ExternalReference",
                     "tracker:referenceSource": "https://musicbrainz.org/doc/Release",
                     "tracker:referenceIdentifier": "345612"
                 },
                 {
-                    "@id": "urn:ExternalReference:https:%2F%2Fmusicbrainz.org%2Fdoc%2FRelease_Group:561234",
+                    "@id": "tracker:ExternalReference:https:%2F%2Fmusicbrainz.org%2Fdoc%2FRelease_Group",
                     "@type": "tracker:ExternalReference",
                     "tracker:referenceSource": "https://musicbrainz.org/doc/Release_Group",
                     "tracker:referenceIdentifier": "561234"
@@ -48,13 +46,13 @@
         },
         "tracker:hasExternalReference": [
             {
-                "@id": "urn:ExternalReference:https:%2F%2Fmusicbrainz.org%2Fdoc%2FRecording:456123",
+                "@id": "tracker:ExternalReference:https:%2F%2Fmusicbrainz.org%2Fdoc%2FRecording",
                 "@type": "tracker:ExternalReference",
                 "tracker:referenceSource": "https://musicbrainz.org/doc/Recording",
                 "tracker:referenceIdentifier": "456123"
             },
             {
-                "@id": "urn:ExternalReference:https:%2F%2Fmusicbrainz.org%2Fdoc%2FTrack:123456",
+                "@id": "tracker:ExternalReference:https:%2F%2Fmusicbrainz.org%2Fdoc%2FTrack",
                 "@type": "tracker:ExternalReference",
                 "tracker:referenceSource": "https://musicbrainz.org/doc/Track",
                 "tracker:referenceIdentifier": "123456"

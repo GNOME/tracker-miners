@@ -1,18 +1,27 @@
 {
-	"test": {
-		"Filename": "playlist-test-1.m3u",
-		"Comment": "Regular m3u playlist file"
-	},
-
-	"metadata": {
-		"@type": "nmm:Playlist",
-		"nfo:entryCounter": "5",
-		"nfo:hasMediaFileListEntry": [
-			{ "nfo:entryUrl": "http://www.apnaradio.com/live/ApnaRadio.mp3" },
-			{ "nfo:entryUrl": "http://live.apnaradio.com:6464" },
-			{ "nfo:entryUrl": "http://live.apnaradio.com:2424" },
-			{ "nfo:entryUrl": "http://www.apnaradio.com/live/MaintenanceE.mp3" },
-			{ "nfo:entryUrl": "http://www.apnaradio.com/live/MaintenanceP.mp3" }
-		]
-	}
+    "test": {
+        "Filename": "playlist-test-1.m3u",
+        "Comment": "Regular m3u playlist file"
+    },
+    "metadata": {
+        "@type": "nmm:Playlist",
+        "nfo:entryCounter": "5",
+        "nfo:hasMediaFileListEntry": [
+            {
+                "nfo:entryUrl": "http://www.apnaradio.com/live/ApnaRadio.mp3"
+            },
+            {
+                "nfo:entryUrl": "http://live.apnaradio.com:6464"
+            },
+            {
+                "nfo:entryUrl": "http://live.apnaradio.com:2424"
+            },
+            {
+                "nfo:entryUrl": "http://www.apnaradio.com/live/MaintenanceE.mp3"
+            },
+            {
+                "nfo:entryUrl": "http://www.apnaradio.com/live/MaintenanceP.mp3"
+            }
+        ]
+    }
 }
