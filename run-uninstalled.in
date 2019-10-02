@@ -25,11 +25,8 @@ import os
 import pathlib
 import sys
 
-TRACKER_UNINSTALLED_CLI_DIR = "@tracker_uninstalled_cli_dir@"
-TRACKER_UNINSTALLED_TESTUTILS_DIR = "@tracker_uninstalled_testutils_dir@"
-
-cli_dir = TRACKER_UNINSTALLED_CLI_DIR
-testutils_dir = TRACKER_UNINSTALLED_TESTUTILS_DIR
+cli_dir = "@tracker_uninstalled_cli_dir@"
+testutils_dir = "@tracker_uninstalled_testutils_dir@"
 
 build_directory = pathlib.Path(__file__).parent
 dbus_config = build_directory.joinpath('tests/test-bus.conf')
@@ -43,6 +40,14 @@ env['PATH'] = ':'.join([cli_dir] + path)
 # Add trackertestutils module to PYTHONPATH
 pythonpath = env.get('PYTHONPATH', '').split(':')
 env['PYTHONPATH'] = ':'.join([testutils_dir] + pythonpath)
+
+env['TRACKER_DB_ONTOLOGIES_DIR'] = "@tracker_uninstalled_nepomuk_ontologies_dir@"
+env['TRACKER_EXTRACTOR_RULES_DIR'] = "@tracker_uninstalled_extract_rules_dir@"
+env['TRACKER_EXTRACTORS_DIR'] = "@tracker_uninstalled_extractors_dir@"
+env['TRACKER_LANGUAGE_STOP_WORDS_DIR'] = "@tracker_uninstalled_stop_words_dir@"
+env['TRACKER_MINER_SERVICES_DIR'] = "@tracker_uninstalled_miner_services_dir@"
+env['TRACKER_TEST_DOMAIN_ONTOLOGY_RULE'] = "@tracker_uninstalled_domain_rule@"
+env['TRACKER_WRITEBACK_MODULES_DIR'] = "@tracker_uninstalled_writeback_modules_dir@"
 
 args = [sys.executable, '-m', 'trackertestutils', '--dbus-config', dbus_config] + sys.argv[1:]
 os.execve(sys.executable, args, env)

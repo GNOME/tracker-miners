@@ -429,7 +429,14 @@ meson.add_install_script('meson_integration_commands.sh', glib_compile_schemas.p
 
 run_uninstalled_conf = configuration_data()
 run_uninstalled_conf.set('tracker_uninstalled_cli_dir', tracker_uninstalled_cli_dir)
+run_uninstalled_conf.set('tracker_uninstalled_domain_rule', tracker_uninstalled_domain_rule)
+run_uninstalled_conf.set('tracker_uninstalled_extract_rules_dir', tracker_uninstalled_extract_rules_dir)
+run_uninstalled_conf.set('tracker_uninstalled_extractors_dir', meson.current_build_dir() / 'src' / 'tracker-extract')
+run_uninstalled_conf.set('tracker_uninstalled_miner_services_dir', tracker_uninstalled_miner_services_dir)
+run_uninstalled_conf.set('tracker_uninstalled_nepomuk_ontologies_dir', tracker_uninstalled_nepomuk_ontologies_dir)
+run_uninstalled_conf.set('tracker_uninstalled_stop_words_dir', tracker_uninstalled_stop_words_dir)
 run_uninstalled_conf.set('tracker_uninstalled_testutils_dir', tracker_uninstalled_testutils_dir)
+run_uninstalled_conf.set('tracker_uninstalled_writeback_modules_dir', tracker_uninstalled_writeback_modules_dir)
 configure_file(
   input: 'run-uninstalled.in',
   output: 'run-uninstalled',
