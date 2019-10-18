@@ -41,6 +41,8 @@ env['PATH'] = ':'.join([cli_dir] + path)
 pythonpath = env.get('PYTHONPATH', '').split(':')
 env['PYTHONPATH'] = ':'.join([testutils_dir] + pythonpath)
 
+env['GSETTINGS_SCHEMA_DIR'] = '@uninstalled_gsettings_schema_dir@'
+
 env['TRACKER_DB_ONTOLOGIES_DIR'] = "@tracker_uninstalled_nepomuk_ontologies_dir@"
 env['TRACKER_EXTRACTOR_RULES_DIR'] = "@tracker_uninstalled_extract_rules_dir@"
 env['TRACKER_EXTRACTORS_DIR'] = "@tracker_uninstalled_extractors_dir@"

@@ -437,6 +437,7 @@ run_uninstalled_conf.set('tracker_uninstalled_nepomuk_ontologies_dir', tracker_u
 run_uninstalled_conf.set('tracker_uninstalled_stop_words_dir', tracker_uninstalled_stop_words_dir)
 run_uninstalled_conf.set('tracker_uninstalled_testutils_dir', tracker_uninstalled_testutils_dir)
 run_uninstalled_conf.set('tracker_uninstalled_writeback_modules_dir', tracker_uninstalled_writeback_modules_dir)
+run_uninstalled_conf.set('uninstalled_gsettings_schema_dir', tracker_miners_uninstalled_gsettings_schema_dir)
 configure_file(
   input: 'run-uninstalled.in',
   output: 'run-uninstalled',
