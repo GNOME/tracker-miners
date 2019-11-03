@@ -1,4 +1,5 @@
 [ExtractorRule]
 ModulePath=libextract-gstreamer.so
 MimeTypes=image/*;
+BlockMimeTypes=image/x-dds;
 FallbackRdfTypes=nfo:Image;nmm:Photo;
