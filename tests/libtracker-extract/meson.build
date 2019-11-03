@@ -1,5 +1,6 @@
 libtracker_extract_tests = [
     'extract-info',
+    'module-manager',
     'guarantee',
     'utils',
     'xmp',

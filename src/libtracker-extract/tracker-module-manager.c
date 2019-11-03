@@ -28,6 +28,7 @@
 #define SHUTDOWN_FUNCTION  "tracker_extract_module_shutdown"
 
 typedef struct {
+	const gchar *rule_path;
 	const gchar *module_path; /* intern string */
 	GList *patterns;
 	GStrv fallback_rdf_types;
@@ -65,8 +66,9 @@ dummy_extract_func (TrackerExtractInfo *info)
 }
 
 static gboolean
-load_extractor_rule (GKeyFile  *key_file,
-                     GError   **error)
+load_extractor_rule (GKeyFile    *key_file,
+                     const gchar *rule_path,
+                     GError     **error)
 {
 	GError *local_error = NULL;
 	gchar *module_path, **mimetypes;
@@ -113,6 +115,8 @@ load_extractor_rule (GKeyFile  *key_file,
 
 		return FALSE;
 	}
+
+	rule.rule_path = g_strdup (rule_path);
 
 	rule.fallback_rdf_types = g_key_file_get_string_list (key_file, "ExtractorRule", "FallbackRdfTypes", NULL, NULL);
 
@@ -189,7 +193,7 @@ tracker_extract_module_manager_init (void)
 		key_file = g_key_file_new ();
 
 		if (!g_key_file_load_from_file (key_file, path, G_KEY_FILE_NONE, &error) ||
-		    !load_extractor_rule (key_file, &error)) {
+		    !load_extractor_rule (key_file, path, &error)) {
 			g_warning ("  Could not load extractor rule file '%s': %s", name, error->message);
 			g_clear_error (&error);
 		} else {
@@ -260,6 +264,29 @@ lookup_rules (const gchar *mimetype)
 	g_free (reversed);
 
 	return mimetype_rules;
+}
+
+/**
+ * tracker_extract_module_manager_get_matching_rules:
+ * @mimetype: a MIME type string
+ *
+ * Returns: (transfer none): a list of extract .rule files that support the given type.
+ **/
+GList *
+tracker_extract_module_manager_get_matching_rules (const gchar *mimetype)
+{
+	GList *rule_list, *l;
+	GList *rule_path_list = NULL;
+
+	rule_list = lookup_rules (mimetype);
+
+	for (l = rule_list; l; l = l->next) {
+		RuleInfo *info = l->data;
+
+		rule_path_list = g_list_prepend (rule_path_list, (char *)(info->rule_path));
+	}
+
+	return g_list_reverse (rule_path_list);
 }
 
 GStrv

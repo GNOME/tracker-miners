@@ -47,6 +47,8 @@ GStrv tracker_extract_module_manager_get_rdf_types (void);
 TrackerMimetypeInfo * tracker_extract_module_manager_get_mimetype_handlers  (const gchar *mimetype);
 GStrv                 tracker_extract_module_manager_get_fallback_rdf_types (const gchar *mimetype);
 
+GList *tracker_extract_module_manager_get_matching_rules (const gchar *mimetype);
+
 GModule * tracker_mimetype_info_get_module (TrackerMimetypeInfo          *info,
                                             TrackerExtractMetadataFunc   *extract_func);
 gboolean  tracker_mimetype_info_iter_next  (TrackerMimetypeInfo          *info);

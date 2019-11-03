@@ -1,0 +1,4 @@
+[ExtractorRule]
+ModulePath=TEST_MODULE_AUDIO
+MimeTypes=audio/*;
+FallbackRdfTypes=nfo:Audio;
