@@ -67,6 +67,10 @@ test_extract_rules (void)
 	// No rule should match this.
 	l = tracker_extract_module_manager_get_matching_rules("text/generic");
 	g_assert_cmpint (g_list_length (l), ==, 0);
+
+	// The image/x-blocked MIME type is explicitly blocked, so no rule should match.
+	l = tracker_extract_module_manager_get_matching_rules("image/x-blocked");
+	g_assert_cmpint (g_list_length (l), ==, 0);
 }
 
 int

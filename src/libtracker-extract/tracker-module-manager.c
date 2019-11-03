@@ -30,7 +30,8 @@
 typedef struct {
 	const gchar *rule_path;
 	const gchar *module_path; /* intern string */
-	GList *patterns;
+	GList *allow_patterns;
+	GList *block_patterns;
 	GStrv fallback_rdf_types;
 } RuleInfo;
 
@@ -71,8 +72,8 @@ load_extractor_rule (GKeyFile    *key_file,
                      GError     **error)
 {
 	GError *local_error = NULL;
-	gchar *module_path, **mimetypes;
-	gsize n_mimetypes, i;
+	gchar *module_path, **allow_mimetypes, **block_mimetypes;
+	gsize n_allow_mimetypes, n_block_mimetypes, i;
 	RuleInfo rule = { 0 };
 
 	module_path = g_key_file_get_string (key_file, "ExtractorRule", "ModulePath", &local_error);
@@ -104,9 +105,9 @@ load_extractor_rule (GKeyFile    *key_file,
 		module_path = tmp;
 	}
 
-	mimetypes = g_key_file_get_string_list (key_file, "ExtractorRule", "MimeTypes", &n_mimetypes, &local_error);
+	allow_mimetypes = g_key_file_get_string_list (key_file, "ExtractorRule", "MimeTypes", &n_allow_mimetypes, &local_error);
 
-	if (!mimetypes) {
+	if (!allow_mimetypes) {
 		g_free (module_path);
 
 		if (local_error) {
@@ -116,6 +117,10 @@ load_extractor_rule (GKeyFile    *key_file,
 		return FALSE;
 	}
 
+	/* This key is optional */
+	block_mimetypes = g_key_file_get_string_list (key_file, "ExtractorRule", "BlockMimeTypes", &n_block_mimetypes, &local_error);
+	g_debug("Block mimetypes for %s: %i", rule_path, n_block_mimetypes);
+
 	rule.rule_path = g_strdup (rule_path);
 
 	rule.fallback_rdf_types = g_key_file_get_string_list (key_file, "ExtractorRule", "FallbackRdfTypes", NULL, NULL);
@@ -123,15 +128,23 @@ load_extractor_rule (GKeyFile    *key_file,
 	/* Construct the rule */
 	rule.module_path = g_intern_string (module_path);
 
-	for (i = 0; i < n_mimetypes; i++) {
+	for (i = 0; i < n_allow_mimetypes; i++) {
 		GPatternSpec *pattern;
 
-		pattern = g_pattern_spec_new (mimetypes[i]);
-		rule.patterns = g_list_prepend (rule.patterns, pattern);
+		pattern = g_pattern_spec_new (allow_mimetypes[i]);
+		rule.allow_patterns = g_list_prepend (rule.allow_patterns, pattern);
+	}
+
+	for (i = 0; i < n_block_mimetypes; i++) {
+		GPatternSpec *pattern;
+
+		pattern = g_pattern_spec_new (block_mimetypes[i]);
+		rule.block_patterns = g_list_prepend (rule.block_patterns, pattern);
 	}
 
 	g_array_append_val (rules, rule);
-	g_strfreev (mimetypes);
+	g_strfreev (allow_mimetypes);
+	g_strfreev (block_mimetypes);
 	g_free (module_path);
 
 	return TRUE;
@@ -245,15 +258,29 @@ lookup_rules (const gchar *mimetype)
 	/* Apply the rules! */
 	for (i = 0; i < rules->len; i++) {
 		GList *l;
+		gboolean matched_allow_pattern = FALSE, matched_block_pattern = FALSE;
 
 		info = &g_array_index (rules, RuleInfo, i);
 
-		for (l = info->patterns; l; l = l->next) {
+		for (l = info->allow_patterns; l; l = l->next) {
 			if (g_pattern_match (l->data, len, mimetype, reversed)) {
-				/* Match, store for future queries and return */
-				mimetype_rules = g_list_prepend (mimetype_rules, info);
+				g_debug ("%s: Matched on allow pattern", mimetype);
+				matched_allow_pattern = TRUE;
+				break;
 			}
 		}
+
+		for (l = info->block_patterns; l; l = l->next) {
+			if (g_pattern_match (l->data, len, mimetype, reversed)) {
+				g_debug ("%s: Matched on block pattern", mimetype);
+				matched_block_pattern = TRUE;
+				break;
+			}
+		}
+
+		if (matched_allow_pattern && !matched_block_pattern) {
+			mimetype_rules = g_list_prepend (mimetype_rules, info);
+		};
 	}
 
 	if (mimetype_rules) {
