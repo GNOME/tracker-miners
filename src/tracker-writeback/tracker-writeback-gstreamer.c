@@ -847,7 +847,7 @@ writeback_gstreamer_get_album_artist (TrackerSparqlConnection *connection,
 {
 	gchar *artist_urn, *val, *query;
 
-	query = g_strdup_printf ("SELECT ?albumArtist WHERE {<%s> nmm:albumArtist ?albumName}", urn);
+	query = g_strdup_printf ("SELECT ?albumArtist WHERE {<%s> nmm:albumArtist ?albumArtist}", urn);
 	artist_urn = writeback_gstreamer_get_from_query (connection, urn, query, "album artist");
 	val = writeback_gstreamer_get_artist_name (connection, artist_urn);
 	g_free(query);
