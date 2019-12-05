@@ -950,6 +950,43 @@ get_id3 (const gchar *data,
 	return TRUE;
 }
 
+static gboolean
+mp3_parse_xing_header (const gchar          *data,
+                       size_t                frame_pos,
+                       gchar                 mpeg_version,
+                       gint                  n_channels,
+                       guint32              *nr_frames)
+{
+	guint32 field_flags;
+	size_t pos;
+	guint xing_header_offset;
+
+	if (mpeg_version == MPEG_V1) {
+		xing_header_offset = (n_channels == 1) ? 21: 36;
+	} else {
+		xing_header_offset = (n_channels == 1) ? 13: 21;
+	}
+
+	pos = frame_pos + xing_header_offset;
+
+	/* header starts with "Xing" or "Info" */
+	if ((data[pos] == 0x58 && data[pos+1] == 0x69 && data[pos+2] == 0x6E && data[pos+3] == 0x67) ||
+	    (data[pos] == 0x49 && data[pos+1] == 0x6E && data[pos+2] == 0x46 && data[pos+3] == 0x6F)) {
+		g_debug ("XING header found");
+	} else {
+		return FALSE;
+	}
+
+	/* Try to extract the number of frames if the frames field flag is set */
+	pos += 4;
+	field_flags = extract_uint32 (&data[pos]);
+	if ((field_flags & 0x0001) > 0) {
+		*nr_frames = extract_uint32 (&data[pos+4]);
+	}
+
+	return TRUE;
+}
+
 /*
  * For the MP3 frame header description, see
  * http://www.mp3-tech.org/programmer/frame_header.html
@@ -978,6 +1015,7 @@ mp3_parse_header (const gchar          *data,
 	guint frames = 0;
 	size_t pos = 0;
 	gint n_channels;
+	guint32 xing_nr_frames = 0;
 
 	pos = seek_pos;
 
@@ -1076,18 +1114,29 @@ mp3_parse_header (const gchar          *data,
 		return FALSE;
 	}
 
-	tracker_resource_set_string (resource, "nfo:codec", "MPEG");
-
 	n_channels = ((header & ch_mask) == ch_mask) ? 1 : 2;
+
+	/* If the file is encoded in variable bit mode (VBR),
+	   try to get the number of frames from the xing header
+	   to compute the file duration.  */
+	if (vbr_flag) {
+		mp3_parse_xing_header (data, seek_pos, mpeg_ver, n_channels, &xing_nr_frames);
+	}
+
+	tracker_resource_set_string (resource, "nfo:codec", "MPEG");
 
 	tracker_resource_set_int (resource, "nfo:channels", n_channels);
 
 	avg_bps /= frames;
 
-	if ((!vbr_flag && frames > VBR_THRESHOLD) || (frames > MAX_FRAMES_SCAN)) {
+	if (vbr_flag && xing_nr_frames > 0) {
+		/* If the file is encoded with variable bitrate mode (VBR)
+		   and the number of frame is known */
+		length = spfp8 * 8 * xing_nr_frames / sample_rate;
+	} else if ((!vbr_flag && frames > VBR_THRESHOLD) || (frames > MAX_FRAMES_SCAN)) {
 		/* If not all frames scanned
 		 * Note that bitrate is always > 0, checked before */
-		length = (filedata->size - filedata->id3v2_size) / (avg_bps ? avg_bps : bitrate) / 125;
+		length = (filedata->size - filedata->id3v2_size) / (avg_bps ? avg_bps : (bitrate / 1000)) / 125;
 	} else {
 		/* Note that sample_rate is always > 0, checked before */
 		length = spfp8 * 8 * frames / sample_rate;
