@@ -31,7 +31,6 @@
 
 typedef struct {
 	gint32 subject_id;
-	gint32 *types;
 } WritebackEvent;
 
 typedef struct {
@@ -154,7 +153,6 @@ writeback_listener_get_property (GObject    *object,
 static void
 free_event (WritebackEvent *event)
 {
-	g_free (event->types);
 	g_free (event);
 }
 
@@ -453,24 +451,13 @@ process_event (gpointer user_data)
 	 * queries that must be made. tracker:uri() is idd unrelated to
 	 * the other part of the query (and is repeated each result, idd) */
 
-	query = g_string_new ("SELECT ");
-	g_string_append_printf (query, "?resource tracker:uri (%d) { "
-		                       "?resource a rdfs:Class . "
-		                       "FILTER (tracker:id (?resource) IN (",
-	                        event->subject_id);
-
-	for (i = 0; event->types[i] != 0; i++) {
-		gint32 rdf_type = event->types[i];
-
-		if (comma) {
-			g_string_append_printf (query, ", %d", rdf_type);
-		} else {
-			g_string_append_printf (query, "%d", rdf_type);
-			comma = TRUE;
-		}
-	}
-
-	g_string_append (query, ")) }");
+	query = g_string_new (NULL);
+	g_string_append_printf (query,
+				"SELECT ?type tracker:uri (%d) { "
+				"  ?resource a ?type . "
+				"  FILTER (tracker:id(?resource) = %d) "
+				"}",
+	                        event->subject_id, event->subject_id);
 
 	tracker_sparql_connection_query_async (priv->connection,
 	                                       query->str,
@@ -526,15 +513,9 @@ on_writeback_cb (GDBusConnection      *connection,
 
 	if (g_variant_iter_next (iter1, "{iai}", &subject_id, &iter2)) {
 		WritebackEvent *event = g_new (WritebackEvent, 1);
-		GArray *types = g_array_new (TRUE, TRUE, sizeof (gint32));
-		gint32 rdf_type;
-
-		while (g_variant_iter_loop (iter2, "i", &rdf_type))
-			g_array_append_val (types, rdf_type);
 
 		g_variant_iter_free (iter2);
 		event->subject_id = subject_id;
-		event->types = (gint32 *) g_array_free (types, FALSE);
 		g_queue_push_tail (priv->events, event);
 	}
 

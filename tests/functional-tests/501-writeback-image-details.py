@@ -77,7 +77,7 @@ class WritebackKeepDateTest (CommonTrackerWritebackTest):
         # This triggers the writeback
         mark_as_favorite = """
          INSERT {
-           ?u nao:hasTag nao:predefined-tag-favorite .
+           ?u a rdfs:Resource ; nao:hasTag nao:predefined-tag-favorite .
          } WHERE {
            ?u nie:url <%s> .
          }

@@ -57,7 +57,7 @@ class WritebackImagesTest (CommonTrackerWritebackTest):
         TEST_VALUE = prop.replace(":", "") + "test"
         SPARQL_TMPL = """
            DELETE { ?u %s ?v } WHERE { ?u nie:url '%s' ; %s ?v }
-           INSERT { ?u %s '%s' }
+           INSERT { ?u a nie:InformationElement; %s '%s' }
            WHERE  { ?u nie:url '%s' }
         """
         self.tracker.update(SPARQL_TMPL % (prop, path.as_uri(), prop, prop, TEST_VALUE, path.as_uri()))
@@ -77,7 +77,7 @@ class WritebackImagesTest (CommonTrackerWritebackTest):
               <test://writeback-hasTag-test/1> a nao:Tag ;
                         nao:prefLabel "testTag" .
 
-              ?u nao:hasTag <test://writeback-hasTag-test/1> .
+              ?u a rdfs:Resource; nao:hasTag <test://writeback-hasTag-test/1> .
             } WHERE {
               ?u nie:url '%s' .
             }

@@ -53,8 +53,8 @@ class ExtractorDecoratorTest(minertest.CommonTrackerMinerTest):
             #   (Writeback must be disabled in the config so that the file
             #   itself is not changed).
             store.update(
-                'DELETE { <%s> nie:title ?title }'
-                ' WHERE { <%s> nie:title ?title }' % (file_urn, file_urn))
+                'DELETE { GRAPH ?g { <%s> nie:title ?title } }'
+                ' WHERE { GRAPH ?g { <%s> nie:title ?title } }' % (file_urn, file_urn))
             store.await_property_changed(VALID_FILE_CLASS, file_id, 'nie:title')
             assert not store.ask('ASK { <%s> nie:title ?title }' % file_urn)
 

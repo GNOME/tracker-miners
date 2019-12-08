@@ -31,8 +31,8 @@ class WritebackAudioTest(CommonTrackerWritebackTest):
 
         TEST_VALUE = prop.replace(":", "") + "test"
         SPARQL_TMPL = """
-           DELETE { ?u %s ?v } WHERE { ?u nie:url '%s' ; %s ?v }
-           INSERT { ?u %s '%s' }
+           DELETE { ?u a nie:InformationElement; %s ?v } WHERE { ?u nie:url '%s' ; %s ?v }
+           INSERT { ?u a nie:InformationElement; %s '%s' }
            WHERE  { ?u nie:url '%s' }
         """
         self.tracker.update(SPARQL_TMPL % (prop, path.as_uri(), prop, prop, TEST_VALUE, path.as_uri()))

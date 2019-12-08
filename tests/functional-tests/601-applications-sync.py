@@ -70,6 +70,7 @@ class TrackerSyncApplicationTests (CommonTrackerApplicationTest):
 
         # Insert new resource in the store
         insert = """
+        WITH <urn:uuid:472ed0cc-40ff-4e37-9c0c-062d78656540>
         DELETE { ?file a rdfs:Resource }
         WHERE  { ?file nie:url '%s'}
 
