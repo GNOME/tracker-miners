@@ -19,7 +19,7 @@
             "nmm:artistName": "Anna Abreu",
             "tracker:hasExternalReference": [
                 {
-                    "@id": "urn:ExternalReference:https:%2F%2Fmusicbrainz.org%2Fdoc%2FArtist:234561",
+                    "@id": "https://musicbrainz.org/artist/234561",
                     "@type": "tracker:ExternalReference",
                     "tracker:referenceSource": "https://musicbrainz.org/doc/Artist",
                     "tracker:referenceIdentifier": "234561"
@@ -30,13 +30,13 @@
             "@type": "nmm:MusicAlbum",
             "tracker:hasExternalReference": [
                 {
-                    "@id": "urn:ExternalReference:https:%2F%2Fmusicbrainz.org%2Fdoc%2FRelease:345612",
+                    "@id": "https://musicbrainz.org/release/345612",
                     "@type": "tracker:ExternalReference",
                     "tracker:referenceSource": "https://musicbrainz.org/doc/Release",
                     "tracker:referenceIdentifier": "345612"
                 },
                 {
-                    "@id": "urn:ExternalReference:https:%2F%2Fmusicbrainz.org%2Fdoc%2FRelease_Group:561234",
+                    "@id": "https://musicbrainz.org/release-group/561234",
                     "@type": "tracker:ExternalReference",
                     "tracker:referenceSource": "https://musicbrainz.org/doc/Release_Group",
                     "tracker:referenceIdentifier": "561234"
@@ -45,13 +45,13 @@
         },
         "tracker:hasExternalReference": [
             {
-                "@id": "urn:ExternalReference:https:%2F%2Fmusicbrainz.org%2Fdoc%2FRecording:456123",
+                "@id": "https://musicbrainz.org/recording/456123",
                 "@type": "tracker:ExternalReference",
                 "tracker:referenceSource": "https://musicbrainz.org/doc/Recording",
                 "tracker:referenceIdentifier": "456123"
             },
             {
-                "@id": "urn:ExternalReference:https:%2F%2Fmusicbrainz.org%2Fdoc%2FTrack:123456",
+                "@id": "https://musicbrainz.org/track/123456",
                 "@type": "tracker:ExternalReference",
                 "tracker:referenceSource": "https://musicbrainz.org/doc/Track",
                 "tracker:referenceIdentifier": "123456"

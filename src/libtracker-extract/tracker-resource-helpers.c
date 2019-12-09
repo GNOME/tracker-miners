@@ -144,9 +144,23 @@ tracker_extract_new_equipment (const char *make,
  * tracker_extract_new_external_reference:
  * @source_uri: the source uri of the external reference
  * @identifier: the identifier of the external reference
+ * @uri: (allow-none): URI of the resource (leave blank to generate one).
  *
  * Create a new tracker:ExternalReference resource and set its source and its
  * identifier. Both @source and @identifer must be non-%NULL.
+ *
+ * External references link local data to online resources where apps can fetch
+ * more metadata. One example is MusicBrainz, an open database of music releases.
+ * Here is an example of creating a tracker:ExternalResource that could be used
+ * to link the music artist 'Pulp' to the corresponding Musicbrainz data:
+ *
+ * <example>
+ * <programlisting>
+ *     TrackerResource *mb_artist = tracker_extract_new_external_reference (
+ *         "https://musicbrainz.org/doc/Artist", "76b2e842-5e85-4c97-ab62-d5bc315595b5",
+ *         "https://musicbrainz.org/artist/76b2e842-5e85-4c97-ab62-d5bc315595b5");
+ * </programlisting>
+ * </example>
  *
  * Returns: a newly allocated #TrackerResource instance, of type tracker:ExternalReference
  *
@@ -154,21 +168,22 @@ tracker_extract_new_equipment (const char *make,
  */
 TrackerResource *
 tracker_extract_new_external_reference (const char *source_uri,
-				        const char *identifier)
+				        const char *identifier,
+				        const char *uri)
 {
 	TrackerResource *external_reference;
-	gchar *uri;
+	g_autofree gchar *generated_uri = NULL;
 
 	g_return_val_if_fail (source_uri != NULL && identifier != NULL, NULL);
 
-	uri = tracker_sparql_escape_uri_printf ("urn:ExternalReference:%s:%s", source_uri, identifier);
+	if (uri == NULL) {
+		uri = generated_uri = tracker_sparql_escape_uri_printf ("urn:ExternalReference:%s:%s", source_uri, identifier);
+	}
 
 	external_reference = tracker_resource_new (uri);
 	tracker_resource_set_uri (external_reference, "rdf:type", "tracker:ExternalReference");
 	tracker_resource_set_uri (external_reference, "tracker:referenceSource", source_uri);
 	tracker_resource_set_string (external_reference, "tracker:referenceIdentifier", identifier);
-
-	g_free(uri);
 
 	return external_reference;
 }
