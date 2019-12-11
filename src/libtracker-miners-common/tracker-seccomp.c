@@ -138,7 +138,6 @@ tracker_seccomp_init (void)
 	/* Descriptors */
 	ALLOW_RULE (close);
 	ALLOW_RULE (read);
-	ALLOW_RULE (pread64);
 	ALLOW_RULE (lseek);
 	ALLOW_RULE (_llseek);
 	ALLOW_RULE (fadvise64);
@@ -208,6 +207,14 @@ tracker_seccomp_init (void)
 	if (seccomp_rule_add (ctx, SCMP_ACT_ERRNO (EACCES), SCMP_SYS(openat), 1,
 	                      SCMP_CMP(2, SCMP_CMP_MASKED_EQ, O_RDWR, O_RDWR)) < 0)
 		goto out;
+
+	/* Syscalls may differ between libcs */
+#if !defined(__GLIBC__)
+	ALLOW_RULE (rt_sigreturn);
+	ALLOW_RULE (readv);
+#else
+	ALLOW_RULE (pread64);
+#endif
 
 	g_debug ("Loading seccomp rules.");
 
