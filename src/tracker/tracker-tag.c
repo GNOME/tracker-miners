@@ -18,7 +18,7 @@
  * Boston, MA  02110-1301, USA.
  */
 
-#include "config.h"
+#include "config-miners.h"
 
 #include <stdlib.h>
 #include <time.h>
@@ -29,8 +29,6 @@
 #include <gio/gio.h>
 
 #include <libtracker-sparql/tracker-sparql.h>
-
-#include "tracker-tag.h"
 
 #define TAG_OPTIONS_ENABLED() \
 	(resources || \

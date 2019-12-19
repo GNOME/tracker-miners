@@ -19,7 +19,7 @@
  * Boston, MA  02110-1301, USA.
  */
 
-#include "config.h"
+#include "config-miners.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -29,10 +29,9 @@
 #include <glib.h>
 #include <glib/gi18n.h>
 
-#include <libtracker-common/tracker-common.h>
+#include <libtracker-miners-common/tracker-common.h>
 #include <libtracker-sparql/tracker-sparql.h>
 
-#include "tracker-status.h"
 #include "tracker-config.h"
 #include "tracker-miner-manager.h"
 

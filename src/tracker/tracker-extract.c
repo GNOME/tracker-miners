@@ -17,7 +17,7 @@
  * 02110-1301, USA.
  */
 
-#include "config.h"
+#include "config-miners.h"
 
 #include <stdlib.h>
 
@@ -25,10 +25,9 @@
 #include <glib/gi18n.h>
 #include <gio/gio.h>
 
-#include <libtracker-common/tracker-common.h>
+#include <libtracker-miners-common/tracker-common.h>
 
 #include "tracker-config.h"
-#include "tracker-extract.h"
 
 static gchar *verbosity;
 static gchar *output_format = "turtle";
