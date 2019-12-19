@@ -18,6 +18,9 @@ if get_option('writeback')
   subdir('tracker-writeback')
 endif
 
+# CLI subcommands
+subdir('tracker')
+
 custom_target('tracker-miners-settings-enums',
     input: 'libtracker-miners-common/tracker-enums.h',
     output: 'org.freedesktop.TrackerMiners.enums.xml',
