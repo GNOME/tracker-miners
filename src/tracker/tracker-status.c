@@ -572,10 +572,16 @@ status_options_enabled (void)
 }
 
 int
-tracker_status (int argc, const char **argv)
+main (int argc, const char **argv)
 {
 	GOptionContext *context;
 	GError *error = NULL;
+
+	setlocale (LC_ALL, "");
+
+	bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
+	bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
+	textdomain (GETTEXT_PACKAGE);
 
 	context = g_option_context_new (NULL);
 	g_option_context_add_main_entries (context, entries, NULL);
