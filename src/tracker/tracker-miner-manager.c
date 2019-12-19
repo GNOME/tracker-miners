@@ -18,14 +18,16 @@
  * Boston, MA  02110-1301, USA.
  */
 
-#include "config.h"
+#include "config-miners.h"
 
 #include <gio/gio.h>
 #include <string.h>
 
-#include <libtracker-common/tracker-dbus.h>
-#include <libtracker-common/tracker-type-utils.h>
-#include <libtracker-common/tracker-domain-ontology.h>
+#include <libtracker-miners-common/tracker-dbus.h>
+#include <libtracker-miners-common/tracker-type-utils.h>
+#include <libtracker-miners-common/tracker-domain-ontology.h>
+
+#include <libtracker-sparql/tracker-sparql.h>
 
 #include "tracker-miner-manager.h"
 

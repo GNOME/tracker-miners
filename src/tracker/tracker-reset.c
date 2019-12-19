@@ -17,7 +17,7 @@
  * 02110-1301, USA.
  */
 
-#include "config.h"
+#include "config-miners.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -27,11 +27,9 @@
 #include <glib/gprintf.h>
 #include <gio/gio.h>
 
-#include <libtracker-common/tracker-common.h>
-#include <libtracker-data/tracker-data.h>
+#include <libtracker-miners-common/tracker-common.h>
+#include <libtracker-sparql/tracker-sparql.h>
 
-#include "tracker-reset.h"
-#include "tracker-daemon.h"
 #include "tracker-process.h"
 #include "tracker-config.h"
 #include "tracker-color.h"

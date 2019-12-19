@@ -18,7 +18,7 @@
  * 02110-1301, USA.
  */
 
-#include "config.h"
+#include "config-miners.h"
 
 #include <stdlib.h>
 #include <errno.h>
