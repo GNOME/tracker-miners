@@ -62,32 +62,6 @@ static GOptionEntry entries[] = {
 	{ NULL }
 };
 
-static void
-log_handler (const gchar    *domain,
-             GLogLevelFlags  log_level,
-             const gchar    *message,
-             gpointer        user_data)
-{
-	switch (log_level) {
-	case G_LOG_LEVEL_WARNING:
-	case G_LOG_LEVEL_CRITICAL:
-	case G_LOG_LEVEL_ERROR:
-	case G_LOG_FLAG_RECURSION:
-	case G_LOG_FLAG_FATAL:
-		g_fprintf (stderr, "%s\n", message);
-		fflush (stderr);
-		break;
-	case G_LOG_LEVEL_MESSAGE:
-	case G_LOG_LEVEL_INFO:
-	case G_LOG_LEVEL_DEBUG:
-	case G_LOG_LEVEL_MASK:
-	default:
-		g_fprintf (stdout, "%s\n", message);
-		fflush (stdout);
-		break;
-	}
-}
-
 static int
 delete_info_recursively (GFile *file)
 {
@@ -162,11 +136,53 @@ error:
 	return EXIT_FAILURE;
 }
 
+static void
+delete_databases (GFile *dir)
+{
+	GFileEnumerator *enumerator;
+	GError *error = NULL;
+	GFileInfo *info;
+
+	enumerator = g_file_enumerate_children (dir,
+	                                        G_FILE_ATTRIBUTE_STANDARD_NAME,
+	                                        G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
+	                                        NULL, &error);
+	if (error) {
+		g_critical ("Location does not have a Tracker DB: %s",
+		            error->message);
+		g_error_free (error);
+		return;
+	}
+
+	while ((info = g_file_enumerator_next_file (enumerator, NULL, NULL)) != NULL) {
+		const gchar *name;
+		GFile *child;
+
+		name = g_file_info_get_name (info);
+
+		/* Delete sqlite files in the location */
+		if (g_str_has_suffix (name, ".db") ||
+		    g_str_has_suffix (name, ".db-wal") ||
+		    g_str_has_suffix (name, ".db-shm")) {
+			child = g_file_enumerator_get_child (enumerator, info);
+
+			if (!g_file_delete (child, NULL, &error)) {
+				g_critical ("Failed to delete '%s': %s",
+				            g_file_info_get_name (info),
+				            error->message);
+				g_error_free (error);
+			}
+
+			g_object_unref (child);
+		}
+	}
+
+	g_object_unref (enumerator);
+}
+
 static gint
 reset_run (void)
 {
-	GError *error = NULL;
-
 	if (hard_reset && soft_reset) {
 		g_printerr ("%s\n",
 		            /* TRANSLATORS: --hard and --soft are commandline arguments */
@@ -216,59 +232,15 @@ reset_run (void)
 	}
 
 	if (hard_reset || soft_reset) {
-		guint log_handler_id;
-		GFile *cache_location, *data_location;
+		GFile *cache_location;
 		gchar *dir;
-		TrackerDBManager *db_manager;
 
 		dir = g_build_filename (g_get_user_cache_dir (), "tracker", NULL);
 		cache_location = g_file_new_for_path (dir);
 		g_free (dir);
 
-		dir = g_build_filename (g_get_user_data_dir (), "tracker", "data", NULL);
-		data_location = g_file_new_for_path (dir);
-		g_free (dir);
-
-		/* Set log handler for library messages */
-		log_handler_id = g_log_set_handler (NULL,
-		                                    G_LOG_LEVEL_MASK | G_LOG_FLAG_FATAL,
-		                                    log_handler,
-		                                    NULL);
-
-		g_log_set_default_handler (log_handler, NULL);
-
-		/* Clean up (select_cache_size and update_cache_size don't matter here) */
-		db_manager = tracker_db_manager_new (TRACKER_DB_MANAGER_REMOVE_ALL,
-		                                     cache_location, data_location,
-		                                     NULL,
-		                                     FALSE,
-		                                     FALSE,
-		                                     100,
-		                                     100,
-		                                     NULL,
-		                                     NULL,
-		                                     NULL,
-		                                     NULL,
-		                                     NULL,
-		                                     &error);
-
-		if (!db_manager) {
-			g_message ("Error initializing database: %s", error->message);
-			g_free (error);
-
-			return EXIT_FAILURE;
-		}
-
-		tracker_db_manager_remove_all (db_manager);
-
-		g_object_unref (db_manager);
-
-		/* Unset log handler */
-		g_log_remove_handler (NULL, log_handler_id);
-
-		if (!remove_config) {
-			return EXIT_SUCCESS;
-		}
+		delete_databases (cache_location);
+		g_object_unref (cache_location);
 	}
 
 	if (remove_config) {
@@ -312,10 +284,7 @@ reset_run (void)
 		return EXIT_SUCCESS;
 	}
 
-	/* All known options have their own exit points */
-	g_warn_if_reached ();
-
-	return EXIT_FAILURE;
+	return EXIT_SUCCESS;
 }
 
 static int
