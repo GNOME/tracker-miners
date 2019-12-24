@@ -68,6 +68,35 @@ on_domain_vanished (GDBusConnection *connection,
 	g_main_loop_quit (loop);
 }
 
+static gboolean
+setup_connection_and_endpoint (TrackerDomainOntology    *domain,
+                               GDBusConnection          *connection,
+                               TrackerSparqlConnection **sparql_conn,
+                               TrackerEndpointDBus     **endpoint,
+                               GError                  **error)
+{
+	GFile *store;
+
+	store = tracker_domain_ontology_get_cache (domain);
+	*sparql_conn = tracker_sparql_connection_new (TRACKER_SPARQL_CONNECTION_FLAGS_NONE,
+	                                              store,
+	                                              NULL,
+	                                              NULL,
+	                                              error);
+	if (!*sparql_conn)
+		return FALSE;
+
+	*endpoint = tracker_endpoint_dbus_new (*sparql_conn,
+	                                       connection,
+	                                       NULL,
+	                                       NULL,
+	                                       error);
+	if (!*endpoint)
+		return FALSE;
+
+	return TRUE;
+}
+
 int
 main (int argc, char **argv)
 {
@@ -77,6 +106,8 @@ main (int argc, char **argv)
 	TrackerMinerRSS *miner;
 	GError *error = NULL;
 	GDBusConnection *connection;
+	TrackerSparqlConnection *sparql_conn;
+	TrackerEndpointDBus *endpoint;
 	TrackerMinerProxy *proxy;
 	TrackerDomainOntology *domain_ontology;
 	gchar *domain_name, *dbus_name;
@@ -188,7 +219,20 @@ main (int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	miner = tracker_miner_rss_new (&error);
+	if (!setup_connection_and_endpoint (domain_ontology,
+	                                    connection,
+	                                    &sparql_conn,
+	                                    &endpoint,
+	                                    &error)) {
+
+		g_critical ("Could not create store/endpoint: %s",
+		            error->message);
+		g_error_free (error);
+
+		return EXIT_FAILURE;
+	}
+
+	miner = tracker_miner_rss_new (sparql_conn, &error);
 	if (!miner) {
 		g_critical ("Could not create new RSS miner: '%s', exiting...\n",
 		            error ? error->message : "unknown error");
@@ -235,6 +279,8 @@ main (int argc, char **argv)
 
 	tracker_log_shutdown ();
 	g_main_loop_unref (loop);
+	g_object_unref (sparql_conn);
+	g_object_unref (endpoint);
 	g_object_unref (miner);
 	g_object_unref (connection);
 	g_object_unref (proxy);
