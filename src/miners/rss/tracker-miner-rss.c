@@ -1227,10 +1227,12 @@ miner_resumed (TrackerMiner *miner)
 }
 
 TrackerMinerRSS *
-tracker_miner_rss_new (GError **error)
+tracker_miner_rss_new (TrackerSparqlConnection  *connection,
+                       GError                  **error)
 {
 	return g_initable_new (TRACKER_TYPE_MINER_RSS,
 	                       NULL,
 	                       error,
+	                       "connection", connection,
 	                       NULL);
 }
