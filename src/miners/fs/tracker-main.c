@@ -759,6 +759,35 @@ on_domain_vanished (GDBusConnection *connection,
 	g_main_loop_quit (loop);
 }
 
+static gboolean
+setup_connection_and_endpoint (TrackerDomainOntology    *domain,
+                               GDBusConnection          *connection,
+                               TrackerSparqlConnection **sparql_conn,
+                               TrackerEndpointDBus     **endpoint,
+                               GError                  **error)
+{
+	GFile *store;
+
+	store = tracker_domain_ontology_get_cache (domain);
+	*sparql_conn = tracker_sparql_connection_new (TRACKER_SPARQL_CONNECTION_FLAGS_NONE,
+	                                              store,
+	                                              NULL,
+	                                              NULL,
+	                                              error);
+	if (!*sparql_conn)
+		return FALSE;
+
+	*endpoint = tracker_endpoint_dbus_new (*sparql_conn,
+	                                       connection,
+	                                       NULL,
+	                                       NULL,
+	                                       error);
+	if (!*endpoint)
+		return FALSE;
+
+	return TRUE;
+}
+
 int
 main (gint argc, gchar *argv[])
 {
@@ -773,6 +802,8 @@ main (gint argc, gchar *argv[])
 	gboolean store_available;
 	TrackerMinerProxy *proxy;
 	GDBusConnection *connection;
+	TrackerSparqlConnection *sparql_conn;
+	TrackerEndpointDBus *endpoint;
 	TrackerDomainOntology *domain_ontology;
 	gchar *domain_name, *dbus_name;
 
@@ -875,8 +906,21 @@ main (gint argc, gchar *argv[])
 	           no_daemon ? "No" : "Yes",
 	           no_daemon ? "(forced by command line)" : "");
 
+	if (!setup_connection_and_endpoint (domain_ontology,
+	                                    connection,
+	                                    &sparql_conn,
+	                                    &endpoint,
+	                                    &error)) {
+
+		g_critical ("Could not create store/endpoint: %s",
+		            error->message);
+		g_error_free (error);
+
+		return EXIT_FAILURE;
+	}
+
 	/* Create new TrackerMinerFiles object */
-	miner_files = tracker_miner_files_new (config, &error);
+	miner_files = tracker_miner_files_new (sparql_conn, config, &error);
 	if (!miner_files) {
 		g_critical ("Couldn't create new Files miner: '%s'",
 		            error ? error->message : "unknown error");

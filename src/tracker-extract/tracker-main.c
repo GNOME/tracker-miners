@@ -315,6 +315,7 @@ main (int argc, char *argv[])
 	GMainLoop *my_main_loop;
 	GDBusConnection *connection;
 	TrackerMinerProxy *proxy;
+	TrackerSparqlConnection *sparql_connection;
 	TrackerDomainOntology *domain_ontology;
 	gchar *domain_name, *dbus_name;
 
@@ -414,7 +415,18 @@ main (int argc, char *argv[])
 
 	tracker_module_manager_load_modules ();
 
-	decorator = tracker_extract_decorator_new (extract, NULL, &error);
+	dbus_name = tracker_domain_ontology_get_domain (domain_ontology, "Files");
+	sparql_connection = tracker_sparql_connection_bus_new (dbus_name,
+	                                                       NULL, &error);
+
+	if (error) {
+		g_critical ("Could not connect to filesystem miner endpoint: %s",
+		            error->message);
+		g_error_free (error);
+		return EXIT_FAILURE;
+	}
+
+	decorator = tracker_extract_decorator_new (sparql_connection, extract, NULL, &error);
 
 	if (error) {
 		g_critical ("Could not start decorator: %s\n", error->message);
