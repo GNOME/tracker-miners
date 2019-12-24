@@ -144,7 +144,6 @@ static TrackerDecoratorInfo *
 tracker_decorator_info_new (TrackerDecorator    *decorator,
                             TrackerSparqlCursor *cursor)
 {
-	TrackerSparqlBuilder *sparql;
 	TrackerDecoratorInfo *info;
 	GCancellable *cancellable;
 
@@ -159,10 +158,6 @@ tracker_decorator_info_new (TrackerDecorator    *decorator,
 	info->task = g_task_new (decorator, cancellable,
 	                         decorator_task_done, info);
 	g_object_unref (cancellable);
-
-	sparql = tracker_sparql_builder_new_update ();
-	g_task_set_task_data (info->task, sparql,
-	                      (GDestroyNotify) g_object_unref);
 
 	return info;
 }
@@ -1646,9 +1641,8 @@ tracker_decorator_info_get_mimetype (TrackerDecoratorInfo *info)
  * Get the #GTask associated with retrieving extended metadata and
  * information for a URN in Tracker.
  *
- * The task object's data (accessible with g_task_get_task_data()) is the
- * #TrackerSparqlBuilder. Use tracker_decorator_info_complete() to complete
- * the task instead of using this object.
+ * Use tracker_decorator_info_complete() to complete the task instead
+ * using this object.
  *
  * Returns: (transfer none): the #GTask for #TrackerDecoratorInfo on
  * success or #NULL if there is no existing #GTask.
