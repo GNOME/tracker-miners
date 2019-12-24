@@ -121,6 +121,8 @@ static void decorator_cache_next_items (TrackerDecorator *decorator);
 static gboolean decorator_check_commit (TrackerDecorator *decorator);
 
 static void notifier_events_cb (TrackerDecorator *decorator,
+				const gchar      *service,
+				const gchar      *graph,
 				GPtrArray        *events,
 				TrackerNotifier  *notifier);
 
@@ -936,32 +938,6 @@ decorator_cache_next_items (TrackerDecorator *decorator)
 }
 
 static void
-update_notifier (TrackerDecorator *decorator)
-{
-	TrackerDecoratorPrivate *priv = decorator->priv;
-
-	g_clear_object (&priv->notifier);
-
-	if (priv->class_names) {
-		GError *error = NULL;
-
-		priv->notifier = tracker_notifier_new ((const gchar * const *) priv->class_names,
-						       TRACKER_NOTIFIER_FLAG_NOTIFY_UNEXTRACTED,
-						       NULL, &error);
-
-		if (error) {
-			g_warning ("Could not create notifier: %s\n",
-				   error->message);
-			g_error_free (error);
-		}
-
-		g_signal_connect_swapped (priv->notifier, "events",
-					  G_CALLBACK (notifier_events_cb),
-					  decorator);
-	}
-}
-
-static void
 tracker_decorator_get_property (GObject    *object,
                                 guint       param_id,
                                 GValue     *value,
@@ -1016,8 +992,6 @@ decorator_set_classes (TrackerDecorator  *decorator,
 	for (i = 0; classes[i]; i++) {
 		decorator_add_class (decorator, classes[i]);
 	}
-
-	update_notifier (decorator);
 }
 
 static void
@@ -1052,8 +1026,10 @@ tracker_decorator_set_property (GObject      *object,
 
 static void
 notifier_events_cb (TrackerDecorator *decorator,
-		    GPtrArray       *events,
-		    TrackerNotifier *notifier)
+		    const gchar      *service,
+		    const gchar      *graph,
+		    GPtrArray        *events,
+		    TrackerNotifier  *notifier)
 {
 	gboolean check_added = FALSE;
 	gint64 id;
@@ -1090,16 +1066,23 @@ tracker_decorator_initable_init (GInitable     *initable,
                                  GError       **error)
 {
 	TrackerDecorator *decorator;
+	TrackerDecoratorPrivate *priv;
+	TrackerSparqlConnection *conn;
 
 	if (!parent_initable_iface->init (initable, cancellable, error))
 		return FALSE;
 
 	decorator = TRACKER_DECORATOR (initable);
+	priv = tracker_decorator_get_instance_private (decorator);
 
 	if (g_cancellable_is_cancelled (cancellable))
 		return FALSE;
 
-	update_notifier (decorator);
+	conn = tracker_miner_get_connection (TRACKER_MINER (decorator));
+	priv->notifier = tracker_sparql_connection_create_notifier (conn, 0);
+	g_signal_connect_swapped (priv->notifier, "events",
+				  G_CALLBACK (notifier_events_cb),
+				  decorator);
 
 	decorator_update_state (decorator, "Idle", FALSE);
 	return TRUE;
