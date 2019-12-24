@@ -58,6 +58,20 @@ static GOptionEntry entries[] = {
 	{ NULL }
 };
 
+static TrackerSparqlCursor *
+statistics_query (TrackerSparqlConnection  *connection,
+		  GError                  **error)
+{
+	return tracker_sparql_connection_query (connection,
+						"SELECT ?class (COUNT(?elem) AS ?count) {"
+						"  ?class a rdfs:Class . "
+						"  ?elem a ?class . "
+						"} "
+						"GROUP BY ?class "
+						"ORDER BY DESC count(?elem) ",
+                                               NULL, error);
+}
+
 static int
 status_stat (void)
 {
@@ -75,7 +89,7 @@ status_stat (void)
 		return EXIT_FAILURE;
 	}
 
-	cursor = tracker_sparql_connection_statistics (connection, NULL, &error);
+	cursor = statistics_query (connection, &error);
 
 	g_object_unref (connection);
 
@@ -304,7 +318,7 @@ collect_debug (void)
 	} else {
 		TrackerSparqlCursor *cursor;
 
-		cursor = tracker_sparql_connection_statistics (connection, NULL, &error);
+		cursor = statistics_query (connection, &error);
 
 		if (error) {
 			g_print ("** %s, %s **\n",
