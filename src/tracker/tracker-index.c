@@ -201,13 +201,20 @@ import_turtle_files (void)
 	for (p = filenames; *p; p++) {
 		GError *error = NULL;
 		GFile *file;
+		gchar *query, *uri;
 
 		g_print ("%s:'%s'\n",
 		         _("Importing Turtle file"),
 		         *p);
 
 		file = g_file_new_for_commandline_arg (*p);
-		tracker_sparql_connection_load (connection, file, NULL, &error);
+		uri = g_file_get_uri (file);
+		query = g_strdup_printf ("LOAD <%s>", uri);
+		tracker_sparql_connection_update (connection, query,
+						  G_PRIORITY_DEFAULT, NULL,
+						  &error);
+		g_free (query);
+		g_free (uri);
 		g_object_unref (file);
 
 		if (error) {
