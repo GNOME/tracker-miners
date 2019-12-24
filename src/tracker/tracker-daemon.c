@@ -46,11 +46,6 @@ typedef struct {
 	GStrv filter;
 } WatchData;
 
-static gboolean parse_watch (const gchar  *option_name,
-                             const gchar  *value,
-                             gpointer      data,
-                             GError      **error);
-
 static GDBusConnection *connection = NULL;
 static GDBusProxy *proxy = NULL;
 static GMainLoop *main_loop;
@@ -72,7 +67,7 @@ static gboolean full_namespaces = FALSE; /* Can be turned on if needed, or made 
  */
 static gboolean status;
 static gboolean follow;
-static gchar *watch = NULL;
+static gboolean watch;
 static gboolean list_common_statuses;
 
 static gchar *miner_name;
@@ -134,9 +129,9 @@ static GOptionEntry entries[] = {
 	  N_("Follow status changes as they happen"),
 	  NULL
 	},
-	{ "watch", 'w', G_OPTION_FLAG_OPTIONAL_ARG, G_OPTION_ARG_CALLBACK, parse_watch,
+	{ "watch", 'w', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &watch,
 	  N_("Watch changes to the database in real time (e.g. resources or files being added)"),
-	  N_("ONTOLOGY")
+	  NULL
 	},
 	{ "list-common-statuses", 0, 0, G_OPTION_ARG_NONE, &list_common_statuses,
 	  N_("List common statuses for miners and the store"),
@@ -191,21 +186,6 @@ static GOptionEntry entries[] = {
 	  NULL },
 	{ NULL }
 };
-
-static gboolean
-parse_watch (const gchar  *option_name,
-             const gchar  *value,
-             gpointer      data,
-             GError      **error)
-{
-	if (!value) {
-		watch = g_strdup ("");
-	} else {
-		watch = g_strdup (value);
-	}
-
-	return TRUE;
-}
 
 static gboolean
 signal_handler (gpointer user_data)
@@ -985,7 +965,7 @@ daemon_run (void)
 		status = TRUE;
 	}
 
-	if (watch != NULL) {
+	if (watch) {
 		TrackerSparqlConnection *sparql_connection;
 		TrackerNotifier *notifier;
 		GError *error = NULL;
