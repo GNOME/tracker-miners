@@ -47,9 +47,10 @@ struct TrackerExtractDecoratorClass {
 
 GType              tracker_extract_decorator_get_type (void) G_GNUC_CONST;
 
-TrackerDecorator * tracker_extract_decorator_new      (TrackerExtract  *extractor,
-						       GCancellable    *cancellable,
-						       GError         **error);
+TrackerDecorator * tracker_extract_decorator_new (TrackerSparqlConnection  *connection,
+                                                  TrackerExtract           *extractor,
+                                                  GCancellable             *cancellable,
+                                                  GError                  **error);
 
 G_END_DECLS
 

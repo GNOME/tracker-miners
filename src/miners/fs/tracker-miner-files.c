@@ -2913,12 +2913,14 @@ miner_files_move_file (TrackerMinerFS *fs,
 }
 
 TrackerMiner *
-tracker_miner_files_new (TrackerConfig  *config,
-                         GError        **error)
+tracker_miner_files_new (TrackerSparqlConnection  *connection,
+                         TrackerConfig            *config,
+                         GError                  **error)
 {
 	return g_initable_new (TRACKER_TYPE_MINER_FILES,
 	                       NULL,
 	                       error,
+	                       "connection", connection,
 	                       "root", NULL,
 	                       "config", config,
 	                       "processing-pool-wait-limit", 10,
