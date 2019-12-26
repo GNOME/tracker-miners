@@ -18,6 +18,8 @@ option('miner_rss', type: 'boolean', value: true,
 option('writeback', type: 'boolean', value: true,
        description: 'Enable Tracker writeback feature')
 
+option('network_manager', type: 'feature', value: 'auto',
+       description: 'Connection detection through NetworkManager')
 option('abiword', type: 'boolean', value: 'true',
        description: 'Enable extractor for AbiWord files')
 option('dvi', type: 'boolean', value: 'true',

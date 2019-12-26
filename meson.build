@@ -16,10 +16,9 @@ glib_required = '2.40.0'
 
 if get_option('tracker_core') == 'system'
   tracker_sparql = dependency('tracker-sparql-2.0', version: '>= 2.2.0', required: false)
-  tracker_miner = dependency('tracker-miner-2.0', version: '>= 2.2.0', required: false)
   tracker_testutils = dependency('tracker-testutils-2.0', required: false)
 
-  if not tracker_sparql.found() or not tracker_miner.found() or not tracker_testutils.found()
+  if not tracker_sparql.found() or not tracker_testutils.found()
     error('Did not find the required versions of the Tracker core libraries ' +
           'installed in the system. Please ensure they are installed, or ' +
           'use the -Dtracker_core=subproject option to build from Git.')
@@ -42,6 +41,7 @@ if get_option('tracker_core') == 'system'
   tracker_uninstalled_nepomuk_ontologies_dir = join_paths(tracker_sparql.get_pkgconfig_variable('ontologies_dir'), 'nepomuk')
   tracker_uninstalled_stop_words_dir = join_paths(tracker_sparql.get_pkgconfig_variable('datadir'), 'tracker', 'stop-words')
   tracker_uninstalled_testutils_dir = tracker_testutils.get_pkgconfig_variable('python_path')
+  tracker_uninstalled_nepomuk_ontologies_dir = join_paths(tracker_sparql.get_pkgconfig_variable('ontologies_dir'), 'nepomuk')
 else
   tracker_subproject = subproject('tracker',
     default_options: [
@@ -51,7 +51,6 @@ else
     ])
 
   tracker_sparql = tracker_subproject.get_variable('tracker_sparql_dep')
-  tracker_miner = tracker_subproject.get_variable('tracker_miner_dep')
 
   tracker_store = tracker_subproject.get_variable('tracker_store')
   tracker_store_path = tracker_store.full_path()
@@ -62,6 +61,7 @@ else
   tracker_uninstalled_nepomuk_ontologies_dir = tracker_subproject.get_variable('tracker_uninstalled_nepomuk_ontologies_dir')
   tracker_uninstalled_stop_words_dir = tracker_subproject.get_variable('tracker_uninstalled_stop_words_dir')
   tracker_uninstalled_testutils_dir = tracker_subproject.get_variable('tracker_uninstalled_testutils_dir')
+  tracker_uninstalled_nepomuk_ontologies_dir = tracker_subproject.get_variable('tracker_uninstalled_nepomuk_ontologies_dir')
 
   tracker_common_enums_header = tracker_subproject.get_variable('tracker_common_enums_header')
   tracker_gsettings_schemas = tracker_subproject.get_variable('tracker_gsettings_schemas')
@@ -106,6 +106,9 @@ zlib = dependency('zlib')
 
 libgif = cc.find_library('gif', required: get_option('gif'))
 libmath = cc.find_library('m', required: false)
+
+network_manager = dependency('libnm', required: get_option('network_manager'))
+have_network_manager = network_manager.found()
 
 have_tracker_extract = get_option('extract')
 have_tracker_miner_fs = get_option('miner_fs')
@@ -342,6 +345,7 @@ conf.set('HAVE_LIBEXIF', libexif.found())
 conf.set('HAVE_LIBIPTCDATA', libiptcdata.found())
 conf.set('HAVE_LIBSECCOMP', libseccomp.found())
 conf.set('HAVE_UPOWER', battery_detection_library_name == 'upower')
+conf.set('HAVE_NETWORK_MANAGER', have_network_manager)
 
 conf.set('HAVE_GETLINE', cc.has_function('getline', prefix : '#include <stdio.h>'))
 conf.set('HAVE_POSIX_FADVISE', cc.has_function('posix_fadvise', prefix : '#include <fcntl.h>'))
@@ -451,6 +455,7 @@ summary = [
   '\nFeature Support:',
   '    Battery/mains power detection:          ' + battery_detection_library_name,
   '    Build with Journal support:             ' + get_option('journal').to_string(),
+  '    Support for network status detection:   ' + have_network_manager.to_string(),
   '\nData Miners / Writebacks:',
   '    FS (File System):                       ' + have_tracker_miner_fs.to_string(),
   '    RSS:                                    ' + have_tracker_miner_rss.to_string(),
