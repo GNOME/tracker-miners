@@ -786,30 +786,16 @@ feed_channel_content_update_cb (GObject      *source,
                                 gpointer      user_data)
 {
 	TrackerSparqlConnection *connection;
-	GPtrArray *errors, *array = user_data;
+	GPtrArray *array = user_data;
 	GError *error = NULL;
 	guint i;
 
 	connection = TRACKER_SPARQL_CONNECTION (source);
-	errors = tracker_sparql_connection_update_array_finish (connection,
-	                                                        result, &error);
-
-	if (error) {
+	if (!tracker_sparql_connection_update_array_finish (connection,
+	                                                    result, &error)) {
 		g_warning ("Could not update feed items: %s",
 		           error->message);
 		g_error_free (error);
-	} else {
-		for (i = 0; i < errors->len; i++) {
-			GError *error = g_ptr_array_index (errors, i);
-
-			if (!error)
-				continue;
-
-			g_warning ("Error in item %d of update: %s\nQuery: %s", i,
-			           error->message, (gchar *) g_ptr_array_index (array, i));
-		}
-
-		g_ptr_array_unref (errors);
 	}
 
 	g_ptr_array_unref (array);
