@@ -451,7 +451,6 @@ main (int argc, char *argv[])
 	tracker_locale_sanity_check ();
 
 	controller = tracker_extract_controller_new (decorator, connection);
-	tracker_miner_start (TRACKER_MINER (decorator));
 
 	/* Request DBus name */
 	dbus_name = tracker_domain_ontology_get_domain (domain_ontology, DBUS_NAME_SUFFIX);
@@ -489,6 +488,8 @@ main (int argc, char *argv[])
 	g_signal_connect (decorator, "items-available",
 	                  G_CALLBACK (on_decorator_items_available),
 	                  main_loop);
+
+	tracker_miner_start (TRACKER_MINER (decorator));
 
 	initialize_signal_handler ();
 
