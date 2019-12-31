@@ -295,15 +295,12 @@ miner_initable_init (GInitable     *initable,
                      GError       **error)
 {
 	TrackerMiner *miner = TRACKER_MINER (initable);
-	GError *inner_error = NULL;
 
 	if (!miner->priv->connection) {
-		/* Try to get SPARQL connection... */
-		miner->priv->connection = tracker_sparql_connection_get (NULL, &inner_error);
-	}
-
-	if (!miner->priv->connection) {
-		g_propagate_error (error, inner_error);
+		g_set_error (error,
+		             TRACKER_MINER_ERROR,
+		             TRACKER_MINER_ERROR_NAME_MISSING,
+		             "No SPARQL connection");
 		return FALSE;
 	}
 
