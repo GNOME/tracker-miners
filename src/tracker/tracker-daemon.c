@@ -970,7 +970,8 @@ daemon_run (void)
 		TrackerNotifier *notifier;
 		GError *error = NULL;
 
-		sparql_connection = tracker_sparql_connection_get (NULL, &error);
+		sparql_connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.Files",
+		                                                       NULL, &error);
 
 		if (!sparql_connection) {
 			g_critical ("%s, %s",
