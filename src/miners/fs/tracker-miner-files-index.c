@@ -247,7 +247,6 @@ tracker_miner_files_index_reindex_mime_types (TrackerMinerFilesIndex *miner,
 {
 	TrackerMinerFilesIndexPrivate *priv;
 	GString *query;
-	GError *inner_error = NULL;
 	TrackerSparqlConnection *connection;
 	TrackerDBusRequest *request;
 	gint len, i;
@@ -265,15 +264,7 @@ tracker_miner_files_index_reindex_mime_types (TrackerMinerFilesIndex *miner,
 	                                        __FUNCTION__,
 	                                        len);
 
-	connection = tracker_sparql_connection_get (NULL, &inner_error);
-
-	if (!connection) {
-		g_free (mime_types);
-		tracker_dbus_request_end (request, inner_error);
-		g_dbus_method_invocation_return_gerror (invocation, inner_error);
-		g_error_free (inner_error);
-		return;
-	}
+	connection = tracker_miner_get_connection (TRACKER_MINER (priv->files_miner));
 
 	tracker_dbus_request_comment (request,
 	                              "Attempting to reindex the following mime types:");
