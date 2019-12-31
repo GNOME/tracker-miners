@@ -50,6 +50,7 @@ GType         tracker_miner_files_get_type                 (void) G_GNUC_CONST;
 
 TrackerMiner *tracker_miner_files_new                      (TrackerSparqlConnection  *connection,
                                                             TrackerConfig            *config,
+                                                            const gchar              *domain,
                                                             GError                  **error);
 
 /* Convenience functions for --eligible tracker-miner-fs cmdline */

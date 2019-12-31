@@ -31,7 +31,7 @@ G_DECLARE_FINAL_TYPE (TrackerExtractWatchdog,
 		      TRACKER, EXTRACT_WATCHDOG,
 		      GObject)
 
-TrackerExtractWatchdog * tracker_extract_watchdog_new (void);
+TrackerExtractWatchdog * tracker_extract_watchdog_new (const gchar *domain);
 
 void tracker_extract_watchdog_ensure_started (TrackerExtractWatchdog *watchdog);
 
