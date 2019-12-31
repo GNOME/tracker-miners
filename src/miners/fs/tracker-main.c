@@ -773,7 +773,8 @@ main (gint argc, gchar *argv[])
 	gboolean store_available;
 	TrackerMinerProxy *proxy;
 	GDBusConnection *connection;
-	gchar *dbus_domain_name, *dbus_name;
+	TrackerDomainOntology *domain_ontology;
+	gchar *domain_name, *dbus_name;
 
 	main_loop = NULL;
 
@@ -813,9 +814,8 @@ main (gint argc, gchar *argv[])
 
 	tracker_sparql_connection_set_domain (domain_ontology_name);
 
-	tracker_load_domain_config (domain_ontology_name, &dbus_domain_name, &error);
-
-	if (error != NULL) {
+	domain_ontology = tracker_domain_ontology_new (domain_ontology_name, NULL, &error);
+	if (error) {
 		g_critical ("Could not load domain ontology '%s': %s",
 		            domain_ontology_name, error->message);
 		g_error_free (error);
@@ -856,16 +856,18 @@ main (gint argc, gchar *argv[])
 
 	main_loop = g_main_loop_new (NULL, FALSE);
 
-	if (domain_ontology_name) {
+	if (domain_ontology && domain_ontology_name) {
 		/* If we are running for a specific domain, we tie the lifetime of this
 		 * process to the domain. For example, if the domain name is
 		 * org.example.MyApp then this tracker-miner-fs process will exit as
 		 * soon as org.example.MyApp exits.
 		 */
-		g_bus_watch_name_on_connection (connection, dbus_domain_name,
+		domain_name = tracker_domain_ontology_get_domain (domain_ontology, NULL);
+		g_bus_watch_name_on_connection (connection, domain_name,
 		                                G_BUS_NAME_WATCHER_FLAGS_NONE,
 		                                NULL, on_domain_vanished,
 		                                main_loop, NULL);
+		g_free (domain_name);
 	}
 
 	g_message ("Checking if we're running as a daemon:");
@@ -920,7 +922,7 @@ main (gint argc, gchar *argv[])
 	}
 
 	/* Request DBus name */
-	dbus_name = g_strconcat (dbus_domain_name, ".", DBUS_NAME_SUFFIX, NULL);
+	dbus_name = tracker_domain_ontology_get_domain (domain_ontology, DBUS_NAME_SUFFIX);
 
 	if (!tracker_dbus_request_name (connection, dbus_name, &error)) {
 		g_critical ("Could not request DBus name '%s': %s",
@@ -994,8 +996,7 @@ main (gint argc, gchar *argv[])
 
 	g_object_unref (proxy);
 	g_object_unref (connection);
-
-	g_free (dbus_domain_name);
+	tracker_domain_ontology_unref (domain_ontology);
 
 	tracker_writeback_shutdown ();
 	tracker_log_shutdown ();

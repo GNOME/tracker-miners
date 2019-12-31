@@ -23,11 +23,29 @@
 #define __TRACKER_DOMAIN_ONTOLOGY_H__
 
 #if !defined (__LIBTRACKER_COMMON_INSIDE__) && !defined (TRACKER_COMPILATION)
-#error "only <libtracker-miners-common/tracker-common.h> must be included directly."
+#error "only <libtracker-common/tracker-common.h> must be included directly."
 #endif
 
 #include <glib-object.h>
+#include <gio/gio.h>
 
-gboolean tracker_load_domain_config (const gchar *name, gchar **dbus_domain_name, GError **error);
+typedef struct _TrackerDomainOntology TrackerDomainOntology;
+
+TrackerDomainOntology * tracker_domain_ontology_new      (const gchar   *name,
+                                                          GCancellable  *cancellable,
+                                                          GError       **error);
+TrackerDomainOntology * tracker_domain_ontology_ref      (TrackerDomainOntology *domain_ontology);
+
+void    tracker_domain_ontology_unref        (TrackerDomainOntology *domain_ontology);
+
+GFile * tracker_domain_ontology_get_cache    (TrackerDomainOntology *domain_ontology);
+GFile * tracker_domain_ontology_get_journal  (TrackerDomainOntology *domain_ontology);
+GFile * tracker_domain_ontology_get_ontology (TrackerDomainOntology *domain_ontology);
+
+gchar * tracker_domain_ontology_get_domain   (TrackerDomainOntology *domain_ontology,
+                                              const gchar           *suffix);
+
+gboolean tracker_domain_ontology_uses_miner  (TrackerDomainOntology *domain_ontology,
+                                              const gchar           *suffix);
 
 #endif /* __TRACKER_DOMAIN_ONTOLOGY_H__ */

@@ -78,7 +78,8 @@ main (int argc, char **argv)
 	GError *error = NULL;
 	GDBusConnection *connection;
 	TrackerMinerProxy *proxy;
-	gchar *dbus_domain_name, *dbus_name;
+	TrackerDomainOntology *domain_ontology;
+	gchar *domain_name, *dbus_name;
 
 	setlocale (LC_ALL, "");
 
@@ -171,8 +172,7 @@ main (int argc, char **argv)
 		g_free (log_filename);
 	}
 
-	tracker_load_domain_config (domain_ontology_name, &dbus_domain_name, &error);
-
+	domain_ontology = tracker_domain_ontology_new (domain_ontology_name, NULL, &error);
 	if (error) {
 		g_critical ("Could not load domain ontology '%s': %s",
 		            domain_ontology_name, error->message);
@@ -203,7 +203,7 @@ main (int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	dbus_name = g_strconcat (dbus_domain_name, ".", DBUS_NAME_SUFFIX, NULL);
+	dbus_name = tracker_domain_ontology_get_domain (domain_ontology, DBUS_NAME_SUFFIX);
 
 	if (!tracker_dbus_request_name (connection, dbus_name, &error)) {
 		g_critical ("Could not request DBus name '%s': %s",
@@ -217,16 +217,18 @@ main (int argc, char **argv)
 
 	loop = g_main_loop_new (NULL, FALSE);
 
-	if (domain_ontology_name) {
+	if (domain_ontology && domain_ontology_name) {
 		/* If we are running for a specific domain, we tie the lifetime of this
 		 * process to the domain. For example, if the domain name is
 		 * org.example.MyApp then this tracker-miner-rss process will exit as
 		 * soon as org.example.MyApp exits.
 		 */
-		g_bus_watch_name_on_connection (connection, dbus_domain_name,
+		domain_name = tracker_domain_ontology_get_domain (domain_ontology, NULL);
+		g_bus_watch_name_on_connection (connection, domain_name,
 		                                G_BUS_NAME_WATCHER_FLAGS_NONE,
 		                                NULL, on_domain_vanished,
 		                                loop, NULL);
+		g_free (domain_name);
 	}
 
 	g_main_loop_run (loop);
@@ -236,7 +238,7 @@ main (int argc, char **argv)
 	g_object_unref (miner);
 	g_object_unref (connection);
 	g_object_unref (proxy);
-	g_free (dbus_domain_name);
+	tracker_domain_ontology_unref (domain_ontology);
 
 	return EXIT_SUCCESS;
 }
