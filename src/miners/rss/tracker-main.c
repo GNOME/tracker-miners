@@ -152,7 +152,8 @@ main (int argc, char **argv)
 		         title,
 		         add_feed);
 
-		connection = tracker_sparql_connection_get (NULL, &error);
+		connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.RSS",
+		                                                NULL, &error);
 
 		if (!connection) {
 			g_printerr ("%s: %s\n",
