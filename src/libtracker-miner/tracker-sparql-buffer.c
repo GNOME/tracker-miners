@@ -220,12 +220,10 @@ tracker_sparql_buffer_update_array_cb (GObject      *object,
 {
 	TrackerSparqlBufferPrivate *priv;
 	TrackerSparqlBuffer *buffer;
-	GError *global_error = NULL;
-	GPtrArray *sparql_array_errors;
+	GError *error = NULL;
 	UpdateArrayData *update_data;
 	gint i;
 
-	/* Get arrays of errors and queries */
 	update_data = user_data;
 	buffer = TRACKER_SPARQL_BUFFER (update_data->buffer);
 	priv = tracker_sparql_buffer_get_instance_private (buffer);
@@ -234,40 +232,20 @@ tracker_sparql_buffer_update_array_cb (GObject      *object,
 	g_debug ("(Sparql buffer) Finished array-update with %u tasks",
 	         update_data->tasks->len);
 
-	sparql_array_errors = tracker_sparql_connection_update_array_finish (priv->connection,
-	                                                                     result,
-	                                                                     &global_error);
-	if (global_error) {
+	if (!tracker_sparql_connection_update_array_finish (priv->connection,
+							    result,
+							    &error)) {
 		g_critical ("  (Sparql buffer) Error in array-update: %s",
-		            global_error->message);
+		            error->message);
 	}
 
 	/* Report status on each task of the batch update */
 	for (i = 0; i < update_data->tasks->len; i++) {
 		TrackerTask *task;
 		SparqlTaskData *task_data;
-		GError *error = NULL;
 
 		task = g_ptr_array_index (update_data->tasks, i);
 		task_data = tracker_task_get_data (task);
-
-		if (global_error) {
-			error = global_error;
-		} else {
-			error = g_ptr_array_index (sparql_array_errors, i);
-			if (error) {
-				GFile *file;
-				gchar *uri;
-
-				file = tracker_task_get_file (task);
-				uri = g_file_get_uri (file);
-				g_critical ("  (Sparql buffer) Error in task %u (%s) of the array-update: %s",
-				            i, uri, error->message);
-				g_free (uri);
-
-				g_debug ("    Sparql: %s", task_data->str);
-			}
-		}
 
 		/* Call finished handler with the error, if any */
 		if (error) {
@@ -285,16 +263,11 @@ tracker_sparql_buffer_update_array_cb (GObject      *object,
 		 * unref-ing the UpdateArrayData below */
 	}
 
-	/* Unref the arrays of errors and queries */
-	if (sparql_array_errors) {
-		g_ptr_array_unref (sparql_array_errors);
-	}
-
 	/* Note that tasks are actually deallocated here */
 	update_array_data_free (update_data);
 
-	if (global_error) {
-		g_error_free (global_error);
+	if (error) {
+		g_error_free (error);
 	}
 
 	if (tracker_task_pool_limit_reached (TRACKER_TASK_POOL (buffer))) {
