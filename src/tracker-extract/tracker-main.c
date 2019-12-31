@@ -361,8 +361,6 @@ main (int argc, char *argv[])
 
 	setlocale (LC_ALL, "");
 
-	tracker_sparql_connection_set_domain (domain_ontology_name);
-
 	domain_ontology = tracker_domain_ontology_new (domain_ontology_name, NULL, &error);
 	if (error) {
 		g_critical ("Could not load domain ontology '%s': %s",

@@ -630,13 +630,10 @@ tracker_miner_manager_new_full (gboolean   auto_start,
 {
 	GError *inner_error = NULL;
 	TrackerMinerManager *manager;
-	const gchar *domain_ontology;
 
-	domain_ontology = tracker_sparql_connection_get_domain ();
 	manager = g_initable_new (TRACKER_TYPE_MINER_MANAGER,
 	                          NULL,
 	                          &inner_error,
-	                          "domain-ontology", domain_ontology,
 	                          "auto-start", auto_start,
 	                          NULL);
 	if (inner_error)

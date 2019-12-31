@@ -139,8 +139,6 @@ main (int argc, char **argv)
 
 	g_option_context_free (context);
 
-	tracker_sparql_connection_set_domain (domain_ontology_name);
-
 	/* Command line stuff doesn't use logging, so we're using g_print*() */
 	if (add_feed) {
 		TrackerSparqlConnection *connection;
