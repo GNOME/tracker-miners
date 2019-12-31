@@ -341,34 +341,22 @@ decorator_commit_cb (GObject      *object,
 	TrackerDecoratorPrivate *priv;
 	TrackerDecorator *decorator;
 	GError *error = NULL;
-	GPtrArray *errors;
 	guint i;
 
 	decorator = user_data;
 	priv = decorator->priv;
 	conn = TRACKER_SPARQL_CONNECTION (object);
-	errors = tracker_sparql_connection_update_array_finish (conn, result, &error);
 
-	if (error) {
+	if (!tracker_sparql_connection_update_array_finish (conn, result, &error)) {
 		g_warning ("There was an error pushing metadata: %s\n", error->message);
-	}
 
-	if (errors) {
-		for (i = 0; i < errors->len; i++) {
+		for (i = 0; i < priv->commit_buffer->len; i++) {
 			SparqlUpdate *update;
-			GError *child_error;
 
-			child_error = g_ptr_array_index (errors, i);
 			update = &g_array_index (priv->commit_buffer, SparqlUpdate, i);
-
-			if (!child_error)
-				continue;
-
 			decorator_blacklist_add (decorator, update->id);
-			item_warn (conn, update->id, update->sparql, child_error);
+			item_warn (conn, update->id, update->sparql, error);
 		}
-
-		g_ptr_array_unref (errors);
 	}
 
 	g_clear_pointer (&priv->commit_buffer, g_array_unref);
