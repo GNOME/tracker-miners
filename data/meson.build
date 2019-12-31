@@ -69,3 +69,6 @@ custom_target('tracker-miners-compile-schemas',
   depend_files: schemas)
 
 tracker_miners_uninstalled_gsettings_schema_dir = meson.current_build_dir()
+
+install_data('default.rule',
+    install_dir: join_paths(get_option('datadir'), 'tracker', 'domain-ontologies'))
