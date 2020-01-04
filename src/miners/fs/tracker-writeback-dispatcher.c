@@ -103,7 +103,7 @@ tracker_writeback_dispatcher_class_init (TrackerWritebackDispatcherClass *klass)
 	                                                      "files_miner",
 	                                                      "The FS Miner",
 	                                                      TRACKER_TYPE_MINER_FILES,
-	                                                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+	                                                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
 }
 
 static void

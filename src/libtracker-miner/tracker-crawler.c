@@ -228,7 +228,8 @@ tracker_crawler_class_init (TrackerCrawlerClass *klass)
 	                                                      "Data provider to use to crawl structures populating data, e.g. like GFileEnumerator",
 	                                                      TRACKER_TYPE_DATA_PROVIDER,
 	                                                      G_PARAM_READWRITE |
-	                                                      G_PARAM_CONSTRUCT_ONLY));
+	                                                      G_PARAM_CONSTRUCT_ONLY |
+	                                                      G_PARAM_STATIC_STRINGS));
 
 	file_info_quark = g_quark_from_static_string ("tracker-crawler-file-info");
 }

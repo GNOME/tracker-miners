@@ -256,7 +256,7 @@ tracker_indexing_tree_class_init (TrackerIndexingTreeClass *klass)
 	                                                      "Root URL",
 	                                                      "The root GFile for the indexing tree",
 	                                                      G_TYPE_FILE,
-	                                                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+	                                                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
 
 	g_object_class_install_property (object_class,
 	                                 PROP_FILTER_HIDDEN,
@@ -264,7 +264,7 @@ tracker_indexing_tree_class_init (TrackerIndexingTreeClass *klass)
 	                                                       "Filter hidden",
 	                                                       "Whether hidden resources are filtered",
 	                                                       FALSE,
-	                                                       G_PARAM_READWRITE));
+	                                                       G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 	/**
 	 * TrackerIndexingTree::directory-added:
 	 * @indexing_tree: a #TrackerIndexingTree

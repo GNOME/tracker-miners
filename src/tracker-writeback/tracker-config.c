@@ -71,7 +71,8 @@ tracker_config_class_init (TrackerConfigClass *klass)
 	                                                    "Log verbosity (0=errors, 1=minimal, 2=detailed, 3=debug)",
 	                                                    TRACKER_TYPE_VERBOSITY,
 	                                                    TRACKER_VERBOSITY_ERRORS,
-	                                                    G_PARAM_READWRITE));
+	                                                    G_PARAM_READWRITE |
+	                                                    G_PARAM_STATIC_STRINGS));
 }
 
 static void

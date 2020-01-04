@@ -1229,28 +1229,32 @@ tracker_decorator_class_init (TrackerDecoratorClass *klass)
 	                                                      "nie:DataSource to use in this decorator",
 	                                                      NULL,
 	                                                      G_PARAM_READWRITE |
-	                                                      G_PARAM_CONSTRUCT_ONLY));
+	                                                      G_PARAM_CONSTRUCT_ONLY |
+	                                                      G_PARAM_STATIC_STRINGS));
 	g_object_class_install_property (object_class,
 	                                 PROP_CLASS_NAMES,
 	                                 g_param_spec_boxed ("class-names",
 	                                                     "Class names",
 	                                                     "rdfs:Class objects to listen to for changes",
 	                                                     G_TYPE_STRV,
-	                                                     G_PARAM_READWRITE));
+	                                                     G_PARAM_READWRITE |
+	                                                     G_PARAM_STATIC_STRINGS));
 	g_object_class_install_property (object_class,
 	                                 PROP_COMMIT_BATCH_SIZE,
 	                                 g_param_spec_int ("commit-batch-size",
 	                                                   "Commit batch size",
 	                                                   "Number of items per update batch",
 	                                                   0, G_MAXINT, DEFAULT_BATCH_SIZE,
-	                                                   G_PARAM_READWRITE));
+	                                                   G_PARAM_READWRITE |
+	                                                   G_PARAM_STATIC_STRINGS));
 	g_object_class_install_property (object_class,
 	                                 PROP_PRIORITY_RDF_TYPES,
 	                                 g_param_spec_boxed ("priority-rdf-types",
 	                                                     "Priority RDF types",
 	                                                     "rdf:type that needs to be extracted first",
 	                                                     G_TYPE_STRV,
-	                                                     G_PARAM_WRITABLE));
+	                                                     G_PARAM_WRITABLE |
+	                                                     G_PARAM_STATIC_STRINGS));
 	/**
 	 * TrackerDecorator::items-available:
 	 * @decorator: the #TrackerDecorator

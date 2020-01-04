@@ -145,7 +145,7 @@ tracker_miner_online_class_init (TrackerMinerOnlineClass *klass)
 	                                                    "Network type for the current connection",
 	                                                    TRACKER_TYPE_NETWORK_TYPE,
 	                                                    TRACKER_NETWORK_TYPE_NONE,
-	                                                    G_PARAM_READABLE));
+	                                                    G_PARAM_READABLE | G_PARAM_STATIC_STRINGS));
 
 	/**
 	 * TrackerMinerOnline::connected:

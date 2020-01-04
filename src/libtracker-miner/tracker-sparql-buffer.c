@@ -138,7 +138,8 @@ tracker_sparql_buffer_class_init (TrackerSparqlBufferClass *klass)
 	                                                      "Sparql Connection",
 	                                                      TRACKER_SPARQL_TYPE_CONNECTION,
 	                                                      G_PARAM_READWRITE |
-	                                                      G_PARAM_CONSTRUCT_ONLY));
+	                                                      G_PARAM_CONSTRUCT_ONLY |
+	                                                      G_PARAM_STATIC_STRINGS));
 }
 
 static gboolean
