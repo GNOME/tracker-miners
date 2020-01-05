@@ -252,7 +252,8 @@ tracker_miner_proxy_class_init (TrackerMinerProxyClass *klass)
 	                                                      "Miner to manage",
 	                                                      TRACKER_TYPE_MINER,
 	                                                      G_PARAM_READWRITE |
-	                                                      G_PARAM_CONSTRUCT_ONLY));
+	                                                      G_PARAM_CONSTRUCT_ONLY |
+	                                                      G_PARAM_STATIC_STRINGS));
 	g_object_class_install_property (object_class,
 	                                 PROP_DBUS_CONNECTION,
 	                                 g_param_spec_object ("dbus-connection",
@@ -260,7 +261,8 @@ tracker_miner_proxy_class_init (TrackerMinerProxyClass *klass)
 	                                                      "DBus connection",
 	                                                      G_TYPE_DBUS_CONNECTION,
 	                                                      G_PARAM_READWRITE |
-	                                                      G_PARAM_CONSTRUCT_ONLY));
+	                                                      G_PARAM_CONSTRUCT_ONLY |
+	                                                      G_PARAM_STATIC_STRINGS));
 	g_object_class_install_property (object_class,
 	                                 PROP_DBUS_PATH,
 	                                 g_param_spec_string ("dbus-path",
@@ -268,7 +270,8 @@ tracker_miner_proxy_class_init (TrackerMinerProxyClass *klass)
 	                                                      "DBus path for this miner",
 	                                                      NULL,
 	                                                      G_PARAM_READWRITE |
-	                                                      G_PARAM_CONSTRUCT_ONLY));
+	                                                      G_PARAM_CONSTRUCT_ONLY |
+	                                                      G_PARAM_STATIC_STRINGS));
 }
 
 static void

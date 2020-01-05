@@ -557,7 +557,8 @@ tracker_extract_decorator_class_init (TrackerExtractDecoratorClass *klass)
 	                                                      "Extractor",
 	                                                      TRACKER_TYPE_EXTRACT,
 	                                                      G_PARAM_READWRITE |
-	                                                      G_PARAM_CONSTRUCT_ONLY));
+	                                                      G_PARAM_CONSTRUCT_ONLY |
+	                                                      G_PARAM_STATIC_STRINGS));
 }
 
 static void

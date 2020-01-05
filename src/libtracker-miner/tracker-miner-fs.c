@@ -321,14 +321,14 @@ tracker_miner_fs_class_init (TrackerMinerFSClass *klass)
 	                                                      "Throttle",
 	                                                      "Modifier for the indexing speed, 0 is max speed",
 	                                                      0, 1, 0,
-	                                                      G_PARAM_READWRITE));
+	                                                      G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 	g_object_class_install_property (object_class,
 	                                 PROP_ROOT,
 	                                 g_param_spec_object ("root",
 	                                                      "Root",
 	                                                      "Top level URI for our indexing tree and file notify clases",
 	                                                      G_TYPE_FILE,
-	                                                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+	                                                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
 	g_object_class_install_property (object_class,
 	                                 PROP_WAIT_POOL_LIMIT,
 	                                 g_param_spec_uint ("processing-pool-wait-limit",
@@ -336,7 +336,7 @@ tracker_miner_fs_class_init (TrackerMinerFSClass *klass)
 	                                                    "Maximum number of files that can be concurrently "
 	                                                    "processed by the upper layer",
 	                                                    1, G_MAXUINT, DEFAULT_WAIT_POOL_LIMIT,
-	                                                    G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+	                                                    G_PARAM_READWRITE | G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS));
 	g_object_class_install_property (object_class,
 	                                 PROP_READY_POOL_LIMIT,
 	                                 g_param_spec_uint ("processing-pool-ready-limit",
@@ -344,14 +344,14 @@ tracker_miner_fs_class_init (TrackerMinerFSClass *klass)
 	                                                    "Maximum number of SPARQL updates that can be merged "
 	                                                    "in a single connection to the store",
 	                                                    1, G_MAXUINT, DEFAULT_READY_POOL_LIMIT,
-	                                                    G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+	                                                    G_PARAM_READWRITE | G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS));
 	g_object_class_install_property (object_class,
 	                                 PROP_DATA_PROVIDER,
 	                                 g_param_spec_object ("data-provider",
 	                                                      "Data provider",
 	                                                      "Data provider populating data, e.g. like GFileEnumerator",
 	                                                      TRACKER_TYPE_DATA_PROVIDER,
-	                                                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+	                                                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
 
 	/**
 	 * TrackerMinerFS::process-file:

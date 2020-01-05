@@ -184,7 +184,7 @@ tracker_monitor_class_init (TrackerMonitorClass *klass)
 	                                                       "Enabled",
 	                                                       "Enabled",
 	                                                       TRUE,
-	                                                       G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+	                                                       G_PARAM_READWRITE | G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS));
 }
 
 static void

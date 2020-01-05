@@ -202,7 +202,9 @@ tracker_controller_class_init (TrackerControllerClass *klass)
 	                                                    "Shutdown timeout",
 	                                                    "Shutdown timeout, 0 to disable",
 	                                                    0, 1000, 0,
-	                                                    G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+	                                                    G_PARAM_READWRITE |
+	                                                    G_PARAM_CONSTRUCT_ONLY |
+	                                                    G_PARAM_STATIC_STRINGS));
 }
 
 static void

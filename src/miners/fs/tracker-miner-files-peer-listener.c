@@ -240,7 +240,7 @@ tracker_miner_files_peer_listener_class_init (TrackerMinerFilesPeerListenerClass
 	                                                      "Connection",
 	                                                      "Connection",
 	                                                      G_TYPE_DBUS_CONNECTION,
-	                                                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+	                                                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
 
 	signals[WATCH_FILE] =
 		g_signal_new ("watch-file",

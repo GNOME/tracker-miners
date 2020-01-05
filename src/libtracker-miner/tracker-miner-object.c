@@ -237,7 +237,9 @@ tracker_miner_class_init (TrackerMinerClass *klass)
 	                                                      "Status",
 	                                                      "Translatable string with status description",
 	                                                      "Idle",
-	                                                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+	                                                      G_PARAM_READWRITE |
+	                                                      G_PARAM_CONSTRUCT |
+	                                                      G_PARAM_STATIC_STRINGS));
 	g_object_class_install_property (object_class,
 	                                 PROP_PROGRESS,
 	                                 g_param_spec_double ("progress",
@@ -246,7 +248,9 @@ tracker_miner_class_init (TrackerMinerClass *klass)
 	                                                      0.0,
 	                                                      1.0,
 	                                                      0.0,
-	                                                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+	                                                      G_PARAM_READWRITE |
+	                                                      G_PARAM_CONSTRUCT |
+	                                                      G_PARAM_STATIC_STRINGS));
 
 	g_object_class_install_property (object_class,
 	                                 PROP_REMAINING_TIME,
@@ -256,7 +260,9 @@ tracker_miner_class_init (TrackerMinerClass *klass)
 	                                                   -1,
 	                                                   G_MAXINT,
 	                                                   -1,
-	                                                   G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+	                                                   G_PARAM_READWRITE |
+	                                                   G_PARAM_CONSTRUCT |
+	                                                   G_PARAM_STATIC_STRINGS));
 	/**
 	 * TrackerMiner:connection:
 	 *
@@ -273,7 +279,8 @@ tracker_miner_class_init (TrackerMinerClass *klass)
 	                                                      "SPARQL Connection",
 	                                                      TRACKER_SPARQL_TYPE_CONNECTION,
 	                                                      G_PARAM_READWRITE |
-	                                                      G_PARAM_CONSTRUCT_ONLY));
+	                                                      G_PARAM_CONSTRUCT_ONLY |
+	                                                      G_PARAM_STATIC_STRINGS));
 }
 
 static void

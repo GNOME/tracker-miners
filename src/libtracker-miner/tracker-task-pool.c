@@ -114,14 +114,14 @@ tracker_task_pool_class_init (TrackerTaskPoolClass *klass)
 	                                                    "Limit",
 	                                                    "Task limit",
 	                                                    1, G_MAXUINT, 1,
-	                                                    G_PARAM_READWRITE));
+	                                                    G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 	g_object_class_install_property (object_class,
 	                                 PROP_LIMIT_REACHED,
 	                                 g_param_spec_boolean ("limit-reached",
 	                                                       "Limit reached",
 	                                                       "Task limit reached",
 	                                                       FALSE,
-	                                                       G_PARAM_READABLE));
+	                                                       G_PARAM_READABLE | G_PARAM_STATIC_STRINGS));
 }
 
 static gboolean

@@ -1914,7 +1914,8 @@ tracker_file_notifier_class_init (TrackerFileNotifierClass *klass)
 	                                                      "Indexing tree",
 	                                                      TRACKER_TYPE_INDEXING_TREE,
 	                                                      G_PARAM_READWRITE |
-	                                                      G_PARAM_CONSTRUCT_ONLY));
+	                                                      G_PARAM_CONSTRUCT_ONLY |
+	                                                      G_PARAM_STATIC_STRINGS));
 	g_object_class_install_property (object_class,
 	                                 PROP_DATA_PROVIDER,
 	                                 g_param_spec_object ("data-provider",
@@ -1922,7 +1923,8 @@ tracker_file_notifier_class_init (TrackerFileNotifierClass *klass)
 	                                                      "Data provider to use to crawl structures populating data, e.g. like GFileEnumerator",
 	                                                      TRACKER_TYPE_DATA_PROVIDER,
 	                                                      G_PARAM_READWRITE |
-	                                                      G_PARAM_CONSTRUCT_ONLY));
+	                                                      G_PARAM_CONSTRUCT_ONLY |
+	                                                      G_PARAM_STATIC_STRINGS));
 	g_object_class_install_property (object_class,
 	                                 PROP_CONNECTION,
 	                                 g_param_spec_object ("connection",
@@ -1930,7 +1932,8 @@ tracker_file_notifier_class_init (TrackerFileNotifierClass *klass)
 	                                                      "Connection to use for queries",
 	                                                      TRACKER_SPARQL_TYPE_CONNECTION,
 	                                                      G_PARAM_READWRITE |
-	                                                      G_PARAM_CONSTRUCT_ONLY));
+	                                                      G_PARAM_CONSTRUCT_ONLY |
+	                                                      G_PARAM_STATIC_STRINGS));
 
 	/* Initialize property quarks */
 	quark_property_iri = g_quark_from_static_string ("tracker-property-iri");

@@ -433,7 +433,9 @@ tracker_file_system_class_init (TrackerFileSystemClass *klass)
 	                                                      "Root URL",
 	                                                      "The root GFile for the indexing tree",
 	                                                      G_TYPE_FILE,
-	                                                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+	                                                      G_PARAM_READWRITE |
+	                                                      G_PARAM_CONSTRUCT_ONLY |
+	                                                      G_PARAM_STATIC_STRINGS));
 
 	quark_file_node =
 		g_quark_from_static_string ("tracker-quark-file-node");
