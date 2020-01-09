@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2011, Nokia <ivan.frade@nokia.com>
+ * Copyright (C) 2020, Sam Thursfield <sam@afuera.me.uk>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,59 +20,37 @@
 
 #include "config-miners.h"
 
-#ifdef __linux__
-
-#include <errno.h>
-#include <sched.h>
+#include <pthread.h>
 
 #include "tracker-sched.h"
 
+/* Sets the priority of the current thread to SCHED_IDLE.
+ *
+ * Threads spawned from a SCHED_IDLE thread will inherit the same priority,
+ * so you just need to call this function when the main thread starts to
+ * set priority for the whole process.
+ */
 gboolean
 tracker_sched_idle (void)
 {
 	struct sched_param sp;
+	int result, policy;
 
-	/* Set process scheduling parameters:
-	 * This is used so we don't steal scheduling priority from
-	 * the most important applications - like the phone
-	 * application which has a real time requirement here. This
-	 * is detailed in Nokia bug #95573
-	 */
-	g_message ("Setting scheduler policy to SCHED_IDLE");
+	result = pthread_getschedparam (pthread_self (), &policy, &sp);
 
-	if (sched_getparam (0, &sp) == 0) {
-		if (sched_setscheduler (0, SCHED_IDLE, &sp) != 0) {
-//LCOV_EXCL_START
-			const gchar *str = g_strerror (errno);
+	if (result == 0) {
+		result = pthread_setschedparam (pthread_self(), SCHED_IDLE, &sp);
+	}
 
-			g_warning ("Could not set scheduler policy, %s",
-			           str ? str : "no error given");
+	if (result == 0) {
+		g_message ("Set scheduler policy to SCHED_IDLE");
 
-			return FALSE;
-		}
+		return TRUE;
 	} else {
-		const gchar *str = g_strerror (errno);
+		const gchar *str = g_strerror (result);
 
-		g_warning ("Could not get scheduler policy, %s",
-		           str ? str : "no error given");
+		g_message ("Error setting scheduler policy: %s", str ? str : "no error given");
 
 		return FALSE;
 	}
-//LCOV_EXCL_END
-
-	return TRUE;
 }
-
-#else /* __linux__ */
-
-#include <glib.h>
-
-#include "tracker-sched.h"
-
-gboolean
-tracker_sched_idle (void)
-{
-	return TRUE;
-}
-
-#endif /* __linux__ */
