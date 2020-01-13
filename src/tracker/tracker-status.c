@@ -80,7 +80,7 @@ status_stat (void)
 	GError *error = NULL;
 
 	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.Files",
-	                                                NULL, &error);
+	                                                NULL, NULL, &error);
 
 	if (!connection) {
 		g_printerr ("%s: %s\n",
@@ -310,7 +310,7 @@ collect_debug (void)
 	g_print ("[%s]\n", _("Data Statistics"));
 
 	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.Files",
-	                                                NULL, &error);
+	                                                NULL, NULL, &error);
 
 	if (!connection) {
 		g_print ("** %s, %s **\n",
@@ -387,7 +387,7 @@ get_file_and_folder_count (int *files,
 	GError *error = NULL;
 
 	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.Files",
-	                                                NULL, &error);
+	                                                NULL, NULL, &error);
 
 	if (files) {
 		*files = 0;
