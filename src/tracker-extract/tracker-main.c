@@ -415,7 +415,7 @@ main (int argc, char *argv[])
 
 	dbus_name = tracker_domain_ontology_get_domain (domain_ontology, "Tracker1.Miner.Files");
 	sparql_connection = tracker_sparql_connection_bus_new (dbus_name,
-	                                                       NULL, &error);
+	                                                       NULL, NULL, &error);
 
 	if (error) {
 		g_critical ("Could not connect to filesystem miner endpoint: %s",

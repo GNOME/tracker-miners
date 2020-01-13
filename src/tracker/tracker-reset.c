@@ -73,7 +73,7 @@ delete_info_recursively (GFile *file)
 	GError *error = NULL;
 
 	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.Files",
-	                                                NULL, &error);
+	                                                NULL, NULL, &error);
 
 	if (error)
 		goto error;
