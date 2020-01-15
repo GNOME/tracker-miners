@@ -65,3 +65,13 @@ test-fedora-latest:
 test-ubuntu-rolling:
   image: registry.gitlab.gnome.org/gnome/tracker-oci-images/amd64/ubuntu:rolling
   <<: *test
+
+test-alpine-rolling:
+  image: alpine:edge
+  before_script:
+    - echo 'https://alpine.global.ssl.fastly.net/alpine/edge/community/' >> /etc/apk/repositories
+    - apk add -U alpine-sdk bash meson glib-dev intltool ffmpeg-dev dbus-dev exempi-dev flac-dev gexiv2-dev gstreamer-dev enca-dev libexif-dev libgsf-dev libgxps-dev libiptcdata-dev libjpeg-turbo-dev libosinfo-dev libpng-dev libseccomp-dev tiff-dev libxml2-dev libvorbis-dev poppler-dev taglib-dev totem-pl-parser-dev upower-dev zlib-dev gst-plugins-base-dev giflib-dev libxml2-dev sqlite-dev networkmanager-dev vala py3-gobject3 py3-setuptools libsoup-dev libcue-dev json-glib-dev icu-dev gobject-introspection-dev gtk-doc libgrss-dev
+    - addgroup -S tracker
+    - adduser -D -G tracker -g tracker tracker
+  <<: *test
+
