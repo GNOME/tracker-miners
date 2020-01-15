@@ -23,7 +23,7 @@ stages:
     # tracker as a submodule.
     - su tracker -c '.gitlab-ci/checkout-tracker.sh'
     - su tracker -c 'mkdir build'
-    - su tracker -c 'cd build; meson .. --prefix=/usr -Dtracker_core=subproject -Db_lto=true -Db_coverage=true'
+    - su tracker -c 'cd build; meson .. --prefix=/usr -Dtracker_core=subproject -Db_lto=true -Db_coverage=true -Dsystemd_user_services=false'
     - su tracker -c 'cd build; ninja'
     - |
       # Remove the many "CI_" variables from the environment. Meson dumps the
@@ -60,6 +60,13 @@ test-fedora-latest:
 
 test-ubuntu-rolling:
   image: registry.gitlab.gnome.org/gnome/tracker-oci-images/amd64/ubuntu:rolling
+  <<: *test
+
+test-alpine-rolling:
+  image: registry.gitlab.gnome.org/gnome/tracker-oci-images/amd64/alpine:edge
+  before_script:
+    - apk add libgrss-dev libseccomp-dev gstreamer-dev libcue-dev libgxps-dev libgsf-dev libtiff-dev upower-dev libosinfo-dev totem-pl-parser-dev poppler-dev
+
   <<: *test
 
 coverity:
