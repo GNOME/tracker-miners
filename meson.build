@@ -24,14 +24,6 @@ if get_option('tracker_core') == 'system'
           'use the -Dtracker_core=subproject option to build from Git.')
   endif
 
-  # The tracker-miners will not work unless installed into the same prefix as
-  # the base 'tracker' package as it expects to be able to access data files
-  # in ${prefix}/{datadir}/tracker.
-  #
-  # This check acts as a guard to make sure we are being configured with the
-  # right prefix, among other things.
-  tracker_store_path = tracker_sparql.get_pkgconfig_variable('tracker_store')
-
   # If we are building against an installed version of tracker core rather than
   # having it as a subproject, these 'uninstalled' locations point to the actual
   # installed locations.
@@ -51,9 +43,6 @@ else
     ])
 
   tracker_sparql = tracker_subproject.get_variable('tracker_sparql_dep')
-
-  tracker_store = tracker_subproject.get_variable('tracker_store')
-  tracker_store_path = tracker_store.full_path()
 
   tracker_test_dbus_services_dir = tracker_subproject.get_variable('tracker_test_dbus_services_dir')
   tracker_uninstalled_cli_dir = tracker_subproject.get_variable('tracker_uninstalled_cli_dir')
