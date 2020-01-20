@@ -279,6 +279,7 @@ unsupported_cpus = [
   'm68k',
   'parisc',
   'parisc64',
+  'riscv64',
   'sh4',
   'sparc',
   'sparc64',
