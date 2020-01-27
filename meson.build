@@ -27,9 +27,7 @@ if get_option('tracker_core') == 'system'
   # If we are building against an installed version of tracker core rather than
   # having it as a subproject, these 'uninstalled' locations point to the actual
   # installed locations.
-  tracker_test_dbus_services_dir = join_paths(tracker_sparql.get_pkgconfig_variable('dbus_services_dir'))
   tracker_uninstalled_cli_dir = join_paths (tracker_sparql.get_pkgconfig_variable('exec_prefix'), 'bin')
-  tracker_uninstalled_domain_rule = join_paths (tracker_sparql.get_pkgconfig_variable('domain_ontologies_dir'), 'default.rule')
   tracker_uninstalled_nepomuk_ontologies_dir = join_paths(tracker_sparql.get_pkgconfig_variable('ontologies_dir'), 'nepomuk')
   tracker_uninstalled_stop_words_dir = join_paths(tracker_sparql.get_pkgconfig_variable('datadir'), 'tracker', 'stop-words')
   tracker_uninstalled_testutils_dir = tracker_testutils.get_pkgconfig_variable('python_path')
@@ -44,9 +42,7 @@ else
 
   tracker_sparql = tracker_subproject.get_variable('tracker_sparql_dep')
 
-  tracker_test_dbus_services_dir = tracker_subproject.get_variable('tracker_test_dbus_services_dir')
   tracker_uninstalled_cli_dir = tracker_subproject.get_variable('tracker_uninstalled_cli_dir')
-  tracker_uninstalled_domain_rule = tracker_subproject.get_variable('tracker_uninstalled_domain_rule')
   tracker_uninstalled_nepomuk_ontologies_dir = tracker_subproject.get_variable('tracker_uninstalled_nepomuk_ontologies_dir')
   tracker_uninstalled_stop_words_dir = tracker_subproject.get_variable('tracker_uninstalled_stop_words_dir')
   tracker_uninstalled_testutils_dir = tracker_subproject.get_variable('tracker_uninstalled_testutils_dir')
@@ -361,7 +357,6 @@ conf.set('includedir', join_paths(get_option('prefix'), get_option('includedir')
 conf.set('libdir', libdir)
 conf.set('libexecdir', join_paths(get_option('prefix'), get_option('libexecdir')))
 conf.set('prefix', get_option('prefix'))
-conf.set('tracker_test_dbus_services_dir', tracker_test_dbus_services_dir)
 conf.set('TRACKER_API_VERSION', tracker_api_version)
 conf.set('VERSION', meson.project_version())
 
@@ -423,7 +418,6 @@ meson.add_install_script('meson_integration_commands.sh', glib_compile_schemas.p
 
 run_uninstalled_conf = configuration_data()
 run_uninstalled_conf.set('tracker_uninstalled_cli_dir', tracker_uninstalled_cli_dir)
-run_uninstalled_conf.set('tracker_uninstalled_domain_rule', tracker_uninstalled_domain_rule)
 run_uninstalled_conf.set('tracker_uninstalled_extract_rules_dir', tracker_uninstalled_extract_rules_dir)
 run_uninstalled_conf.set('tracker_uninstalled_extractors_dir', meson.current_build_dir() / 'src' / 'tracker-extract')
 run_uninstalled_conf.set('tracker_uninstalled_miner_services_dir', tracker_uninstalled_miner_services_dir)
