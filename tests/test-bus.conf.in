@@ -7,7 +7,6 @@
   <listen>unix:tmpdir=./</listen>
 
   <servicedir>@abs_top_builddir@/tests/services/</servicedir>
-  <servicedir>@tracker_test_dbus_services_dir@</servicedir>
   <standard_session_servicedirs/>
 
   <policy context="default">

@@ -48,7 +48,6 @@ env['TRACKER_EXTRACTOR_RULES_DIR'] = "@tracker_uninstalled_extract_rules_dir@"
 env['TRACKER_EXTRACTORS_DIR'] = "@tracker_uninstalled_extractors_dir@"
 env['TRACKER_LANGUAGE_STOP_WORDS_DIR'] = "@tracker_uninstalled_stop_words_dir@"
 env['TRACKER_MINER_SERVICES_DIR'] = "@tracker_uninstalled_miner_services_dir@"
-env['TRACKER_TEST_DOMAIN_ONTOLOGY_RULE'] = "@tracker_uninstalled_domain_rule@"
 env['TRACKER_WRITEBACK_MODULES_DIR'] = "@tracker_uninstalled_writeback_modules_dir@"
 
 args = [sys.executable, '-m', 'trackertestutils', '--dbus-config', dbus_config] + sys.argv[1:]
