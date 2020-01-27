@@ -22,6 +22,9 @@
 
 #define __LIBTRACKER_MINER_H_INSIDE__
 
+#define TRACKER_PREFIX_DATASOURCE_URN \
+       "urn:nepomuk:datasource:"
+
 #include <libtracker-miner/tracker-data-provider.h>
 #include <libtracker-miner/tracker-decorator.h>
 #include <libtracker-miner/tracker-decorator-fs.h>
