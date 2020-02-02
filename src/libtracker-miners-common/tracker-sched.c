@@ -20,6 +20,8 @@
 
 #include "config-miners.h"
 
+#ifdef __linux__
+
 #include <pthread.h>
 
 #include "tracker-sched.h"
@@ -54,3 +56,17 @@ tracker_sched_idle (void)
 		return FALSE;
 	}
 }
+
+#else /* __linux__ */
+
+#include <glib.h>
+
+#include "tracker-sched.h"
+
+gboolean
+tracker_sched_idle (void)
+{
+	return TRUE;
+}
+
+#endif /* __linux__ */
