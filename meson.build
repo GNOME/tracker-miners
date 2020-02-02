@@ -373,7 +373,7 @@ conf.set('libdir', libdir)
 conf.set('libexecdir', join_paths(get_option('prefix'), get_option('libexecdir')))
 conf.set('prefix', get_option('prefix'))
 conf.set('tracker_test_dbus_services_dir', tracker_test_dbus_services_dir)
-conf.set('TRACKER_API_VERSION', '1.0')
+conf.set('TRACKER_API_VERSION', tracker_api_version)
 conf.set('VERSION', meson.project_version())
 
 configure_file(input: 'config-miners.h.meson.in',
