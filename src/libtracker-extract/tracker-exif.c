@@ -335,6 +335,9 @@ get_gps_coordinate (ExifData *exif,
 				if (refentry->data[0] == 'S' || refentry->data[0] == 'W') {
 					f = -1 * f;
 				}
+			} else {
+				g_error("Invalid GPS Ref entry!")
+				return NULL;
 			}
 
 			return g_strdup_printf ("%f", f);
