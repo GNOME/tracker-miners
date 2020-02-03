@@ -38,6 +38,7 @@ if libjpeg.found() and exempi.found() and libexif.found()
   extractor_tests += [
     'images/jpeg-basic',
     'images/jpeg-region-of-interest',
+    'images/jpeg-gps-location',
   ]
 
   if libiptcdata.found()
