@@ -1,0 +1,25 @@
+{
+    "test": {
+        "Filename": "jpeg-gps-location.jpg",
+        "Comment": "Basic jpeg example"
+    },
+    "metadata": {
+        "@type": "nmm:Photo",
+        "nfo:width": "699",
+        "nfo:height": "464",
+        "nie:title": "Kid",
+        "nmm:fnumber": "5.0",
+        "nmm:focalLength": "5.0",
+        "nie:comment": "This is a for tracker test",
+        "slo:location": {
+            "slo:latitude": "-35.253368",
+            "slo:longitude": "149.112579",
+            "slo:postalAddress": {
+                "nco:locality": "Tig",
+                "nco:country": "Banglore"
+            }
+        },
+        "nfo:horizontalResolution": "20.0",
+        "nfo:verticalResolution": "20.0"
+    }
+}

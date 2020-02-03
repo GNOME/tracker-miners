@@ -312,14 +312,12 @@ get_gps_coordinate (ExifData *exif,
 		ExifByteOrder order;
 		ExifRational degrees, minutes, seconds;
 		gfloat f;
-		gchar ref;
 
 		if (entry->size == 24) {
 			order = exif_data_get_byte_order (exif);
 			degrees = exif_get_rational (entry->data, order);
 			minutes = exif_get_rational (entry->data + 8, order);
 			seconds = exif_get_rational (entry->data + 16, order);
-			ref = exif_get_short (refentry->data, order);
 
 			/* Avoid ridiculous values */
 			if (degrees.denominator == 0 ||
@@ -332,8 +330,14 @@ get_gps_coordinate (ExifData *exif,
 				(gdouble) minutes.numerator / (minutes.denominator * 60) +
 				(gdouble) seconds.numerator / (seconds.denominator * 60 * 60);
 
-			if (ref == 'S' || ref == 'W') {
-				f = -1 * f;
+			if (refentry->format == EXIF_FORMAT_ASCII && (refentry->size == 2)) {
+				// following Exif Version 2.2 specs
+				if (refentry->data[0] == 'S' || refentry->data[0] == 'W') {
+					f = -1 * f;
+				}
+			} else {
+				g_error("Invalid GPS Ref entry!");
+				return NULL;
 			}
 
 			return g_strdup_printf ("%f", f);
