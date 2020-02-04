@@ -196,11 +196,27 @@ class CommonTrackerMinerFTSTest (CommonTrackerMinerTest):
 
         self.tracker.reset_graph_updates_tracking()
 
+    def create_text_files(self, file_contents):
+        """
+        Create and index a set of files.
+
+        The `file-contents` parameter should be a dict mapping filename to
+        contents.
+        """
+        for filename, contents in file_contents.items():
+            with open(self.path(filename), 'w') as f:
+                f.write(contents)
+        for filename in file_contents:
+            self.tracker.await_resource_inserted(
+                rdf_class=NFO_DOCUMENT, url=self.uri(filename),
+                required_property='nie:plainTextContent')
+        self.tracker.reset_graph_updates_tracking()
+
     def search_word(self, word):
         """
         Return list of URIs with the word in them
         """
-        log.info("Search for: %s", word)
+        log.info("Search for word: %s", word)
         results = self.tracker.query("""
                 SELECT ?url WHERE {
                   ?u a nfo:TextDocument ;
@@ -208,6 +224,20 @@ class CommonTrackerMinerFTSTest (CommonTrackerMinerTest):
                       fts:match '%s'.
                  }
                  """ % (word))
+        return [r[0] for r in results]
+
+    def search_sentence(self, sentence):
+        """
+        Return list of URIs with the sentence in them
+        """
+        log.info("Search for sentence: %s" % sentence)
+        results = self.tracker.query("""
+                SELECT ?url WHERE {
+                  ?u a nfo:TextDocument ;
+                      nie:url ?url ;
+                      fts:match \"%s\".
+                 }
+                 """ % (sentence))
         return [r[0] for r in results]
 
     def basic_test(self, text, word):

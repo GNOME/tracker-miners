@@ -32,7 +32,7 @@ import locale
 import time
 
 import unittest as ut
-from minertest import CommonTrackerMinerFTSTest, DEFAULT_TEXT
+from minertest import CommonTrackerMinerFTSTest, DEFAULT_TEXT, NFO_DOCUMENT
 import configuration as cfg
 
 
@@ -77,7 +77,16 @@ class MinerFTSBasicTest (CommonTrackerMinerFTSTest):
 
     def test_06_sentence(self):
         TEXT = "plastic is fantastic"
-        self.basic_test(TEXT, TEXT)
+
+        self.create_text_files({
+            'test-monitored/match.txt': "I think that plastic is fantastic.",
+            'test-monitored/non-match-1.txt': "Plastic plastic plastic plastic plastic.",
+            'test-monitored/non-match-2.txt': "Plastic is OK, but wood is really something fantastic.",
+        })
+
+        results = self.search_sentence(TEXT)
+        self.assertEqual(len(results), 1)
+        self.assertIn(self.uri('test-monitored/match.txt'), results)
 
     def test_07_partial_sentence(self):
         TEXT = "plastic is fantastic"
