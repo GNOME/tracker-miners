@@ -28,6 +28,9 @@ import tempfile
 import sys
 
 
+DEFAULT_TIMEOUT = 10
+
+
 if 'TRACKER_FUNCTIONAL_TEST_CONFIG' not in os.environ:
     raise RuntimeError("The TRACKER_FUNCTIONAL_TEST_CONFIG environment "
                        "variable must be set to point to the location of "

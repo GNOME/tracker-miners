@@ -23,17 +23,17 @@ metadata is extracted. Load dynamically the test information from a data
 directory (containing xxx.expected files)
 """
 
-import configuration as cfg
-from extractor import get_tracker_extract_jsonld_output, TrackerExtractTestCase
-import unittest as ut
 import json
 import os
 import shutil
 import sys
 import tempfile
+import unittest as ut
 
+import configuration as cfg
+import fixtures
 
-class GenericExtractionTestCase(TrackerExtractTestCase):
+class GenericExtractionTestCase(fixtures.TrackerExtractTestCase):
     """
     Test checks if the tracker extractor is able to retrieve metadata
     """
@@ -86,7 +86,7 @@ class GenericExtractionTestCase(TrackerExtractTestCase):
         tmpdir = tempfile.mkdtemp(prefix='tracker-extract-test-')
         try:
             extra_env = cfg.test_environment(tmpdir)
-            result = get_tracker_extract_jsonld_output(extra_env, self.file_to_extract)
+            result = fixtures.get_tracker_extract_jsonld_output(extra_env, self.file_to_extract)
             self.__assert_extraction_ok(result)
         finally:
             shutil.rmtree(tmpdir, ignore_errors=True)
