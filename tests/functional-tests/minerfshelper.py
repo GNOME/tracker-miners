@@ -18,17 +18,20 @@
 # 02110-1301, USA.
 
 
+import gi
+gi.require_version('Tracker', '3.0')
+from gi.repository import Gio, GLib
+from gi.repository import Tracker
+
 import logging
 
-from gi.repository import Gio
-from gi.repository import GLib
-
 import trackertestutils.mainloop
+
+import configuration
 
 
 log = logging.getLogger(__name__)
 
-REASONABLE_TIMEOUT = 5
 
 class WakeupCycleTimeoutException(RuntimeError):
     pass
@@ -63,6 +66,10 @@ class MinerFsHelper ():
     def stop(self):
         self.miner_fs.Stop()
 
+    def get_sparql_connection(self):
+        return Tracker.SparqlConnection.bus_new(
+            'org.freedesktop.Tracker1.Miner.Files', None, self.bus)
+
     def start_watching_progress(self):
         self._previous_status = None
         self._target_wakeup_count = None
@@ -91,7 +98,7 @@ class MinerFsHelper ():
         """Return the number of wakeup-to-idle cycles the miner-fs completed."""
         return self._wakeup_count
 
-    def await_wakeup_count(self, target_wakeup_count, timeout=REASONABLE_TIMEOUT):
+    def await_wakeup_count(self, target_wakeup_count, timeout=configuration.DEFAULT_TIMEOUT):
         """Block until the miner has completed N wakeup-and-idle cycles.
 
         This function is for use by miner-fs tests that should trigger an

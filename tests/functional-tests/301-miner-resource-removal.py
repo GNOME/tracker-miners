@@ -1,5 +1,5 @@
 # Copyright (C) 2010, Nokia (ivan.frade@nokia.com)
-# Copyright (C) 2019, Sam Thursfield (sam@afuera.me.uk)
+# Copyright (C) 2019-2020, Sam Thursfield (sam@afuera.me.uk)
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -21,70 +21,62 @@ Test that resource removal does not leave debris or clobber too much,
 especially in the case where nie:InformationElement != nie:DataObject
 """
 
-import configuration as cfg
-from minertest import CommonTrackerMinerTest
-
-from gi.repository import GLib
-
 import os
+import pathlib
 import unittest as ut
 
+# We must import this to set up logging.
+import configuration
+from fixtures import TrackerMinerTest
 
-NFO_DOCUMENT = 'http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#Document'
-NMM_MUSIC_PIECE = 'http://www.tracker-project.org/temp/nmm#MusicPiece'
+TRACKER_OWN_GRAPH_URN = "urn:uuid:472ed0cc-40ff-4e37-9c0c-062d78656540"
 
-
-class MinerResourceRemovalTest (CommonTrackerMinerTest):
+class MinerResourceRemovalTest(TrackerMinerTest):
 
     def prepare_directories(self):
         # Override content from the base class
         pass
 
     def create_test_content(self, file_urn, title):
-        sparql = "INSERT { \
+        sparql = "WITH %s INSERT { \
                     _:ie a nmm:MusicPiece ; \
                          nie:title \"%s\" ; \
                          nie:isStoredAs <%s> \
-                  } " % (title, file_urn)
+                  } " % (TRACKER_OWN_GRAPH_URN, title, file_urn)
 
-        self.tracker.update(sparql)
-
-        return self.tracker.await_resource_inserted(rdf_class=NMM_MUSIC_PIECE,
-                                                    title=title)
+        with self.tracker.await_insert(f'a nmm:MusicPiece; nie:title "{title}"') as resource:
+            self.tracker.update(sparql)
+        return resource
 
     def create_test_file(self, file_name):
-        file_path = self.path(file_name)
+        path = pathlib.Path(self.path(file_name))
+        text = "Test"
 
-        file = open(file_path, 'w')
-        file.write("Test")
-        file.close()
+        with self.await_document_inserted(file_name, content=text) as resource:
+            path.write_text(text)
+        return resource
 
-        return self.tracker.await_resource_inserted(rdf_class=NFO_DOCUMENT,
-                                                    url=self.uri(file_name))
-
-    @ut.skip("https://gitlab.gnome.org/GNOME/tracker-miners/issues/57")
     def test_01_file_deletion(self):
         """
         Ensure every logical resource (nie:InformationElement) contained with
         in a file is deleted when the file is deleted.
         """
 
-        (file_1_id, file_1_urn) = self.create_test_file("test-monitored/test_1.txt")
-        (file_2_id, file_2_urn) = self.create_test_file("test-monitored/test_2.txt")
-        (ie_1_id, ie_1_urn) = self.create_test_content(file_1_urn, "Test resource 1")
-        (ie_2_id, ie_2_urn) = self.create_test_content(file_2_urn, "Test resource 2")
+        file_1 = self.create_test_file("test-monitored/test_1.txt")
+        file_2 = self.create_test_file("test-monitored/test_2.txt")
+        ie_1 = self.create_test_content(file_1.urn, "Test resource 1")
+        ie_2 = self.create_test_content(file_2.urn, "Test resource 2")
 
-        os.unlink(self.path("test-monitored/test_1.txt"))
+        with self.tracker.await_delete(file_1.id):
+            os.unlink(self.path("test-monitored/test_1.txt"))
 
-        self.tracker.await_resource_deleted(NFO_DOCUMENT, file_1_id)
-
-        self.assertResourceMissing(file_1_urn)
+        self.assertResourceMissing(file_1.urn)
         # Ensure the logical resource is deleted when the relevant file is
         # removed.
-        self.assertResourceMissing(ie_1_urn)
+        self.assertResourceMissing(ie_1.urn)
 
-        self.assertResourceExists(file_2_urn)
-        self.assertResourceExists(ie_2_urn)
+        self.assertResourceExists(file_2.urn)
+        self.assertResourceExists(ie_2.urn)
 
     # def test_02_removable_device_data (self):
     #    """

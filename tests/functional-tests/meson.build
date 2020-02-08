@@ -3,12 +3,13 @@ python = find_program('python3')
 # Configure functional tests to run completely from source tree.
 testconf = configuration_data()
 
-config_json_full_path = join_paths(meson.current_build_dir(), 'configuration.json')
-dconf_profile_full_path = join_paths(meson.current_source_dir(), 'trackertest')
-tracker_extractors_dir = join_paths(meson.current_build_dir(), '..', '..', 'src', 'tracker-extract')
+config_json_full_path = meson.current_build_dir() / 'configuration.json'
+dconf_profile_full_path = meson.current_source_dir() / 'trackertest'
+tracker_extractors_dir = meson.current_build_dir() / '..' / '..' / 'src' / 'tracker-extract'
 
-testconf.set('TEST_DBUS_DAEMON_CONFIG_FILE', join_paths(build_root, 'tests', 'test-bus.conf'))
+testconf.set('TEST_DBUS_DAEMON_CONFIG_FILE', build_root / 'tests' / 'test-bus.conf')
 testconf.set('TEST_DCONF_PROFILE', dconf_profile_full_path)
+testconf.set('TEST_DOMAIN_ONTOLOGY_RULE', meson.current_build_dir() / 'test-domain.rule')
 testconf.set('TEST_EXTRACTOR_RULES_DIR', tracker_uninstalled_extract_rules_dir)
 testconf.set('TEST_EXTRACTORS_DIR', tracker_extractors_dir)
 testconf.set('TEST_GSETTINGS_SCHEMA_DIR', tracker_miners_uninstalled_gsettings_schema_dir)
@@ -16,6 +17,12 @@ testconf.set('TEST_LANGUAGE_STOP_WORDS_DIR', tracker_uninstalled_stop_words_dir)
 testconf.set('TEST_ONTOLOGIES_DIR', tracker_uninstalled_nepomuk_ontologies_dir)
 testconf.set('TEST_WRITEBACK_MODULES_DIR', tracker_uninstalled_writeback_modules_dir)
 testconf.set('TRACKER_EXTRACT_PATH', uninstalled_tracker_extract_path)
+
+test_domain_rule = configure_file(
+  input: 'test-domain.rule.in',
+  output: 'test-domain.rule',
+  configuration: testconf
+)
 
 config_json = configure_file(
   input: 'configuration.json.in',
@@ -135,6 +142,13 @@ else
 endif
 
 test_env = environment()
+
+if get_option('tracker_core') == 'subproject'
+  tracker_sparql_uninstalled_dir = tracker_subproject.get_variable('tracker_sparql_uninstalled_dir')
+  test_env.prepend('GI_TYPELIB_PATH', tracker_sparql_uninstalled_dir)
+  test_env.prepend('LD_LIBRARY_PATH', tracker_sparql_uninstalled_dir)
+endif
+
 test_env.prepend('PYTHONPATH', tracker_uninstalled_testutils_dir)
 test_env.set('TRACKER_FUNCTIONAL_TEST_CONFIG', config_json_full_path)
 
