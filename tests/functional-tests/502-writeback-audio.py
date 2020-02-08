@@ -1,4 +1,4 @@
-# Copyright (C) 2019, Sam Thursfield (sam@afuera.me.uk)
+# Copyright (C) 2019-2020, Sam Thursfield (sam@afuera.me.uk)
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -18,11 +18,10 @@
 
 import unittest
 
-from extractor import get_tracker_extract_jsonld_output
-from writebacktest import CommonTrackerWritebackTest
+import fixtures
 
 
-class WritebackAudioTest(CommonTrackerWritebackTest):
+class WritebackAudioTest(fixtures.TrackerWritebackTest):
     def _writeback_test(self, path):
         prop = 'nie:title'
 
@@ -39,7 +38,7 @@ class WritebackAudioTest(CommonTrackerWritebackTest):
 
         self.wait_for_file_change(path, initial_mtime)
 
-        results = get_tracker_extract_jsonld_output(self.extra_env, path)
+        results = fixtures.get_tracker_extract_jsonld_output(self.extra_env, path)
         self.assertIn(TEST_VALUE, results[prop])
 
     def test_writeback_mp3(self):
