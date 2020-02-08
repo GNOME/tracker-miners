@@ -134,6 +134,13 @@ else
 endif
 
 test_env = environment()
+
+if get_option('tracker_core') == 'subproject'
+  tracker_sparql_uninstalled_dir = tracker_subproject.get_variable('tracker_sparql_uninstalled_dir')
+  test_env.prepend('GI_TYPELIB_PATH', tracker_sparql_uninstalled_dir)
+  test_env.prepend('LD_LIBRARY_PATH', tracker_sparql_uninstalled_dir)
+endif
+
 test_env.prepend('PYTHONPATH', tracker_uninstalled_testutils_dir)
 test_env.set('TRACKER_FUNCTIONAL_TEST_CONFIG', config_json_full_path)
 
