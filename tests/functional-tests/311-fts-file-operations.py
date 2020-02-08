@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (C) 2010, Nokia (ivan.frade@nokia.com)
-# Copyright (C) 2019, Sam Thursfield (sam@afuera.me.uk)
+# Copyright (C) 2019-2020, Sam Thursfield (sam@afuera.me.uk)
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -28,18 +28,15 @@ the text contents are updated accordingly in the indexes.
 """
 import os
 import shutil
-import locale
 import time
-
 import unittest as ut
-from minertest import CommonTrackerMinerFTSTest, DEFAULT_TEXT
+
+# Needed for log config.
 import configuration as cfg
+import fixtures
 
 
-NFO_DOCUMENT = 'http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#Document'
-
-
-class MinerFTSFileOperationsTest (CommonTrackerMinerFTSTest):
+class MinerFTSFileOperationsTest(fixtures.TrackerMinerFTSTest):
     """
     Move, update, delete the files and check the text indexes are updated accordingly.
     """
@@ -52,8 +49,8 @@ class MinerFTSFileOperationsTest (CommonTrackerMinerFTSTest):
         self.basic_test(TEXT, "automobile")
 
         id = self._query_id(self.uri(self.testfile))
-        os.remove(self.path(self.testfile))
-        self.tracker.await_resource_deleted(NFO_DOCUMENT, id)
+        with self.tracker.await_delete(id):
+            os.remove(self.path(self.testfile))
 
         results = self.search_word("automobile")
         self.assertEqual(len(results), 0)
@@ -125,10 +122,8 @@ class MinerFTSFileOperationsTest (CommonTrackerMinerFTSTest):
         results = self.search_word("airplane")
         self.assertEqual(len(results), 0)
 
-        shutil.copyfile(self.path(TEST_16_SOURCE), self.path(TEST_16_DEST))
-        self.tracker.await_resource_inserted(rdf_class=NFO_DOCUMENT,
-                                             url=self.uri(TEST_16_DEST),
-                                             required_property='nie:plainTextContent')
+        with self.await_document_inserted(TEST_16_DEST, content=TEXT):
+            shutil.copyfile(self.path(TEST_16_SOURCE), self.path(TEST_16_DEST))
 
         results = self.search_word("airplane")
         self.assertEqual(len(results), 1)
