@@ -26,10 +26,11 @@ import tempfile
 import unittest as ut
 
 import configuration as cfg
-from extractor import get_tracker_extract_jsonld_output, create_test_flac, TrackerExtractTestCase
+import datagenerator
+import fixtures
 
 
-class FlacCuesheetTest(TrackerExtractTestCase):
+class FlacCuesheetTest(fixtures.TrackerExtractTestCase):
     def spec(self, audio_path):
         audio_uri = 'file://' + audio_path
         return {
@@ -86,9 +87,9 @@ class FlacCuesheetTest(TrackerExtractTestCase):
             shutil.copy(os.path.join(datadir, 'audio', 'cuesheet-test.cue'), tmpdir)
 
             audio_path = os.path.join(tmpdir, 'cuesheet-test.flac')
-            create_test_flac(audio_path, duration=6*60)
+            datagenerator.create_test_flac(audio_path, duration=6*60)
 
-            result = get_tracker_extract_jsonld_output(
+            result = fixtures.get_tracker_extract_jsonld_output(
                 cfg.test_environment(tmpdir), audio_path)
 
         self.assert_extract_result_matches_spec(

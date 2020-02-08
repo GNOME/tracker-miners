@@ -1,5 +1,5 @@
 # Copyright (C) 2011, Nokia Corporation <ivan.frade@nokia.com>
-# Copyright (C) 2019, Sam Thursfield (sam@afuera.me.uk)
+# Copyright (C) 2019-2020, Sam Thursfield (sam@afuera.me.uk)
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -24,18 +24,15 @@ Tests trying to simulate the behaviour of applications working with tracker
 import logging
 import os
 import random
-
 import unittest as ut
-from applicationstest import CommonTrackerApplicationTest as CommonTrackerApplicationTest
+
+import fixtures
 
 
 log = logging.getLogger(__name__)
 
-NMM_PHOTO = 'http://www.tracker-project.org/temp/nmm#Photo'
-NMM_VIDEO = 'http://www.tracker-project.org/temp/nmm#Video'
 
-
-class TrackerCameraTestSuite (CommonTrackerApplicationTest):
+class TrackerCameraTestSuite (fixtures.TrackerApplicationTest):
     """
     Common functionality for camera tests.
     """
@@ -46,31 +43,14 @@ class TrackerCameraTestSuite (CommonTrackerApplicationTest):
         """
         insert = """
         INSERT { <%(urn)s>
-            a nie:InformationElement,
-            nie:DataObject,
-            nfo:Image,
-            nfo:Media,
-            nfo:Visual,
-            nmm:Photo
-        }
-
-        DELETE { <%(urn)s> nie:mimeType ?_1 }
-        WHERE { <%(urn)s> nie:mimeType ?_1 }
-
-        INSERT { <%(urn)s>
-            a rdfs:Resource ;
-            nie:mimeType \"image/jpeg\"
-        }
-
-        DELETE { <%(urn)s> nie:url ?_2 }
-        WHERE { <%(urn)s> nie:url ?_2 }
-
-        INSERT { <%(urn)s>
-            a rdfs:Resource ;
+            a nie:InformationElement, nie:DataObject, nfo:Image, nfo:Media,
+                nfo:Visual, nmm:Photo ;
+            nie:mimeType \"image/jpeg\" ;
             nie:url \"%(file_url)s\" ;
-            nie:isStoredAs <%(urn)s>
+            nie:isStoredAs <%(urn)s> .
         }
         """ % locals()
+        logging.debug("Running: %s", insert)
         self.tracker.update(insert)
         self.assertEqual(self.get_urn_count_by_url(file_url), 1)
 
@@ -80,29 +60,11 @@ class TrackerCameraTestSuite (CommonTrackerApplicationTest):
         """
         insert = """
         INSERT { <%(urn)s>
-            a nie:InformationElement,
-            nie:DataObject,
-            nfo:Video,
-            nfo:Media,
-            nfo:Visual,
-            nmm:Video
-        }
-
-        DELETE { <%(urn)s> nie:mimeType ?_1 }
-        WHERE { <%(urn)s> nie:mimeType ?_1 }
-
-        INSERT { <%(urn)s>
-            a rdfs:Resource ;
-            nie:mimeType \"video/mp4\"
-        }
-
-        DELETE { <%(urn)s> nie:url ?_2 }
-        WHERE { <%(urn)s> nie:url ?_2 }
-
-        INSERT { <%(urn)s>
-            a rdfs:Resource ;
+            a nie:InformationElement, nie:DataObject, nfo:Video, nfo:Media,
+                nfo:Visual, nmm:Video ;
+            nie:mimeType \"video/mp4\" ;
             nie:url \"%(file_url)s\" ;
-            nie:isStoredAs <%(urn)s>
+            nie:isStoredAs <%(urn)s> .
         }
         """ % locals()
         self.tracker.update(insert)
@@ -147,17 +109,18 @@ class TrackerCameraPicturesApplicationTests (TrackerCameraTestSuite):
         dest_fileuri = "file://" + dest_filepath
 
         self.insert_photo_resource_info(fileurn, dest_fileuri)
+        fileid = self.tracker.get_resource_id_by_uri(fileurn)
 
         # Copy the image to the dest path
-        self.slowcopy_file(origin_filepath, dest_filepath)
-        assert os.path.exists(dest_filepath)
-        dest_id, dest_urn = self.system.store.await_resource_inserted(NMM_PHOTO, dest_fileuri)
+        with self.tracker.await_update(fileid, "", "nfo:contentCreated ?created"):
+            self.slowcopy_file(origin_filepath, dest_filepath)
+            assert os.path.exists(dest_filepath)
         self.assertEqual(self.get_urn_count_by_url(dest_fileuri), 1)
 
         # Clean the new file so the test directory is as before
         log.debug("Remove and wait")
-        os.remove(dest_filepath)
-        self.system.store.await_resource_deleted(NMM_PHOTO, dest_id)
+        with self.tracker.await_delete(fileid):
+            os.remove(dest_filepath)
         self.assertEqual(self.get_urn_count_by_url(dest_fileuri), 0)
 
     def test_02_camera_picture_geolocation(self):
@@ -179,31 +142,32 @@ class TrackerCameraPicturesApplicationTests (TrackerCameraTestSuite):
         postaladdressurn = "tracker://test_camera_picture_02_postaladdress/" + str(random.randint(0, 100))
 
         self.insert_photo_resource_info(fileurn, dest_fileuri)
+        fileid = self.tracker.get_resource_id_by_uri(fileurn)
 
         # FIRST, open the file for writing, and just write some garbage, to simulate that
         # we already started recording the video...
         fdest = open(dest_filepath, 'wb')
-        fdest.write("some garbage written here")
-        fdest.write("to simulate we're recording something...")
+        fdest.write(b"some garbage written here")
+        fdest.write(b"to simulate we're recording something...")
         fdest.seek(0)
 
         # SECOND, set slo:location
         self.insert_dummy_location_info(fileurn, geolocationurn, postaladdressurn)
 
         # THIRD, start copying the image to the dest path
-        original_file = os.path.join(self.get_data_dir(), self.get_test_image())
-        self.slowcopy_file_fd(original_file, fdest)
-        fdest.close()
+        with self.tracker.await_update(fileid, "", "nfo:contentCreated ?created"):
+            original_file = os.path.join(self.get_data_dir(), self.get_test_image())
+            self.slowcopy_file_fd(original_file, fdest)
+            fdest.close()
         assert os.path.exists(dest_filepath)
 
         # FOURTH, ensure we have only 1 resource
-        dest_id, dest_urn = self.system.store.await_resource_inserted(NMM_PHOTO, dest_fileuri)
         self.assertEqual(self.get_urn_count_by_url(dest_fileuri), 1)
 
         # Clean the new file so the test directory is as before
         log.debug("Remove and wait")
-        os.remove(dest_filepath)
-        self.system.store.await_resource_deleted(NMM_PHOTO, dest_id)
+        with self.tracker.await_delete(resource.id):
+            os.remove(dest_filepath)
         self.assertEqual(self.get_urn_count_by_url(dest_fileuri), 0)
 
 
@@ -227,15 +191,15 @@ class TrackerCameraVideosApplicationTests (TrackerCameraTestSuite):
         self.insert_video_resource_info(fileurn, dest_fileuri)
 
         # Copy the image to the dest path
-        self.slowcopy_file(origin_filepath, dest_filepath)
-        assert os.path.exists(dest_filepath)
-        dest_id, dest_urn = self.system.store.await_resource_inserted(NMM_PHOTO, dest_fileuri)
+        with self.await_photo_inserted(dest_filepath) as resource:
+            self.slowcopy_file(origin_filepath, dest_filepath)
+            assert os.path.exists(dest_filepath)
         self.assertEqual(self.get_urn_count_by_url(dest_fileuri), 1)
 
         # Clean the new file so the test directory is as before
         log.debug("Remove and wait")
-        os.remove(dest_filepath)
-        self.system.store.await_resource_deleted(NMM_PHOTO, dest_id)
+        with self.await_delete(resource.id):
+            os.remove(dest_filepath)
         self.assertEqual(self.get_urn_count_by_url(dest_fileuri), 0)
 
     def test_02_camera_video_geolocation(self):
@@ -262,32 +226,28 @@ class TrackerCameraVideosApplicationTests (TrackerCameraTestSuite):
         # FIRST, open the file for writing, and just write some garbage, to simulate that
         # we already started recording the video...
         fdest = open(dest_filepath, 'wb')
-        fdest.write("some garbage written here")
-        fdest.write("to simulate we're recording something...")
+        fdest.write(b"some garbage written here")
+        fdest.write(b"to simulate we're recording something...")
         fdest.seek(0)
 
         # SECOND, set slo:location
         self.insert_dummy_location_info(fileurn, geolocationurn, postaladdressurn)
 
         # THIRD, start copying the image to the dest path
-        self.slowcopy_file_fd(origin_filepath, fdest)
-        fdest.close()
-        assert os.path.exists(dest_filepath)
+        with self.await_photo_inserted(dest_filepath) as resource:
+            self.slowcopy_file_fd(origin_filepath, fdest)
+            fdest.close()
+            assert os.path.exists(dest_filepath)
 
         # FOURTH, ensure we have only 1 resource
-        dest_id, dest_urn = self.system.store.await_resource_inserted(NMM_VIDEO, dest_fileuri)
         self.assertEqual(self.get_urn_count_by_url(dest_fileuri), 1)
 
         # Clean the new file so the test directory is as before
         log.debug("Remove and wait")
-        os.remove(dest_filepath)
-        self.system.store.await_resource_deleted(NMM_VIDEO, dest_id)
+        with self.tracker.await_delete(resource.id):
+            os.remove(dest_filepath)
         self.assertEqual(self.get_urn_count_by_url(dest_fileuri), 0)
 
 
 if __name__ == "__main__":
-    print("FIXME: This test is skipped as it currently fails. See: https://gitlab.gnome.org/GNOME/tracker-miners/issues/55")
-    import sys
-    sys.exit(77)
-
     ut.main(verbosity=2)

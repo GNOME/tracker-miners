@@ -28,6 +28,9 @@ import tempfile
 import sys
 
 
+DEFAULT_TIMEOUT = 10
+
+
 if 'TRACKER_FUNCTIONAL_TEST_CONFIG' not in os.environ:
     raise RuntimeError("The TRACKER_FUNCTIONAL_TEST_CONFIG environment "
                        "variable must be set to point to the location of "
@@ -44,6 +47,7 @@ TRACKER_EXTRACT_PATH = config['TRACKER_EXTRACT_PATH']
 def test_environment(tmpdir):
     return {
         'DCONF_PROFILE': config['TEST_DCONF_PROFILE'],
+        'TRACKER_TEST_DOMAIN_ONTOLOGY_RULE': config['TEST_DOMAIN_ONTOLOGY_RULE'],
         'TRACKER_EXTRACTOR_RULES_DIR': config['TEST_EXTRACTOR_RULES_DIR'],
         'TRACKER_EXTRACTORS_DIR': config['TEST_EXTRACTORS_DIR'],
         'GSETTINGS_SCHEMA_DIR': config['TEST_GSETTINGS_SCHEMA_DIR'],
