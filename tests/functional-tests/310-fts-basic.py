@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (C) 2010, Nokia (ivan.frade@nokia.com)
-# Copyright (C) 2019, Sam Thursfield (sam@afuera.me.uk)
+# Copyright (C) 2019-2020, Sam Thursfield (sam@afuera.me.uk)
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -26,17 +26,15 @@
 Monitor a directory, copy/move/remove/update text files and check that
 the text contents are updated accordingly in the indexes.
 """
-import os
-import shutil
-import locale
-import time
 
 import unittest as ut
-from minertest import CommonTrackerMinerFTSTest, DEFAULT_TEXT
+
+# Must import this for logging.
 import configuration as cfg
+import fixtures
 
 
-class MinerFTSBasicTest (CommonTrackerMinerFTSTest):
+class MinerFTSBasicTest(fixtures.TrackerMinerFTSTest):
     """
     Tests different contents in a single file
     """
@@ -58,8 +56,8 @@ class MinerFTSBasicTest (CommonTrackerMinerFTSTest):
         self.assertIn(self.uri(self.testfile), results)
 
     def test_03_long_word(self):
-        # TEXT is longer than the 20 characters specified in the fts configuration
-        TEXT = "fsfsfsdfskfweeqrewqkmnbbvkdasdjefjewriqjfnc"
+        # TEXT is longer than the 200 characters specified in the fts configuration
+        TEXT = "ai" * 200
         self.set_text(TEXT)
 
         results = self.search_word(TEXT)
@@ -95,6 +93,7 @@ class MinerFTSBasicTest (CommonTrackerMinerFTSTest):
         TEXT = "abc123"
         self.basic_test(TEXT, "abc123")
 
+    @ut.skip("We don't ignore numbers by default since https://gitlab.gnome.org/GNOME/tracker/merge_requests/172.")
     def test_10_ignore_numbers(self):
         TEXT = "palabra 123123"
         self.set_text(TEXT)

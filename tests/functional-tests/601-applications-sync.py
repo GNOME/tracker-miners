@@ -1,5 +1,5 @@
 # Copyright (C) 2011, Nokia Corporation <ivan.frade@nokia.com>
-# Copyright (C) 2019, Sam Thursfield (sam@afuera.me.uk)
+# Copyright (C) 2019-2020, Sam Thursfield (sam@afuera.me.uk)
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -25,17 +25,15 @@ import logging
 import os
 import random
 import shutil
-
 import unittest as ut
-from applicationstest import CommonTrackerApplicationTest as CommonTrackerApplicationTest
+
+import fixtures
 
 
 log = logging.getLogger(__name__)
 
-NMM_MUSICPIECE = 'http://www.tracker-project.org/temp/nmm#MusicPiece'
 
-
-class TrackerSyncApplicationTests (CommonTrackerApplicationTest):
+class TrackerSyncApplicationTests(fixtures.TrackerApplicationTest):
 
     def test_01_sync_audio_nb219946(self):
         """
@@ -116,8 +114,8 @@ class TrackerSyncApplicationTests (CommonTrackerApplicationTest):
 
         # Clean the new file so the test directory is as before
         log.debug("Remove and wait")
-        os.remove(dest_filepath)
-        self.tracker.await_resource_deleted(NMM_MUSICPIECE, resource_id)
+        with self.tracker.await_delete(resource_id):
+            os.remove(dest_filepath)
         self.assertEqual(self.get_urn_count_by_url(dest_fileuri), 0)
 
         self.miner_fs.stop_watching_progress()
