@@ -107,8 +107,6 @@ functional_tests = [
   '311-fts-file-operations',
   '312-fts-stopwords',
   '410-extractor-decorator',
-  '600-applications-camera',
-  '601-applications-sync',
 ]
 
 if libcue.found()
