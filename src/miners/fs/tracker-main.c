@@ -107,6 +107,8 @@ sanity_check_option_values (TrackerConfig *config)
 	           tracker_config_get_sched_idle (config));
 	g_message ("  Initial Sleep  ........................  %d",
 	           tracker_config_get_initial_sleep (config));
+	g_message ("  Writeback  ............................  %s",
+	           tracker_config_get_enable_writeback (config) ? "yes" : "no");
 
 	g_message ("Indexer options:");
 	g_message ("  Throttle level  .......................  %d",
