@@ -101,27 +101,27 @@ if get_option('unzip_ps_gz_files')
 endif
 
 functional_tests = [
-  '300-miner-basic-ops',
-  '301-miner-resource-removal',
-  '310-fts-basic',
-  '311-fts-file-operations',
-  '312-fts-stopwords',
-  '410-extractor-decorator',
+  'miner-basic',
+  'miner-resource-removal',
+  'fts-basic',
+  'fts-file-operations',
+  'fts-stopwords',
+  'extractor-decorator',
 ]
 
 if libcue.found()
-  functional_tests += '401-extractor-flac-cuesheet'
+  functional_tests += 'extractor-flac-cuesheet'
 endif
 
 if libjpeg.found() and libgif.found() and libpng.found() and libtiff.found() and exempi.found() and libexif.found()
   functional_tests += [
-    '500-writeback-images',
-    '501-writeback-image-details',
+    'writeback-images',
+    'writeback-image-details',
   ]
 endif
 
 if libvorbis.found() and flac.found() and generic_media_handler_name != 'none'
-  functional_tests += '502-writeback-audio'
+  functional_tests += 'writeback-audio'
 endif
 
 detect_h264_codec = join_paths(meson.current_source_dir(), 'detect-h264-codec.sh')
@@ -160,7 +160,7 @@ foreach t: extractor_tests
     test_suite = [test_parts[0]]
   endif
   test(test_name, python,
-    args: ['400-extractor-metadata.py', data],
+    args: ['extractor-generic.py', data],
     env: test_env,
     suite: ['extractor'] + test_suite,
     workdir: meson.current_source_dir())
@@ -168,22 +168,7 @@ endforeach
 
 foreach t: functional_tests
   file = '@0@.py'.format(t)
-  test_parts = t.split('-')
-  test_name = t
-  test_suite = []
-  if test_parts.length() > 1
-    test_suite = [test_parts[1]]
-    parts = []
-    i = 0
-    foreach p: test_parts
-      if i > 1
-        parts += p
-      endif
-      i += 1
-    endforeach
-    test_name = '-'.join(parts)
-  endif
-  test(test_name, python,
+  test(t, python,
     args: [file],
     env: test_env,
     workdir: meson.current_source_dir(),
