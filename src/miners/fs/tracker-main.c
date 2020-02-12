@@ -759,6 +759,28 @@ on_domain_vanished (GDBusConnection *connection,
 	g_main_loop_quit (loop);
 }
 
+TrackerSparqlConnectionFlags
+get_fts_connection_flags (void)
+{
+	TrackerSparqlConnectionFlags flags = 0;
+	TrackerFTSConfig *fts_config;
+
+	fts_config = tracker_fts_config_new ();
+
+	if (tracker_fts_config_get_enable_stemmer (fts_config))
+		flags |= TRACKER_SPARQL_CONNECTION_FLAGS_FTS_ENABLE_STEMMER;
+	if (tracker_fts_config_get_enable_unaccent (fts_config))
+		flags |= TRACKER_SPARQL_CONNECTION_FLAGS_FTS_ENABLE_UNACCENT;
+	if (tracker_fts_config_get_ignore_numbers (fts_config))
+		flags |= TRACKER_SPARQL_CONNECTION_FLAGS_FTS_IGNORE_NUMBERS;
+	if (tracker_fts_config_get_ignore_stop_words (fts_config))
+		flags |= TRACKER_SPARQL_CONNECTION_FLAGS_FTS_ENABLE_STOP_WORDS;
+
+	g_object_unref (fts_config);
+
+	return flags;
+}
+
 static gboolean
 setup_connection_and_endpoint (TrackerDomainOntology    *domain,
                                GDBusConnection          *connection,
@@ -769,7 +791,7 @@ setup_connection_and_endpoint (TrackerDomainOntology    *domain,
 	GFile *store;
 
 	store = tracker_domain_ontology_get_cache (domain);
-	*sparql_conn = tracker_sparql_connection_new (TRACKER_SPARQL_CONNECTION_FLAGS_NONE,
+	*sparql_conn = tracker_sparql_connection_new (get_fts_connection_flags (),
 	                                              store,
 	                                              NULL,
 	                                              NULL,
