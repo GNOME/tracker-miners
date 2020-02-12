@@ -167,11 +167,10 @@ foreach t: extractor_tests
 endforeach
 
 foreach t: functional_tests
-  file = '@0@.py'.format(t)
+  file = meson.current_source_dir() / '@0@.py'.format(t)
   test(t, python,
     args: [file],
     env: test_env,
-    workdir: meson.current_source_dir(),
     suite: ['functional'] + test_suite,
     timeout: 120)
 endforeach
