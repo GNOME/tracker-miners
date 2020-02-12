@@ -1,5 +1,6 @@
 schemas = [
   'org.freedesktop.Tracker.Extract.gschema.xml',
+  'org.freedesktop.Tracker.FTS.gschema.xml',
   'org.freedesktop.Tracker.Miner.Files.gschema.xml',
   'org.freedesktop.Tracker.Writeback.gschema.xml',
 ]
