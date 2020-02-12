@@ -34,34 +34,6 @@ tracker_miners_settings_enums = custom_target('tracker-miners-common-settings-en
 #
 compile_schemas_deps = [tracker_miners_settings_enums]
 
-if get_option('tracker_core') == 'subproject'
-  # Here we do an ugly dance to place GSettings schemas from tracker
-  # and tracker-miners into the same directory. The `glib-compile-schemas`
-  # tool cannot combine schemas from multiple directories, and the
-  # GSETTINGS_SCHEMA_DIR environment variable cannot point to multiple
-  # directories, so this appears to be our only option.
-
-  foreach schema : tracker_gsettings_schemas
-    target = configure_file(
-      input: schema,
-      output: '@PLAINNAME@',
-      copy: true)
-  endforeach
-
-  dep = custom_target('tracker-store-settings-enums',
-    input: tracker_common_enums_header,
-    output: 'org.freedesktop.Tracker.enums.xml',
-    command: [glib_mkenums,
-              '--comments', '<!-- @comment@ -->',
-              '--fhead', '<schemalist>',
-              '--vhead', '<@type@ id="org.freedesktop.Tracker.@EnumName@">',
-              '--vprod', '    <value nick="@valuenick@" value="@valuenum@"/>',
-              '--vtail', '  </@type@>',
-              '--ftail', '</schemalist>', '@INPUT@'],
-    capture: true)
-  compile_schemas_deps += [dep]
-endif
-
 custom_target('tracker-miners-compile-schemas',
   output: 'gschemas.compiled',
   command: [glib_compile_schemas, meson.current_build_dir()],
