@@ -43,7 +43,8 @@ typedef struct TrackerExtractClass TrackerExtractClass;
 
 typedef enum {
 	TRACKER_EXTRACT_ERROR_NO_MIMETYPE,
-	TRACKER_EXTRACT_ERROR_NO_EXTRACTOR
+	TRACKER_EXTRACT_ERROR_NO_EXTRACTOR,
+	TRACKER_EXTRACT_ERROR_IO_ERROR,
 } TrackerExtractError;
 
 struct TrackerExtract {

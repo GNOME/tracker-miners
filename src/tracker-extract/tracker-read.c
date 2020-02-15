@@ -29,6 +29,7 @@
 #include <libtracker-extract/tracker-extract.h>
 
 #include "tracker-read.h"
+#include "tracker-extract.h"
 
 /* Size of the buffer to use when reading, in bytes */
 #define BUFFER_SIZE 65535
@@ -107,20 +108,13 @@ process_chunk (const gchar  *read_bytes,
 	 * case where we read 10 bytes in and it is just one
 	 * line with no '\n'. Once we have confirmed this we
 	 * check that the buffer has a '\n' to make sure the
-	 * file is worth indexing. Similarly if the file has
-	 * <= 3 bytes then we drop it.
+	 * file is worth indexing.
 	 *
 	 * NOTE: We may have non-UTF8 content read (say,
 	 * UTF-16LE), so we can't rely on methods which assume
 	 * NUL-terminated strings, as g_strstr_len().
 	 */
 	if (s->len == 0) {
-		if (read_size <= 3) {
-			g_debug ("  File has less than 3 characters in it, "
-			         "not indexing file");
-			return FALSE;
-		}
-
 		if (read_size == buffer_size) {
 			const gchar *i;
 			gboolean eol_found = FALSE;
@@ -159,7 +153,8 @@ process_chunk (const gchar  *read_bytes,
 }
 
 static gchar *
-process_whole_string (GString  *s)
+process_whole_string (GString  *s,
+                      GError  **error)
 {
 	gchar *utf8 = NULL;
 	gsize  utf8_len = 0;
@@ -169,7 +164,7 @@ process_whole_string (GString  *s)
 	 * Windows OS. We will only accept text files in UTF-16 which come
 	 * with a proper BOM. */
 	if (s->len > 2) {
-		GError *error = NULL;
+		GError *inner_error = NULL;
 
 		if (memcmp (s->str, "\xFF\xFE", 2) == 0) {
 			g_debug ("String comes in UTF-16LE, converting");
@@ -179,7 +174,7 @@ process_whole_string (GString  *s)
 			                  "UTF-16LE",
 			                  NULL,
 			                  &utf8_len,
-			                  &error);
+			                  &inner_error);
 
 		} else if (memcmp (s->str, "\xFE\xFF", 2) == 0) {
 			g_debug ("String comes in UTF-16BE, converting");
@@ -189,13 +184,11 @@ process_whole_string (GString  *s)
 			                  "UTF-16BE",
 			                  NULL,
 			                  &utf8_len,
-			                  &error);
+			                  &inner_error);
 		}
 
-		if (error) {
-			g_warning ("Couldn't convert string from UTF-16 to UTF-8...: %s",
-			           error->message);
-			g_error_free (error);
+		if (inner_error) {
+			g_propagate_error (error, inner_error);
 			g_string_free (s, TRUE);
 			return NULL;
 		}
@@ -264,7 +257,8 @@ process_whole_string (GString  *s)
  **/
 gchar *
 tracker_read_text_from_stream (GInputStream *stream,
-                               gsize         max_bytes)
+                               gsize         max_bytes,
+                               GError      **error)
 {
 	GString *s = NULL;
 	gsize n_bytes_remaining = max_bytes;
@@ -282,7 +276,7 @@ tracker_read_text_from_stream (GInputStream *stream,
 	 */
 	while (n_bytes_remaining > 0) {
 		gchar buf[BUFFER_SIZE];
-		GError *error = NULL;
+		GError *inner_error = NULL;
 		gsize n_bytes_read;
 
 		/* Read bytes from stream */
@@ -291,10 +285,8 @@ tracker_read_text_from_stream (GInputStream *stream,
 		                              MIN (BUFFER_SIZE, n_bytes_remaining),
 		                              &n_bytes_read,
 		                              NULL,
-		                              &error)) {
-			g_message ("Error reading from stream: '%s'",
-			           error->message);
-			g_error_free (error);
+		                              &inner_error)) {
+			g_propagate_error (error, inner_error);
 			break;
 		}
 
@@ -309,7 +301,7 @@ tracker_read_text_from_stream (GInputStream *stream,
 	}
 
 	/* Validate UTF-8 if something was read, and return it */
-	return s ? process_whole_string (s) : NULL;
+	return s ? process_whole_string (s, error) : NULL;
 }
 
 
@@ -327,15 +319,17 @@ tracker_read_text_from_stream (GInputStream *stream,
  * Returns: newly-allocated NUL-terminated UTF-8 string with the read text.
  **/
 gchar *
-tracker_read_text_from_fd (gint  fd,
-                           gsize max_bytes)
+tracker_read_text_from_fd (gint     fd,
+                           gsize    max_bytes,
+                           GError **error)
 {
 	FILE *fz;
 	GString *s;
 	gsize n_bytes_remaining = max_bytes;
 
 	if ((fz = fdopen (fd, "r")) == NULL) {
-		g_warning ("Cannot read from FD... could not extract text");
+		g_set_error (error, TRACKER_EXTRACT_ERROR, TRACKER_EXTRACT_ERROR_IO_ERROR,
+		             "Cannot read from file so could not extract text.");
 		close (fd);
 		return NULL;
 	}
@@ -378,5 +372,5 @@ tracker_read_text_from_fd (gint  fd,
 	fclose (fz);
 
 	/* Validate UTF-8 if something was read, and return it */
-	return process_whole_string (s);
+	return process_whole_string (s, error);
 }
