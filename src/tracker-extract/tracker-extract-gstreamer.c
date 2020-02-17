@@ -352,7 +352,7 @@ get_embedded_cue_sheet_data (GstTagList *tag_list)
 			 * not have to jump past cuesheet= on the
 			 * returned value.
 			 */
-			g_memmove (buffer, buffer + 9, strlen ((gchar *) buffer + 9) + 1);
+			memmove (buffer, buffer + 9, strlen ((gchar *) buffer + 9) + 1);
 
 			return buffer;
 		}
