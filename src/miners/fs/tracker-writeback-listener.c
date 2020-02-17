@@ -435,8 +435,6 @@ process_event (gpointer user_data)
 	WritebackEvent *event;
 	QueryData *data = NULL;
 	GString *query;
-	gboolean comma = FALSE;
-	gint i;
 
 	priv = tracker_writeback_listener_get_instance_private (self);
 	event = g_queue_pop_head (priv->events);
