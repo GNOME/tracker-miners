@@ -24,20 +24,10 @@ if get_option('tracker_core') == 'system'
           'use the -Dtracker_core=subproject option to build from Git.')
   endif
 
-  # The tracker-miners will not work unless installed into the same prefix as
-  # the base 'tracker' package as it expects to be able to access data files
-  # in ${prefix}/{datadir}/tracker.
-  #
-  # This check acts as a guard to make sure we are being configured with the
-  # right prefix, among other things.
-  tracker_store_path = tracker_sparql.get_pkgconfig_variable('tracker_store')
-
   # If we are building against an installed version of tracker core rather than
   # having it as a subproject, these 'uninstalled' locations point to the actual
   # installed locations.
-  tracker_test_dbus_services_dir = join_paths(tracker_sparql.get_pkgconfig_variable('dbus_services_dir'))
   tracker_uninstalled_cli_dir = join_paths (tracker_sparql.get_pkgconfig_variable('exec_prefix'), 'bin')
-  tracker_uninstalled_domain_rule = join_paths (tracker_sparql.get_pkgconfig_variable('domain_ontologies_dir'), 'default.rule')
   tracker_uninstalled_nepomuk_ontologies_dir = join_paths(tracker_sparql.get_pkgconfig_variable('ontologies_dir'), 'nepomuk')
   tracker_uninstalled_stop_words_dir = join_paths(tracker_sparql.get_pkgconfig_variable('datadir'), 'tracker', 'stop-words')
   tracker_uninstalled_testutils_dir = tracker_testutils.get_pkgconfig_variable('python_path')
@@ -52,19 +42,13 @@ else
 
   tracker_sparql = tracker_subproject.get_variable('tracker_sparql_dep')
 
-  tracker_store = tracker_subproject.get_variable('tracker_store')
-  tracker_store_path = tracker_store.full_path()
-
-  tracker_test_dbus_services_dir = tracker_subproject.get_variable('tracker_test_dbus_services_dir')
   tracker_uninstalled_cli_dir = tracker_subproject.get_variable('tracker_uninstalled_cli_dir')
-  tracker_uninstalled_domain_rule = tracker_subproject.get_variable('tracker_uninstalled_domain_rule')
   tracker_uninstalled_nepomuk_ontologies_dir = tracker_subproject.get_variable('tracker_uninstalled_nepomuk_ontologies_dir')
   tracker_uninstalled_stop_words_dir = tracker_subproject.get_variable('tracker_uninstalled_stop_words_dir')
   tracker_uninstalled_testutils_dir = tracker_subproject.get_variable('tracker_uninstalled_testutils_dir')
   tracker_uninstalled_nepomuk_ontologies_dir = tracker_subproject.get_variable('tracker_uninstalled_nepomuk_ontologies_dir')
 
   tracker_common_enums_header = tracker_subproject.get_variable('tracker_common_enums_header')
-  tracker_gsettings_schemas = tracker_subproject.get_variable('tracker_gsettings_schemas')
 endif
 
 avcodec = dependency('libavcodec', version: '>= 0.8.4', required: false)
@@ -372,7 +356,6 @@ conf.set('includedir', join_paths(get_option('prefix'), get_option('includedir')
 conf.set('libdir', libdir)
 conf.set('libexecdir', join_paths(get_option('prefix'), get_option('libexecdir')))
 conf.set('prefix', get_option('prefix'))
-conf.set('tracker_test_dbus_services_dir', tracker_test_dbus_services_dir)
 conf.set('TRACKER_API_VERSION', tracker_api_version)
 conf.set('VERSION', meson.project_version())
 
@@ -434,7 +417,6 @@ meson.add_install_script('meson_integration_commands.sh', glib_compile_schemas.p
 
 run_uninstalled_conf = configuration_data()
 run_uninstalled_conf.set('tracker_uninstalled_cli_dir', tracker_uninstalled_cli_dir)
-run_uninstalled_conf.set('tracker_uninstalled_domain_rule', tracker_uninstalled_domain_rule)
 run_uninstalled_conf.set('tracker_uninstalled_extract_rules_dir', tracker_uninstalled_extract_rules_dir)
 run_uninstalled_conf.set('tracker_uninstalled_extractors_dir', meson.current_build_dir() / 'src' / 'tracker-extract')
 run_uninstalled_conf.set('tracker_uninstalled_miner_services_dir', tracker_uninstalled_miner_services_dir)

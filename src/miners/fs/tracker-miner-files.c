@@ -37,6 +37,7 @@
 #include <libtracker-miners-common/tracker-common.h>
 #include <libtracker-sparql/tracker-ontologies.h>
 #include <libtracker-extract/tracker-extract.h>
+#include <libtracker-miner/tracker-miner.h>
 
 #include "tracker-power.h"
 #include "tracker-miner-files.h"
@@ -83,6 +84,8 @@ struct TrackerMinerFilesPrivate {
 
 	GSList *index_recursive_directories;
 	GSList *index_single_directories;
+
+	gchar *domain;
 
 	guint disk_space_check_id;
 	gboolean disk_space_pause;
@@ -132,7 +135,8 @@ enum {
 
 enum {
 	PROP_0,
-	PROP_CONFIG
+	PROP_CONFIG,
+	PROP_DOMAIN,
 };
 
 enum {
@@ -384,6 +388,13 @@ tracker_miner_files_class_init (TrackerMinerFilesClass *klass)
 	                                                      "Config",
 	                                                      "Config",
 	                                                      TRACKER_TYPE_CONFIG,
+	                                                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
+	g_object_class_install_property (object_class,
+	                                 PROP_DOMAIN,
+	                                 g_param_spec_string ("domain",
+	                                                      "Domain",
+	                                                      "Domain",
+	                                                      NULL,
 	                                                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
 
 	miner_files_error_quark = g_quark_from_static_string ("TrackerMinerFiles");
@@ -814,7 +825,7 @@ miner_files_initable_init (GInitable     *initable,
 
 	disk_space_check_start (mf);
 
-	mf->private->extract_watchdog = tracker_extract_watchdog_new ();
+	mf->private->extract_watchdog = tracker_extract_watchdog_new (mf->private->domain);
 	g_signal_connect (mf->private->extract_watchdog, "lost",
 	                  G_CALLBACK (on_extractor_lost), mf);
 
@@ -837,6 +848,9 @@ miner_files_set_property (GObject      *object,
 	case PROP_CONFIG:
 		priv->config = g_value_dup_object (value);
 		break;
+	case PROP_DOMAIN:
+		priv->domain = g_value_dup_string (value);
+		break;
 	default:
 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
 		break;
@@ -857,6 +871,9 @@ miner_files_get_property (GObject    *object,
 	case PROP_CONFIG:
 		g_value_set_object (value, priv->config);
 		break;
+	case PROP_DOMAIN:
+		g_value_set_string (value, priv->domain);
+		break;
 	default:
 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
 		break;
@@ -875,6 +892,7 @@ miner_files_finalize (GObject *object)
 	g_cancellable_cancel (priv->extract_check_cancellable);
 	g_object_unref (priv->extract_check_cancellable);
 	g_free (priv->extract_check_query);
+	g_free (priv->domain);
 
 	if (priv->grace_period_timeout_id != 0) {
 		g_source_remove (priv->grace_period_timeout_id);
@@ -2913,14 +2931,18 @@ miner_files_move_file (TrackerMinerFS *fs,
 }
 
 TrackerMiner *
-tracker_miner_files_new (TrackerConfig  *config,
-                         GError        **error)
+tracker_miner_files_new (TrackerSparqlConnection  *connection,
+                         TrackerConfig            *config,
+                         const gchar              *domain,
+                         GError                  **error)
 {
 	return g_initable_new (TRACKER_TYPE_MINER_FILES,
 	                       NULL,
 	                       error,
+	                       "connection", connection,
 	                       "root", NULL,
 	                       "config", config,
+	                       "domain", domain,
 	                       "processing-pool-wait-limit", 10,
 	                       "processing-pool-ready-limit", 100,
 	                       NULL);

@@ -20,18 +20,19 @@ Tests the FLAC+cuesheet extraction feature.
 """
 
 
-import os
+import pathlib
 import shutil
 import tempfile
 import unittest as ut
 
 import configuration as cfg
-from extractor import get_tracker_extract_jsonld_output, create_test_flac, TrackerExtractTestCase
+import datagenerator
+import fixtures
 
 
-class FlacCuesheetTest(TrackerExtractTestCase):
+class FlacCuesheetTest(fixtures.TrackerExtractTestCase):
     def spec(self, audio_path):
-        audio_uri = 'file://' + audio_path
+        audio_uri = audio_path.as_uri()
         return {
             '@type': ['nfo:Audio'],
             'nie:url': audio_uri,
@@ -82,13 +83,13 @@ class FlacCuesheetTest(TrackerExtractTestCase):
 
     def test_external_cue_sheet(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            datadir = os.path.join(os.getcwd() + "/test-extraction-data")
-            shutil.copy(os.path.join(datadir, 'audio', 'cuesheet-test.cue'), tmpdir)
+            datadir = pathlib.Path(__file__).parent.joinpath('test-extraction-data')
+            shutil.copy(datadir.joinpath('audio', 'cuesheet-test.cue'), tmpdir)
 
-            audio_path = os.path.join(tmpdir, 'cuesheet-test.flac')
-            create_test_flac(audio_path, duration=6*60)
+            audio_path = pathlib.Path(tmpdir).joinpath('cuesheet-test.flac')
+            datagenerator.create_test_flac(audio_path, duration=6*60)
 
-            result = get_tracker_extract_jsonld_output(
+            result = fixtures.get_tracker_extract_jsonld_output(
                 cfg.test_environment(tmpdir), audio_path)
 
         self.assert_extract_result_matches_spec(

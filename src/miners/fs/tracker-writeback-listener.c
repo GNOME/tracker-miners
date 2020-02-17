@@ -208,13 +208,7 @@ writeback_listener_initable_init (GInitable    *initable,
 	GError *internal_error = NULL;
 
 	priv = tracker_writeback_listener_get_instance_private (listener);
-
-	priv->connection = tracker_sparql_connection_get (NULL, &internal_error);
-
-	if (internal_error) {
-		g_propagate_error (error, internal_error);
-		return FALSE;
-	}
+	priv->connection = tracker_miner_get_connection (TRACKER_MINER (priv->files_miner));
 
 	priv->d_connection = g_bus_get_sync (TRACKER_IPC_BUS, NULL, &internal_error);
 

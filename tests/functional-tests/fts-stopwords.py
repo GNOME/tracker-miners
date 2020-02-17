@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (C) 2010, Nokia (ivan.frade@nokia.com)
-# Copyright (C) 2019, Sam Thursfield (sam@afuera.me.uk)
+# Copyright (C) 2019-2020, Sam Thursfield (sam@afuera.me.uk)
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -22,27 +22,26 @@
 # TODO:
 #     These tests are for files... we need to write them for folders!
 #
+
 """
 Monitor a directory, copy/move/remove/update text files and check that
 the text contents are updated accordingly in the indexes.
 """
-import os
-import shutil
+
 import locale
-import time
-
+import os
 import unittest as ut
-from minertest import CommonTrackerMinerFTSTest, DEFAULT_TEXT
+
 import configuration as cfg
+import fixtures
 
 
-class MinerFTSStopwordsTest (CommonTrackerMinerFTSTest):
+class MinerFTSStopwordsTest(fixtures.TrackerMinerFTSTest):
     """
     Search for stopwords in a file 
     """
 
     def __get_some_stopwords(self):
-
         langcode, encoding = locale.getdefaultlocale()
         if "_" in langcode:
             langcode = langcode.split("_")[0]
@@ -67,6 +66,7 @@ class MinerFTSStopwordsTest (CommonTrackerMinerFTSTest):
 
         return stopwords
 
+    @ut.skip("Stopwords are disabled by default since https://gitlab.gnome.org/GNOME/tracker/merge_requests/172")
     def test_01_stopwords(self):
         stopwords = self.__get_some_stopwords()
         TEXT = " ".join(["this a completely normal text automobile"] + stopwords)

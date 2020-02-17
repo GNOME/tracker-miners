@@ -73,37 +73,6 @@ tracker_miner = declare_dependency(
     include_directories: include_directories('.')
 )
 
-tracker_miner_gir = gnome.generate_gir(libtracker_miner,
-    sources: miner_sources + miner_headers,
-    nsversion: tracker_api_version,
-    namespace: 'TrackerMiner',
-    identifier_prefix: 'Tracker',
-    symbol_prefix: 'tracker',
-    # FIXME: also depends on Tracker-2.0.gir (output of libtracker-sparql)
-    # but we can't currently access that from the Vala target
-    includes : ['GLib-2.0', 'GObject-2.0', 'Gio-2.0' ],
-    install: true,
-    extra_args: tracker_c_args + [
-        '--c-include=libtracker-miner/tracker-miner.h',
-        '-DTRACKER_COMPILATION',
-    ])
-
-gnome.generate_vapi(
-      'tracker-miner-' + tracker_api_version,
-      sources : tracker_miner_gir[0],
-      packages : 'gio-2.0',
-      install : true,
-    )
-
-configure_file(
-    input: 'tracker-miner.pc.in',
-    output: 'tracker-miner-@0@.pc'.format(tracker_api_version),
-    configuration: conf,
-    install: true,
-    install_dir: join_paths(get_option('prefix'), get_option('libdir'), 'pkgconfig'))
-
-install_headers(miner_headers, subdir: 'tracker-@0@/libtracker-miner'.format(tracker_api_version))
-
 install_data(
     'tracker-miner.xml',
     install_dir: join_paths(get_option('prefix'), get_option('datadir'), 'tracker'))

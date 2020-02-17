@@ -684,12 +684,14 @@ tracker_extract_decorator_initable_iface_init (GInitableIface *iface)
 }
 
 TrackerDecorator *
-tracker_extract_decorator_new (TrackerExtract  *extract,
-                               GCancellable    *cancellable,
-                               GError         **error)
+tracker_extract_decorator_new (TrackerSparqlConnection  *connection,
+                               TrackerExtract           *extract,
+                               GCancellable             *cancellable,
+                               GError                  **error)
 {
 	return g_initable_new (TRACKER_TYPE_EXTRACT_DECORATOR,
 	                       cancellable, error,
+	                       "connection", connection,
 	                       "data-source", TRACKER_EXTRACT_DATA_SOURCE,
 	                       "class-names", supported_classes,
 	                       "extractor", extract,

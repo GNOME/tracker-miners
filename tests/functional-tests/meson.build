@@ -3,13 +3,13 @@ python = find_program('python3')
 # Configure functional tests to run completely from source tree.
 testconf = configuration_data()
 
-config_json_full_path = join_paths(meson.current_build_dir(), 'configuration.json')
-dconf_profile_full_path = join_paths(meson.current_source_dir(), 'trackertest')
-tracker_extractors_dir = join_paths(meson.current_build_dir(), '..', '..', 'src', 'tracker-extract')
+config_json_full_path = meson.current_build_dir() / 'configuration.json'
+dconf_profile_full_path = meson.current_source_dir() / 'trackertest'
+tracker_extractors_dir = meson.current_build_dir() / '..' / '..' / 'src' / 'tracker-extract'
 
-testconf.set('TEST_DBUS_DAEMON_CONFIG_FILE', join_paths(build_root, 'tests', 'test-bus.conf'))
+testconf.set('TEST_DBUS_DAEMON_CONFIG_FILE', build_root / 'tests' / 'test-bus.conf')
 testconf.set('TEST_DCONF_PROFILE', dconf_profile_full_path)
-testconf.set('TEST_DOMAIN_ONTOLOGY_RULE', tracker_uninstalled_domain_rule)
+testconf.set('TEST_DOMAIN_ONTOLOGY_RULE', meson.current_build_dir() / 'test-domain.rule')
 testconf.set('TEST_EXTRACTOR_RULES_DIR', tracker_uninstalled_extract_rules_dir)
 testconf.set('TEST_EXTRACTORS_DIR', tracker_extractors_dir)
 testconf.set('TEST_GSETTINGS_SCHEMA_DIR', tracker_miners_uninstalled_gsettings_schema_dir)
@@ -17,6 +17,12 @@ testconf.set('TEST_LANGUAGE_STOP_WORDS_DIR', tracker_uninstalled_stop_words_dir)
 testconf.set('TEST_ONTOLOGIES_DIR', tracker_uninstalled_nepomuk_ontologies_dir)
 testconf.set('TEST_WRITEBACK_MODULES_DIR', tracker_uninstalled_writeback_modules_dir)
 testconf.set('TRACKER_EXTRACT_PATH', uninstalled_tracker_extract_path)
+
+test_domain_rule = configure_file(
+  input: 'test-domain.rule.in',
+  output: 'test-domain.rule',
+  configuration: testconf
+)
 
 config_json = configure_file(
   input: 'configuration.json.in',
@@ -95,29 +101,27 @@ if get_option('unzip_ps_gz_files')
 endif
 
 functional_tests = [
-  '300-miner-basic-ops',
-  '301-miner-resource-removal',
-  '310-fts-basic',
-  '311-fts-file-operations',
-  '312-fts-stopwords',
-  '410-extractor-decorator',
-  '600-applications-camera',
-  '601-applications-sync',
+  'miner-basic',
+  'miner-resource-removal',
+  'fts-basic',
+  'fts-file-operations',
+  'fts-stopwords',
+  'extractor-decorator',
 ]
 
 if libcue.found()
-  functional_tests += '401-extractor-flac-cuesheet'
+  functional_tests += 'extractor-flac-cuesheet'
 endif
 
 if libjpeg.found() and libgif.found() and libpng.found() and libtiff.found() and exempi.found() and libexif.found()
   functional_tests += [
-    '500-writeback-images',
-    '501-writeback-image-details',
+    'writeback-images',
+    'writeback-image-details',
   ]
 endif
 
 if libvorbis.found() and flac.found() and generic_media_handler_name != 'none'
-  functional_tests += '502-writeback-audio'
+  functional_tests += 'writeback-audio'
 endif
 
 detect_h264_codec = join_paths(meson.current_source_dir(), 'detect-h264-codec.sh')
@@ -136,6 +140,13 @@ else
 endif
 
 test_env = environment()
+
+if get_option('tracker_core') == 'subproject'
+  tracker_sparql_uninstalled_dir = tracker_subproject.get_variable('tracker_sparql_uninstalled_dir')
+  test_env.prepend('GI_TYPELIB_PATH', tracker_sparql_uninstalled_dir)
+  test_env.prepend('LD_LIBRARY_PATH', tracker_sparql_uninstalled_dir)
+endif
+
 test_env.prepend('PYTHONPATH', tracker_uninstalled_testutils_dir)
 test_env.set('TRACKER_FUNCTIONAL_TEST_CONFIG', config_json_full_path)
 
@@ -149,33 +160,17 @@ foreach t: extractor_tests
     test_suite = [test_parts[0]]
   endif
   test(test_name, python,
-    args: ['400-extractor-metadata.py', data],
+    args: ['extractor-generic.py', data],
     env: test_env,
     suite: ['extractor'] + test_suite,
     workdir: meson.current_source_dir())
 endforeach
 
 foreach t: functional_tests
-  file = '@0@.py'.format(t)
-  test_parts = t.split('-')
-  test_name = t
-  test_suite = []
-  if test_parts.length() > 1
-    test_suite = [test_parts[1]]
-    parts = []
-    i = 0
-    foreach p: test_parts
-      if i > 1
-        parts += p
-      endif
-      i += 1
-    endforeach
-    test_name = '-'.join(parts)
-  endif
-  test(test_name, python,
+  file = meson.current_source_dir() / '@0@.py'.format(t)
+  test(t, python,
     args: [file],
     env: test_env,
-    workdir: meson.current_source_dir(),
     suite: ['functional'] + test_suite,
     timeout: 120)
 endforeach

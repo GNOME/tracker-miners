@@ -727,7 +727,8 @@ tracker_controller_dbus_start (TrackerController   *controller,
 
 	priv = tracker_controller_get_instance_private (controller);
 
-	priv->connection = tracker_sparql_connection_get (NULL, &err);
+	priv->connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.Files",
+	                                                      NULL, NULL, &err);
 
 	if (!priv->connection) {
 		g_propagate_error (error, err);

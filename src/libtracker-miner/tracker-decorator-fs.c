@@ -25,6 +25,7 @@
 
 #include "tracker-decorator-private.h"
 #include "tracker-decorator-fs.h"
+#include "tracker-miner-fs.h"
 
 /**
  * SECTION:tracker-decorator-fs

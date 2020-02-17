@@ -68,6 +68,57 @@ on_domain_vanished (GDBusConnection *connection,
 	g_main_loop_quit (loop);
 }
 
+TrackerSparqlConnectionFlags
+get_fts_connection_flags (void)
+{
+	TrackerSparqlConnectionFlags flags = 0;
+	TrackerFTSConfig *fts_config;
+
+	fts_config = tracker_fts_config_new ();
+
+	if (tracker_fts_config_get_enable_stemmer (fts_config))
+		flags |= TRACKER_SPARQL_CONNECTION_FLAGS_FTS_ENABLE_STEMMER;
+	if (tracker_fts_config_get_enable_unaccent (fts_config))
+		flags |= TRACKER_SPARQL_CONNECTION_FLAGS_FTS_ENABLE_UNACCENT;
+	if (tracker_fts_config_get_ignore_numbers (fts_config))
+		flags |= TRACKER_SPARQL_CONNECTION_FLAGS_FTS_IGNORE_NUMBERS;
+	if (tracker_fts_config_get_ignore_stop_words (fts_config))
+		flags |= TRACKER_SPARQL_CONNECTION_FLAGS_FTS_ENABLE_STOP_WORDS;
+
+	g_object_unref (fts_config);
+
+	return flags;
+}
+
+static gboolean
+setup_connection_and_endpoint (TrackerDomainOntology    *domain,
+                               GDBusConnection          *connection,
+                               TrackerSparqlConnection **sparql_conn,
+                               TrackerEndpointDBus     **endpoint,
+                               GError                  **error)
+{
+	GFile *store;
+
+	store = tracker_domain_ontology_get_cache (domain);
+	*sparql_conn = tracker_sparql_connection_new (get_fts_connection_flags (),
+	                                              store,
+	                                              NULL,
+	                                              NULL,
+	                                              error);
+	if (!*sparql_conn)
+		return FALSE;
+
+	*endpoint = tracker_endpoint_dbus_new (*sparql_conn,
+	                                       connection,
+	                                       NULL,
+	                                       NULL,
+	                                       error);
+	if (!*endpoint)
+		return FALSE;
+
+	return TRUE;
+}
+
 int
 main (int argc, char **argv)
 {
@@ -77,6 +128,8 @@ main (int argc, char **argv)
 	TrackerMinerRSS *miner;
 	GError *error = NULL;
 	GDBusConnection *connection;
+	TrackerSparqlConnection *sparql_conn;
+	TrackerEndpointDBus *endpoint;
 	TrackerMinerProxy *proxy;
 	TrackerDomainOntology *domain_ontology;
 	gchar *domain_name, *dbus_name;
@@ -108,8 +161,6 @@ main (int argc, char **argv)
 
 	g_option_context_free (context);
 
-	tracker_sparql_connection_set_domain (domain_ontology_name);
-
 	/* Command line stuff doesn't use logging, so we're using g_print*() */
 	if (add_feed) {
 		TrackerSparqlConnection *connection;
@@ -121,7 +172,8 @@ main (int argc, char **argv)
 		         title,
 		         add_feed);
 
-		connection = tracker_sparql_connection_get (NULL, &error);
+		connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.RSS",
+		                                                NULL, NULL, &error);
 
 		if (!connection) {
 			g_printerr ("%s: %s\n",
@@ -188,7 +240,20 @@ main (int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	miner = tracker_miner_rss_new (&error);
+	if (!setup_connection_and_endpoint (domain_ontology,
+	                                    connection,
+	                                    &sparql_conn,
+	                                    &endpoint,
+	                                    &error)) {
+
+		g_critical ("Could not create store/endpoint: %s",
+		            error->message);
+		g_error_free (error);
+
+		return EXIT_FAILURE;
+	}
+
+	miner = tracker_miner_rss_new (sparql_conn, &error);
 	if (!miner) {
 		g_critical ("Could not create new RSS miner: '%s', exiting...\n",
 		            error ? error->message : "unknown error");
@@ -235,6 +300,8 @@ main (int argc, char **argv)
 
 	tracker_log_shutdown ();
 	g_main_loop_unref (loop);
+	g_object_unref (sparql_conn);
+	g_object_unref (endpoint);
 	g_object_unref (miner);
 	g_object_unref (connection);
 	g_object_unref (proxy);

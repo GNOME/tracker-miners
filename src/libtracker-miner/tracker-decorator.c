@@ -121,6 +121,8 @@ static void decorator_cache_next_items (TrackerDecorator *decorator);
 static gboolean decorator_check_commit (TrackerDecorator *decorator);
 
 static void notifier_events_cb (TrackerDecorator *decorator,
+				const gchar      *service,
+				const gchar      *graph,
 				GPtrArray        *events,
 				TrackerNotifier  *notifier);
 
@@ -144,7 +146,6 @@ static TrackerDecoratorInfo *
 tracker_decorator_info_new (TrackerDecorator    *decorator,
                             TrackerSparqlCursor *cursor)
 {
-	TrackerSparqlBuilder *sparql;
 	TrackerDecoratorInfo *info;
 	GCancellable *cancellable;
 
@@ -159,10 +160,6 @@ tracker_decorator_info_new (TrackerDecorator    *decorator,
 	info->task = g_task_new (decorator, cancellable,
 	                         decorator_task_done, info);
 	g_object_unref (cancellable);
-
-	sparql = tracker_sparql_builder_new_update ();
-	g_task_set_task_data (info->task, sparql,
-	                      (GDestroyNotify) g_object_unref);
 
 	return info;
 }
@@ -344,34 +341,22 @@ decorator_commit_cb (GObject      *object,
 	TrackerDecoratorPrivate *priv;
 	TrackerDecorator *decorator;
 	GError *error = NULL;
-	GPtrArray *errors;
 	guint i;
 
 	decorator = user_data;
 	priv = decorator->priv;
 	conn = TRACKER_SPARQL_CONNECTION (object);
-	errors = tracker_sparql_connection_update_array_finish (conn, result, &error);
 
-	if (error) {
+	if (!tracker_sparql_connection_update_array_finish (conn, result, &error)) {
 		g_warning ("There was an error pushing metadata: %s\n", error->message);
-	}
 
-	if (errors) {
-		for (i = 0; i < errors->len; i++) {
+		for (i = 0; i < priv->commit_buffer->len; i++) {
 			SparqlUpdate *update;
-			GError *child_error;
 
-			child_error = g_ptr_array_index (errors, i);
 			update = &g_array_index (priv->commit_buffer, SparqlUpdate, i);
-
-			if (!child_error)
-				continue;
-
 			decorator_blacklist_add (decorator, update->id);
-			item_warn (conn, update->id, update->sparql, child_error);
+			item_warn (conn, update->id, update->sparql, error);
 		}
-
-		g_ptr_array_unref (errors);
 	}
 
 	g_clear_pointer (&priv->commit_buffer, g_array_unref);
@@ -941,32 +926,6 @@ decorator_cache_next_items (TrackerDecorator *decorator)
 }
 
 static void
-update_notifier (TrackerDecorator *decorator)
-{
-	TrackerDecoratorPrivate *priv = decorator->priv;
-
-	g_clear_object (&priv->notifier);
-
-	if (priv->class_names) {
-		GError *error = NULL;
-
-		priv->notifier = tracker_notifier_new ((const gchar * const *) priv->class_names,
-						       TRACKER_NOTIFIER_FLAG_NOTIFY_UNEXTRACTED,
-						       NULL, &error);
-
-		if (error) {
-			g_warning ("Could not create notifier: %s\n",
-				   error->message);
-			g_error_free (error);
-		}
-
-		g_signal_connect_swapped (priv->notifier, "events",
-					  G_CALLBACK (notifier_events_cb),
-					  decorator);
-	}
-}
-
-static void
 tracker_decorator_get_property (GObject    *object,
                                 guint       param_id,
                                 GValue     *value,
@@ -1021,8 +980,6 @@ decorator_set_classes (TrackerDecorator  *decorator,
 	for (i = 0; classes[i]; i++) {
 		decorator_add_class (decorator, classes[i]);
 	}
-
-	update_notifier (decorator);
 }
 
 static void
@@ -1057,8 +1014,10 @@ tracker_decorator_set_property (GObject      *object,
 
 static void
 notifier_events_cb (TrackerDecorator *decorator,
-		    GPtrArray       *events,
-		    TrackerNotifier *notifier)
+		    const gchar      *service,
+		    const gchar      *graph,
+		    GPtrArray        *events,
+		    TrackerNotifier  *notifier)
 {
 	gboolean check_added = FALSE;
 	gint64 id;
@@ -1095,16 +1054,23 @@ tracker_decorator_initable_init (GInitable     *initable,
                                  GError       **error)
 {
 	TrackerDecorator *decorator;
+	TrackerDecoratorPrivate *priv;
+	TrackerSparqlConnection *conn;
 
 	if (!parent_initable_iface->init (initable, cancellable, error))
 		return FALSE;
 
 	decorator = TRACKER_DECORATOR (initable);
+	priv = tracker_decorator_get_instance_private (decorator);
 
 	if (g_cancellable_is_cancelled (cancellable))
 		return FALSE;
 
-	update_notifier (decorator);
+	conn = tracker_miner_get_connection (TRACKER_MINER (decorator));
+	priv->notifier = tracker_sparql_connection_create_notifier (conn, 0);
+	g_signal_connect_swapped (priv->notifier, "events",
+				  G_CALLBACK (notifier_events_cb),
+				  decorator);
 
 	decorator_update_state (decorator, "Idle", FALSE);
 	return TRUE;
@@ -1646,9 +1612,8 @@ tracker_decorator_info_get_mimetype (TrackerDecoratorInfo *info)
  * Get the #GTask associated with retrieving extended metadata and
  * information for a URN in Tracker.
  *
- * The task object's data (accessible with g_task_get_task_data()) is the
- * #TrackerSparqlBuilder. Use tracker_decorator_info_complete() to complete
- * the task instead of using this object.
+ * Use tracker_decorator_info_complete() to complete the task instead
+ * using this object.
  *
  * Returns: (transfer none): the #GTask for #TrackerDecoratorInfo on
  * success or #NULL if there is no existing #GTask.

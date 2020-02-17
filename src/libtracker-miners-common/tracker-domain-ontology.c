@@ -316,21 +316,16 @@ tracker_domain_ontology_new (const gchar   *domain_name,
 	if (!domain_ontology->ontology_location) {
 		gchar *ontology_path;
 
-		if (g_getenv ("TRACKER_DB_ONTOLOGIES_DIR") != NULL) {
-			/* Override for use only by testcases */
-			domain_ontology->ontology_location = g_file_new_for_path (g_getenv ("TRACKER_DB_ONTOLOGIES_DIR"));
-		} else {
-			ontology_path = g_build_filename (SHAREDIR, "tracker", "ontologies",
-			                                  domain_ontology->ontology_name, NULL);
+		ontology_path = g_build_filename (SHAREDIR, "tracker", "ontologies",
+		                                  domain_ontology->ontology_name, NULL);
 
-			if (!g_file_test (ontology_path, G_FILE_TEST_IS_DIR)) {
-				g_error ("Unable to find ontologies in the configured location %s", ontology_path);
-			}
-
-			domain_ontology->ontology_location = g_file_new_for_path (ontology_path);
-
-			g_free (ontology_path);
+		if (!g_file_test (ontology_path, G_FILE_TEST_IS_DIR)) {
+			g_error ("Unable to find ontologies in the configured location %s", ontology_path);
 		}
+
+		domain_ontology->ontology_location = g_file_new_for_path (ontology_path);
+
+		g_free (ontology_path);
 	}
 
 end:

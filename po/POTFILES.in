@@ -1,6 +1,7 @@
 # List of source files containing translatable strings.
 # Please keep this file sorted alphabetically.
 data/org.freedesktop.Tracker.Extract.gschema.xml
+data/org.freedesktop.Tracker.FTS.gschema.xml
 data/org.freedesktop.Tracker.Miner.Files.gschema.xml
 data/org.freedesktop.Tracker.Writeback.gschema.xml
 src/libtracker-miners-common/tracker-dbus.c

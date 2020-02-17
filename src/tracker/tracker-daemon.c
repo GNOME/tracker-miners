@@ -46,11 +46,6 @@ typedef struct {
 	GStrv filter;
 } WatchData;
 
-static gboolean parse_watch (const gchar  *option_name,
-                             const gchar  *value,
-                             gpointer      data,
-                             GError      **error);
-
 static GDBusConnection *connection = NULL;
 static GDBusProxy *proxy = NULL;
 static GMainLoop *main_loop;
@@ -72,7 +67,7 @@ static gboolean full_namespaces = FALSE; /* Can be turned on if needed, or made 
  */
 static gboolean status;
 static gboolean follow;
-static gchar *watch = NULL;
+static gboolean watch;
 static gboolean list_common_statuses;
 
 static gchar *miner_name;
@@ -134,9 +129,9 @@ static GOptionEntry entries[] = {
 	  N_("Follow status changes as they happen"),
 	  NULL
 	},
-	{ "watch", 'w', G_OPTION_FLAG_OPTIONAL_ARG, G_OPTION_ARG_CALLBACK, parse_watch,
+	{ "watch", 'w', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &watch,
 	  N_("Watch changes to the database in real time (e.g. resources or files being added)"),
-	  N_("ONTOLOGY")
+	  NULL
 	},
 	{ "list-common-statuses", 0, 0, G_OPTION_ARG_NONE, &list_common_statuses,
 	  N_("List common statuses for miners and the store"),
@@ -191,21 +186,6 @@ static GOptionEntry entries[] = {
 	  NULL },
 	{ NULL }
 };
-
-static gboolean
-parse_watch (const gchar  *option_name,
-             const gchar  *value,
-             gpointer      data,
-             GError      **error)
-{
-	if (!value) {
-		watch = g_strdup ("");
-	} else {
-		watch = g_strdup (value);
-	}
-
-	return TRUE;
-}
 
 static gboolean
 signal_handler (gpointer user_data)
@@ -580,68 +560,6 @@ get_shorthand (GHashTable  *prefixes,
 	return g_strdup (namespace);
 }
 
-static GHashTable *
-get_prefixes (TrackerSparqlConnection *connection)
-{
-	TrackerSparqlCursor *cursor;
-	GError *error = NULL;
-	GHashTable *retval;
-	const gchar *query;
-
-	retval = g_hash_table_new_full (g_str_hash,
-	                                g_str_equal,
-	                                g_free,
-	                                g_free);
-
-	/* FIXME: Would like to get this in the same SPARQL that we
-	 * use to get the info, but doesn't seem possible at the
-	 * moment with the limited string manipulation features we
-	 * support in SPARQL.
-	 */
-	query = "SELECT ?ns ?prefix "
-	        "WHERE {"
-	        "  ?ns a tracker:Namespace ;"
-	        "  tracker:prefix ?prefix "
-	        "}";
-
-	cursor = tracker_sparql_connection_query (connection, query, NULL, &error);
-
-	if (error) {
-		g_printerr ("%s, %s\n",
-			    _("Unable to retrieve namespace prefixes"),
-			    error->message);
-
-		g_error_free (error);
-		return retval;
-	}
-
-	if (!cursor) {
-		g_printerr ("%s\n", _("No namespace prefixes were returned"));
-		return retval;
-	}
-
-	while (tracker_sparql_cursor_next (cursor, NULL, NULL)) {
-		const gchar *key, *value;
-
-		key = tracker_sparql_cursor_get_string (cursor, 0, NULL);
-		value = tracker_sparql_cursor_get_string (cursor, 1, NULL);
-
-		if (!key || !value) {
-			continue;
-		}
-
-		g_hash_table_insert (retval,
-		                     g_strndup (key, strlen (key) - 1),
-		                     g_strdup (value));
-	}
-
-	if (cursor) {
-		g_object_unref (cursor);
-	}
-
-	return retval;
-}
-
 static inline void
 print_key (GHashTable  *prefixes,
            const gchar *key)
@@ -674,203 +592,22 @@ store_progress (GDBusConnection *connection,
 }
 
 static void
-store_graph_update_interpret (WatchData  *wd,
-                              GHashTable *updates,
-                              gint        subject,
-                              gint        predicate)
+notifier_events_cb (TrackerNotifier         *notifier,
+		    const gchar             *service,
+		    const gchar             *graph,
+		    GPtrArray               *events,
+		    TrackerSparqlConnection *conn)
 {
-	TrackerSparqlCursor *cursor;
-	GError *error = NULL;
-	gchar *query, *key;
-	gboolean ok = TRUE;
+	gint i;
 
-	query = g_strdup_printf ("SELECT tracker:uri (%d) tracker:uri(%d) {}",
-	                         subject,
-	                         predicate);
-	cursor = tracker_sparql_connection_query (wd->connection,
-	                                          query,
-	                                          NULL,
-	                                          &error);
-	g_free (query);
+	for (i = 0; i < events->len; i++) {
+		TrackerNotifierEvent *event;
 
-	if (error) {
-		g_critical ("%s, %s",
-		            _("Could not run SPARQL query"),
-		            error->message);
-		g_clear_error (&error);
-		return;
+		event = g_ptr_array_index (events, i);
+		g_print ("  '%s' => '%s'\n", graph,
+			 tracker_notifier_event_get_urn (event));
 	}
-
-	if (!tracker_sparql_cursor_next (cursor, NULL, &error) || error) {
-		g_critical ("%s, %s",
-		            _("Could not call tracker_sparql_cursor_next() on SPARQL query"),
-		            error ? error->message : _("No error given"));
-		g_clear_error (&error);
-		return;
-	}
-
-	/* Key = predicate */
-	key = g_strdup (tracker_sparql_cursor_get_string (cursor, 1, NULL));
-	query = g_strdup_printf ("SELECT ?t { <%s> <%s> ?t } ORDER BY DESC(<%s>)",
-	                         tracker_sparql_cursor_get_string (cursor, 0, NULL),
-	                         key,
-	                         key);
-	g_object_unref (cursor);
-
-	cursor = tracker_sparql_connection_query (wd->connection, query, NULL, &error);
-	g_free (query);
-
-	if (error) {
-		g_critical ("%s, %s",
-		            _("Could not run SPARQL query"),
-		            error->message);
-		g_clear_error (&error);
-		return;
-	}
-
-	while (ok) {
-		const gchar *value;
-
-		ok = tracker_sparql_cursor_next (cursor, NULL, &error);
-
-		if (error) {
-			g_critical ("%s, %s",
-			            _("Could not call tracker_sparql_cursor_next() on SPARQL query"),
-			            error ? error->message : _("No error given"));
-			g_clear_error (&error);
-			break;
-		}
-
-		value = tracker_sparql_cursor_get_string (cursor, 0, NULL);
-
-		if (!key || !value) {
-			continue;
-		}
-
-		/* Don't display nie:plainTextContent */
-		if (strcmp (key, "http://www.semanticdesktop.org/ontologies/2007/01/19/nie#plainTextContent") == 0) {
-			continue;
-		}
-
-		if (G_UNLIKELY (full_namespaces)) {
-			if (wd->filter == NULL ||
-			    tracker_string_in_string_list (key, wd->filter) != -1) {
-				g_hash_table_replace (updates, g_strdup (key), g_strdup (value));
-			}
-		} else {
-			gchar *shorthand;
-
-			shorthand = get_shorthand (wd->prefixes, key);
-
-			if (wd->filter == NULL ||
-			    tracker_string_in_string_list (shorthand, wd->filter) != -1) {
-				g_hash_table_replace (updates, shorthand, g_strdup (value));
-			} else {
-				g_free (shorthand);
-			}
-		}
-	}
-
-	g_free (key);
-	g_object_unref (cursor);
 }
-
-static void
-store_graph_update_cb (GDBusConnection *connection,
-                       const gchar     *sender_name,
-                       const gchar     *object_path,
-                       const gchar     *interface_name,
-                       const gchar     *signal_name,
-                       GVariant        *parameters,
-                       gpointer         user_data)
-
-{
-	WatchData *wd;
-	GHashTable *updates;
-	GVariantIter *iter1, *iter2;
-	gchar *class_name;
-	gint graph = 0, subject = 0, predicate = 0, object = 0;
-
-	wd = user_data;
-
-	updates = g_hash_table_new_full (g_str_hash,
-	                                 g_str_equal,
-	                                 (GDestroyNotify) g_free,
-	                                 (GDestroyNotify) g_free);
-
-	g_variant_get (parameters, "(&sa(iiii)a(iiii))", &class_name, &iter1, &iter2);
-
-	while (g_variant_iter_loop (iter1, "(iiii)", &graph, &subject, &predicate, &object)) {
-		store_graph_update_interpret (wd, updates, subject, predicate);
-	}
-
-	while (g_variant_iter_loop (iter2, "(iiii)", &graph, &subject, &predicate, &object)) {
-		store_graph_update_interpret (wd, updates, subject, predicate);
-	}
-
-	/* Print updates sorted and filtered */
-	GList *keys, *l;
-
-	keys = g_hash_table_get_keys (updates);
-	keys = g_list_sort (keys, (GCompareFunc) g_strcmp0);
-
-	if (g_hash_table_size (updates) > 0) {
-		print_key (wd->prefixes, class_name);
-	}
-
-	for (l = keys; l; l = l->next) {
-		gchar *key = l->data;
-		gchar *value = g_hash_table_lookup (updates, l->data);
-
-		g_print ("  '%s' = '%s'\n", key, value);
-	}
-
-	g_list_free (keys);
-	g_hash_table_unref (updates);
-	g_variant_iter_free (iter1);
-	g_variant_iter_free (iter2);
-}
-
-static WatchData *
-watch_data_new (TrackerSparqlConnection *sparql_connection,
-                GHashTable              *sparql_prefixes,
-                const gchar             *watch_filter)
-{
-	WatchData *data;
-
-	data = g_new0 (WatchData, 1);
-	data->connection = g_object_ref (sparql_connection);
-	data->prefixes = g_hash_table_ref (sparql_prefixes);
-
-	if (watch_filter && strlen (watch_filter) > 0) {
-		data->filter = g_strsplit (watch_filter, ",", -1);
-	}
-
-	return data;
-}
-
-static void
-watch_data_free (WatchData *data)
-{
-	if (!data) {
-		return;
-	}
-
-	if (data->filter) {
-		g_strfreev (data->filter);
-	}
-
-	if (data->prefixes) {
-		g_hash_table_unref (data->prefixes);
-	}
-
-	if (data->connection) {
-		g_object_unref (data->connection);
-	}
-
-	g_free (data);
-}
-
 
 static gint
 miner_pause (const gchar *miner,
@@ -1228,13 +965,13 @@ daemon_run (void)
 		status = TRUE;
 	}
 
-	if (watch != NULL) {
+	if (watch) {
 		TrackerSparqlConnection *sparql_connection;
-		GHashTable *sparql_prefixes;
+		TrackerNotifier *notifier;
 		GError *error = NULL;
-		guint signal_id;
 
-		sparql_connection = tracker_sparql_connection_get (NULL, &error);
+		sparql_connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.Files",
+		                                                       NULL, NULL, &error);
 
 		if (!sparql_connection) {
 			g_critical ("%s, %s",
@@ -1244,30 +981,10 @@ daemon_run (void)
 			return EXIT_FAILURE;
 		}
 
-		if (!tracker_dbus_get_connection ("org.freedesktop.Tracker1",
-		                                  "/org/freedesktop/Tracker1/Resources",
-		                                  "org.freedesktop.Tracker1.Resources",
-		                                  G_DBUS_PROXY_FLAGS_DO_NOT_AUTO_START,
-		                                  &connection,
-		                                  &proxy)) {
-			g_object_unref (sparql_connection);
-			return EXIT_FAILURE;
-		}
-
-		sparql_prefixes = get_prefixes (sparql_connection);
-
-		signal_id = g_dbus_connection_signal_subscribe (connection,
-		                                                TRACKER_DBUS_SERVICE,
-		                                                TRACKER_DBUS_INTERFACE_RESOURCES,
-		                                                "GraphUpdated",
-		                                                TRACKER_DBUS_OBJECT_RESOURCES,
-		                                                NULL, /* TODO: Use class-name here */
-		                                                G_DBUS_SIGNAL_FLAGS_NONE,
-		                                                store_graph_update_cb,
-		                                                watch_data_new (sparql_connection, sparql_prefixes, watch),
-		                                                (GDestroyNotify) watch_data_free);
-
-		g_hash_table_unref (sparql_prefixes);
+		notifier = tracker_sparql_connection_create_notifier (sparql_connection,
+								      TRACKER_NOTIFIER_FLAG_QUERY_URN);
+		g_signal_connect (notifier, "events",
+				  G_CALLBACK (notifier_events_cb), sparql_connection);
 		g_object_unref (sparql_connection);
 
 		g_print ("%s\n", _("Now listening for resource updates to the database"));
@@ -1277,8 +994,7 @@ daemon_run (void)
 		main_loop = g_main_loop_new (NULL, FALSE);
 		g_main_loop_run (main_loop);
 		g_main_loop_unref (main_loop);
-
-		g_dbus_connection_signal_unsubscribe (connection, signal_id);
+		g_object_unref (notifier);
 
 		return EXIT_SUCCESS;
 	}

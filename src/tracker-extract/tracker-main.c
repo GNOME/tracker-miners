@@ -315,6 +315,7 @@ main (int argc, char *argv[])
 	GMainLoop *my_main_loop;
 	GDBusConnection *connection;
 	TrackerMinerProxy *proxy;
+	TrackerSparqlConnection *sparql_connection;
 	TrackerDomainOntology *domain_ontology;
 	gchar *domain_name, *dbus_name;
 
@@ -359,8 +360,6 @@ main (int argc, char *argv[])
 	g_set_application_name ("tracker-extract");
 
 	setlocale (LC_ALL, "");
-
-	tracker_sparql_connection_set_domain (domain_ontology_name);
 
 	domain_ontology = tracker_domain_ontology_new (domain_ontology_name, NULL, &error);
 	if (error) {
@@ -414,7 +413,18 @@ main (int argc, char *argv[])
 
 	tracker_module_manager_load_modules ();
 
-	decorator = tracker_extract_decorator_new (extract, NULL, &error);
+	dbus_name = tracker_domain_ontology_get_domain (domain_ontology, "Tracker1.Miner.Files");
+	sparql_connection = tracker_sparql_connection_bus_new (dbus_name,
+	                                                       NULL, NULL, &error);
+
+	if (error) {
+		g_critical ("Could not connect to filesystem miner endpoint: %s",
+		            error->message);
+		g_error_free (error);
+		return EXIT_FAILURE;
+	}
+
+	decorator = tracker_extract_decorator_new (sparql_connection, extract, NULL, &error);
 
 	if (error) {
 		g_critical ("Could not start decorator: %s\n", error->message);
@@ -441,7 +451,6 @@ main (int argc, char *argv[])
 	tracker_locale_sanity_check ();
 
 	controller = tracker_extract_controller_new (decorator, connection);
-	tracker_miner_start (TRACKER_MINER (decorator));
 
 	/* Request DBus name */
 	dbus_name = tracker_domain_ontology_get_domain (domain_ontology, DBUS_NAME_SUFFIX);
@@ -479,6 +488,8 @@ main (int argc, char *argv[])
 	g_signal_connect (decorator, "items-available",
 	                  G_CALLBACK (on_decorator_items_available),
 	                  main_loop);
+
+	tracker_miner_start (TRACKER_MINER (decorator));
 
 	initialize_signal_handler ();
 

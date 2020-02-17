@@ -35,6 +35,14 @@
 
 G_BEGIN_DECLS
 
+#define TRACKER_PREFIX_DATASOURCE_URN \
+       "urn:nepomuk:datasource:"
+
+#define TRACKER_DATASOURCE_URN_NON_REMOVABLE_MEDIA \
+        TRACKER_PREFIX_DATASOURCE_URN "9291a450-1d49-11de-8c30-0800200c9a66"
+
+#define TRACKER_OWN_GRAPH_URN "urn:uuid:472ed0cc-40ff-4e37-9c0c-062d78656540"
+
 #define TRACKER_TYPE_MINER_FS         (tracker_miner_fs_get_type())
 #define TRACKER_MINER_FS(o)           (G_TYPE_CHECK_INSTANCE_CAST ((o), TRACKER_TYPE_MINER_FS, TrackerMinerFS))
 #define TRACKER_MINER_FS_CLASS(c)     (G_TYPE_CHECK_CLASS_CAST ((c), TRACKER_TYPE_MINER_FS, TrackerMinerFSClass))
