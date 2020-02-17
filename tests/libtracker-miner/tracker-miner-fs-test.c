@@ -36,7 +36,7 @@ test_miner_process_file (TrackerMinerFS *miner,
 	TrackerResource *resource;
 	GError *error = NULL;
 	GFileInfo *info;
-	GTimeVal timeval;
+	GDateTime *modification_time;
 	gchar *sparql, *str;
 	gchar *urn;
 	GFile *parent;
@@ -60,10 +60,13 @@ test_miner_process_file (TrackerMinerFS *miner,
 
 	tracker_resource_add_uri (resource, "rdf:type", "nfo:FileDataObject");
 
-	g_file_info_get_modification_time (info, &timeval);
-	str = tracker_date_to_string (timeval.tv_sec);
-	tracker_resource_set_string (resource, "nfo:fileLastModified", str);
-	g_free (str);
+	modification_time = g_file_info_get_modification_date_time (info);
+	if (modification_time) {
+		str = g_date_time_format_iso8601 (modification_time);
+		tracker_resource_set_string (resource, "nfo:fileLastModified", str);
+		g_free (str);
+		g_date_time_unref (modification_time);
+	}
 
 	str = g_file_get_uri (file);
 	tracker_resource_set_string (resource, "nie:url", str);

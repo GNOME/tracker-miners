@@ -62,7 +62,6 @@ typedef struct {
 	GFile    *other_file;
 	gchar    *other_file_uri;
 	gboolean  is_directory;
-	GTimeVal  start_time;
 	guint32   event_type;
 	gboolean  expirable;
 } EventData;

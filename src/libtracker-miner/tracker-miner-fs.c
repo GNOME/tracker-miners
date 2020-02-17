@@ -1688,8 +1688,8 @@ miner_handle_next_item (TrackerMinerFS *fs)
 	GFile *file = NULL;
 	GFile *source_file = NULL;
 	GFile *parent;
-	GTimeVal time_now;
-	static GTimeVal time_last = { 0 };
+	gint64 time_now;
+	static gint64 time_last = 0;
 	gboolean keep_processing = TRUE;
 	gboolean attributes_update = FALSE;
 	TrackerMinerFSEventType type;
@@ -1734,9 +1734,9 @@ miner_handle_next_item (TrackerMinerFS *fs)
 	}
 
 	/* Update progress, but don't spam it. */
-	g_get_current_time (&time_now);
+	time_now = g_get_monotonic_time ();
 
-	if ((time_now.tv_sec - time_last.tv_sec) >= 1) {
+	if ((time_now - time_last) >= 1000000) {
 		guint items_processed, items_remaining;
 		gdouble progress_now;
 		static gdouble progress_last = 0.0;

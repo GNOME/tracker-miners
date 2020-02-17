@@ -24,15 +24,10 @@
 #include <errno.h>
 #include <string.h>
 
+/* Avoid warnings about deprecated GParameter from gsf headers */
+#define GLIB_VERSION_MIN_REQUIRED GLIB_VERSION_2_40
 #include <glib.h>
 #include <gsf/gsf.h>
-#include <gsf/gsf-doc-meta-data.h>
-#include <gsf/gsf-infile.h>
-#include <gsf/gsf-infile-msole.h>
-#include <gsf/gsf-input-stdio.h>
-#include <gsf/gsf-msole-utils.h>
-#include <gsf/gsf-utils.h>
-#include <gsf/gsf-infile-zip.h>
 
 #include <libtracker-miners-common/tracker-common.h>
 #include <libtracker-extract/tracker-extract.h>
