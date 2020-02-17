@@ -869,7 +869,6 @@ feed_channel_content_update_cb (GObject      *source,
 	TrackerSparqlConnection *connection;
 	GPtrArray *errors, *array = user_data;
 	GError *error = NULL;
-	guint i;
 
 	connection = TRACKER_SPARQL_CONNECTION (source);
 	errors = tracker_sparql_connection_update_array_finish (connection,
