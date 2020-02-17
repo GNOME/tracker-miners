@@ -21,7 +21,6 @@
 #define __TRACKER_GSF_H__
 
 #include <glib.h>
-#include <gsf/gsf.h>
 
 G_BEGIN_DECLS
 
