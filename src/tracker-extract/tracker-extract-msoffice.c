@@ -24,6 +24,8 @@
 #include <errno.h>
 #include <string.h>
 
+/* Avoid warnings about deprecated GParameter from gsf headers */
+#define GLIB_VERSION_MIN_REQUIRED GLIB_VERSION_2_40
 #include <glib.h>
 #include <gsf/gsf.h>
 
