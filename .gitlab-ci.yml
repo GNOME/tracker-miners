@@ -36,7 +36,7 @@ stages:
       # screenful of junk each time unless we strip these.
       unset $(env|grep -o '^CI_[^=]*')
 
-      su tracker -c 'cd build; dbus-run-session -- env LANG=C.UTF-8 LC_ALL=C.UTF-8 meson test --suite tracker-miners --print-errorlogs'
+      su tracker -c 'cd build; dbus-run-session -- env LANG=C.UTF-8 LC_ALL=C.UTF-8 eatmydata meson test --suite tracker-miners --print-errorlogs'
 
   after_script:
     - |
