@@ -286,31 +286,10 @@ miner_files_filter_event (TrackerMinerFS          *fs,
                           GFile                   *source_file)
 {
 	TrackerMinerFiles *mf = TRACKER_MINER_FILES (fs);
-	GCancellable *cancellable;
 
 	switch (type) {
 	case TRACKER_MINER_FS_EVENT_CREATED:
-		break;
 	case TRACKER_MINER_FS_EVENT_UPDATED:
-		/* If the file is in the writeback task pool, this is the
-		 * file update applying it, so the event should be filtered
-		 * out.
-		 */
-		if (g_hash_table_lookup_extended (mf->private->writeback_tasks, file,
-		                                  NULL, (gpointer*) &cancellable)) {
-			if (!cancellable) {
-				/* The task was already notified, we can remove
-				 * it now, so later updates will be processed.
-				 */
-				g_hash_table_remove (mf->private->writeback_tasks, file);
-				sync_writeback_pause_state (mf);
-			}
-
-			/* There is a writeback task, pending or satisfied.
-			 * Either way, this update should be ignored.
-			 */
-			return TRUE;
-		}
 		break;
 	case TRACKER_MINER_FS_EVENT_DELETED:
 		writeback_remove_recursively (mf, file);
@@ -3597,10 +3576,6 @@ tracker_miner_files_writeback_notify (TrackerMinerFiles *mf,
 		g_free (uri);
 	}
 
-	/* Drop the cancellable, it will be detected on the next file
-	 * update in miner_files_filter_event().
-	 */
 	g_hash_table_steal (mf->private->writeback_tasks, file);
-	g_hash_table_insert (mf->private->writeback_tasks, file, NULL);
 	g_object_unref (cancellable);
 }
