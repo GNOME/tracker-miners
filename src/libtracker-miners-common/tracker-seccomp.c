@@ -114,7 +114,7 @@ tracker_seccomp_init (void)
 	ALLOW_RULE (rt_sigprocmask);
 	ALLOW_RULE (sched_yield);
 	ALLOW_RULE (sched_getaffinity);
-	ERROR_RULE (sched_setattr, EPERM);
+	ALLOW_RULE (sched_setattr);
 	ALLOW_RULE (nanosleep);
 	ALLOW_RULE (waitid);
 	ALLOW_RULE (waitpid);

@@ -271,14 +271,10 @@ initialize_signal_handler (void)
 }
 
 static void
-initialize_priority_and_scheduling (TrackerSchedIdle sched_idle,
-                                    gboolean         first_time_index)
+initialize_priority_and_scheduling (void)
 {
 	/* Set CPU priority */
-	if (sched_idle == TRACKER_SCHED_IDLE_ALWAYS ||
-	    (sched_idle == TRACKER_SCHED_IDLE_FIRST_INDEX && first_time_index)) {
-		tracker_sched_idle ();
-	}
+	tracker_sched_idle ();
 
 	/* Set disk IO priority and scheduling */
 	tracker_ioprio_init ();
@@ -823,6 +819,9 @@ main (gint argc, gchar *argv[])
 		return EXIT_FAILURE;
 	}
 
+	/* This makes sure we don't steal all the system's resources */
+	initialize_priority_and_scheduling ();
+
 	connection = g_bus_get_sync (TRACKER_IPC_BUS, NULL, &error);
 	if (error) {
 		g_critical ("Could not create DBus connection: %s\n",
@@ -850,10 +849,6 @@ main (gint argc, gchar *argv[])
 	}
 
 	sanity_check_option_values (config);
-
-	/* This makes sure we don't steal all the system's resources */
-	initialize_priority_and_scheduling (tracker_config_get_sched_idle (config),
-	                                    tracker_miner_files_get_first_index_done () == FALSE);
 
 	main_loop = g_main_loop_new (NULL, FALSE);
 
