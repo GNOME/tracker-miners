@@ -109,14 +109,10 @@ static GOptionEntry entries[] = {
 };
 
 static void
-initialize_priority_and_scheduling (TrackerSchedIdle sched_idle,
-                                    gboolean         first_time_index)
+initialize_priority_and_scheduling (void)
 {
 	/* Set CPU priority */
-	if (sched_idle == TRACKER_SCHED_IDLE_ALWAYS ||
-	    (sched_idle == TRACKER_SCHED_IDLE_FIRST_INDEX && first_time_index)) {
-		tracker_sched_idle ();
-	}
+	tracker_sched_idle ();
 
 	/* Set disk IO priority and scheduling */
 	tracker_ioprio_init ();
@@ -229,6 +225,9 @@ run_standalone (TrackerConfig *config)
 		output_format_name = "turtle";
 	}
 
+	/* This makes sure we don't steal all the system's resources */
+	initialize_priority_and_scheduling ();
+
 	/* Look up the output format by name */
 	enum_class = g_type_class_ref (TRACKER_TYPE_SERIALIZATION_FORMAT);
 	enum_value = g_enum_get_value_by_nick (enum_class, output_format_name);
@@ -240,9 +239,6 @@ run_standalone (TrackerConfig *config)
 	output_format = enum_value->value;
 
 	tracker_locale_sanity_check ();
-
-	/* This makes sure we don't steal all the system's resources */
-	initialize_priority_and_scheduling (tracker_config_get_sched_idle (config), TRUE);
 
 	file = g_file_new_for_commandline_arg (filename);
 	uri = g_file_get_uri (file);
@@ -369,6 +365,9 @@ main (int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
+	/* This makes sure we don't steal all the system's resources */
+	initialize_priority_and_scheduling ();
+
 	connection = g_bus_get_sync (TRACKER_IPC_BUS, NULL, &error);
 	if (error) {
 		g_critical ("Could not create DBus connection: %s\n",
@@ -399,9 +398,6 @@ main (int argc, char *argv[])
 
 	/* Initialize subsystems */
 	initialize_directories ();
-
-	/* This makes sure we don't steal all the system's resources */
-	initialize_priority_and_scheduling (tracker_config_get_sched_idle (config), TRUE);
 
 	extract = tracker_extract_new (TRUE, force_module);
 
