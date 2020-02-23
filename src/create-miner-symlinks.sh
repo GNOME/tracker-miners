@@ -12,10 +12,10 @@ have_tracker_miner_fs="$3"
 have_tracker_miner_rss="$4"
 
 mkdir -p ${DESTDIR}/${tracker_miner_services_dir}
-ln -sf "${dbus_services_dir}/org.freedesktop.Tracker1.Miner.Extract.service" "${DESTDIR}/${tracker_miner_services_dir}/"
+ln -sf "${dbus_services_dir}/org.freedesktop.Tracker3.Miner.Extract.service" "${DESTDIR}/${tracker_miner_services_dir}/"
 if ([ "$have_tracker_miner_fs" = "true" ]); then
-  ln -sf "${dbus_services_dir}/org.freedesktop.Tracker1.Miner.Files.service" "${DESTDIR}/${tracker_miner_services_dir}/"
+  ln -sf "${dbus_services_dir}/org.freedesktop.Tracker3.Miner.Files.service" "${DESTDIR}/${tracker_miner_services_dir}/"
 fi
 if ([ "$have_tracker_miner_rss" = "true" ]); then
-  ln -sf "${dbus_services_dir}/org.freedesktop.Tracker1.Miner.RSS.service" "${DESTDIR}/${tracker_miner_services_dir}/"
+  ln -sf "${dbus_services_dir}/org.freedesktop.Tracker3.Miner.RSS.service" "${DESTDIR}/${tracker_miner_services_dir}/"
 fi

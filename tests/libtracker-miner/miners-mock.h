@@ -24,8 +24,8 @@
 
 G_BEGIN_DECLS
 
-#define MOCK_MINER_1 "org.freedesktop.Tracker1.Miner.Mock1"
-#define MOCK_MINER_2 "org.freedesktop.Tracker1.Miner.Mock2"
+#define MOCK_MINER_1 "org.freedesktop.Tracker3.Miner.Mock1"
+#define MOCK_MINER_2 "org.freedesktop.Tracker3.Miner.Mock2"
 
 /*
  * Assumptions:

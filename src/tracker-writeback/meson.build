@@ -50,8 +50,8 @@ executable('tracker-writeback',
   install_rpath: tracker_install_rpath)
 
 dbus_service_file = configure_file(
-  input: 'org.freedesktop.Tracker1.Writeback.service.in',
-  output: 'org.freedesktop.Tracker1.Writeback.service',
+  input: 'org.freedesktop.Tracker3.Writeback.service.in',
+  output: 'org.freedesktop.Tracker3.Writeback.service',
   configuration: conf,
   install: true,
   install_dir: dbus_services_dir)

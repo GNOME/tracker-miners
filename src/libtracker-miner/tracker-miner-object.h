@@ -40,7 +40,7 @@ G_BEGIN_DECLS
  *
  * Since: 0.8
  **/
-#define TRACKER_MINER_DBUS_INTERFACE   "org.freedesktop.Tracker1.Miner"
+#define TRACKER_MINER_DBUS_INTERFACE   "org.freedesktop.Tracker3.Miner"
 
 /**
  * TRACKER_MINER_DBUS_NAME_PREFIX:
@@ -48,11 +48,11 @@ G_BEGIN_DECLS
  * D-Bus name prefix to use for all data miners. This allows custom
  * miners to be written using @TRACKER_MINER_DBUS_NAME_PREFIX + "Files" for
  * example and would show up on D-Bus under
- * &quot;org.freedesktop.Tracker1.Miner.Files&quot;.
+ * &quot;org.freedesktop.Tracker3.Miner.Files&quot;.
  *
  * Since: 0.8
  **/
-#define TRACKER_MINER_DBUS_NAME_PREFIX "org.freedesktop.Tracker1.Miner."
+#define TRACKER_MINER_DBUS_NAME_PREFIX "org.freedesktop.Tracker3.Miner."
 
 /**
  * TRACKER_MINER_DBUS_PATH_PREFIX:
@@ -60,11 +60,11 @@ G_BEGIN_DECLS
  * D-Bus path prefix to use for all data miners. This allows custom
  * miners to be written using @TRACKER_MINER_DBUS_PATH_PREFIX + "Files" for
  * example and would show up on D-Bus under
- * &quot;/org/freedesktop/Tracker1/Miner/Files&quot;.
+ * &quot;/org/freedesktop/Tracker3/Miner/Files&quot;.
  *
  * Since: 0.8
  **/
-#define TRACKER_MINER_DBUS_PATH_PREFIX "/org/freedesktop/Tracker1/Miner/"
+#define TRACKER_MINER_DBUS_PATH_PREFIX "/org/freedesktop/Tracker3/Miner/"
 
 #define TRACKER_TYPE_MINER         (tracker_miner_get_type())
 #define TRACKER_MINER(o)           (G_TYPE_CHECK_INSTANCE_CAST ((o), TRACKER_TYPE_MINER, TrackerMiner))

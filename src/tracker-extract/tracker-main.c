@@ -60,8 +60,8 @@
 	"\n" \
 	"  http://www.gnu.org/licenses/gpl.txt\n"
 
-#define DBUS_NAME_SUFFIX "Tracker1.Miner.Extract"
-#define DBUS_PATH "/org/freedesktop/Tracker1/Miner/Extract"
+#define DBUS_NAME_SUFFIX "Tracker3.Miner.Extract"
+#define DBUS_PATH "/org/freedesktop/Tracker3/Miner/Extract"
 
 static GMainLoop *main_loop;
 
@@ -409,7 +409,7 @@ main (int argc, char *argv[])
 
 	tracker_module_manager_load_modules ();
 
-	dbus_name = tracker_domain_ontology_get_domain (domain_ontology, "Tracker1.Miner.Files");
+	dbus_name = tracker_domain_ontology_get_domain (domain_ontology, "Tracker3.Miner.Files");
 	sparql_connection = tracker_sparql_connection_bus_new (dbus_name,
 	                                                       NULL, NULL, &error);
 

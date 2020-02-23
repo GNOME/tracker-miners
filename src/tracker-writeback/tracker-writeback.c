@@ -76,13 +76,13 @@ typedef struct {
 	WritebackData *current;
 } TrackerControllerPrivate;
 
-#define TRACKER_WRITEBACK_SERVICE   "org.freedesktop.Tracker1.Writeback"
-#define TRACKER_WRITEBACK_PATH      "/org/freedesktop/Tracker1/Writeback"
-#define TRACKER_WRITEBACK_INTERFACE "org.freedesktop.Tracker1.Writeback"
+#define TRACKER_WRITEBACK_SERVICE   "org.freedesktop.Tracker3.Writeback"
+#define TRACKER_WRITEBACK_PATH      "/org/freedesktop/Tracker3/Writeback"
+#define TRACKER_WRITEBACK_INTERFACE "org.freedesktop.Tracker3.Writeback"
 
 static const gchar *introspection_xml =
 	"<node>"
-	"  <interface name='org.freedesktop.Tracker1.Writeback'>"
+	"  <interface name='org.freedesktop.Tracker3.Writeback'>"
 	"    <method name='GetPid'>"
 	"      <arg type='i' name='value' direction='out' />"
 	"    </method>"
@@ -727,7 +727,7 @@ tracker_controller_dbus_start (TrackerController   *controller,
 
 	priv = tracker_controller_get_instance_private (controller);
 
-	priv->connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.Files",
+	priv->connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker3.Miner.Files",
 	                                                      NULL, NULL, &err);
 
 	if (!priv->connection) {
