@@ -43,6 +43,7 @@ libtracker_miner = library(
     miner_enums[0], miner_enums[1], miner_sources,
     c_args: tracker_c_args,
     install: true,
+    install_dir: tracker_internal_libs_dir,
     install_rpath: tracker_internal_libs_dir,
     # This doesn't depend on tracker_common_dep because of
     # https://github.com/mesonbuild/meson/issues/671
