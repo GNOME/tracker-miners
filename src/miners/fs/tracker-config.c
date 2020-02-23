@@ -33,7 +33,7 @@
 
 #include "tracker-config.h"
 
-#define CONFIG_SCHEMA "org.freedesktop.Tracker.Miner.Files"
+#define CONFIG_SCHEMA "org.freedesktop.Tracker3.Miner.Files"
 #define CONFIG_PATH   "/org/freedesktop/tracker/miner/files/"
 
 /* Default values */
