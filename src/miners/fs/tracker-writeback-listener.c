@@ -25,9 +25,9 @@
 #include "tracker-writeback-listener.h"
 #include "tracker-miner-files.h"
 
-#define TRACKER_SERVICE                 "org.freedesktop.Tracker1"
-#define TRACKER_RESOURCES_OBJECT        "/org/freedesktop/Tracker1/Resources"
-#define TRACKER_INTERFACE_RESOURCES     "org.freedesktop.Tracker1.Resources"
+#define TRACKER_SERVICE                 "org.freedesktop.Tracker3"
+#define TRACKER_RESOURCES_OBJECT        "/org/freedesktop/Tracker3/Resources"
+#define TRACKER_INTERFACE_RESOURCES     "org.freedesktop.Tracker3.Resources"
 
 typedef struct {
 	gint32 subject_id;

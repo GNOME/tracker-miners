@@ -1563,7 +1563,7 @@ search_run (void)
 		g_object_unref (language);
 	}
 
-	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.Files",
+	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker3.Miner.Files",
 							NULL, NULL, &error);
 
 	if (!connection) {

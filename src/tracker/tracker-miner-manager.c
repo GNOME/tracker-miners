@@ -50,7 +50,7 @@
 #define METHOD_INDEX_FILE "IndexFile"
 #define METHOD_INDEX_FILE_FOR_PROCESS "IndexFileForProcess"
 
-#define TRACKER_MINER_DBUS_INTERFACE "org.freedesktop.Tracker1.Miner"
+#define TRACKER_MINER_DBUS_INTERFACE "org.freedesktop.Tracker3.Miner"
 
 typedef struct TrackerMinerManagerPrivate TrackerMinerManagerPrivate;
 typedef struct MinerData MinerData;
@@ -693,7 +693,7 @@ tracker_miner_manager_get_running (TrackerMinerManager *manager)
 		return NULL;
 	}
 
-	prefix = tracker_domain_ontology_get_domain (priv->domain_ontology, "Tracker1.Miner");
+	prefix = tracker_domain_ontology_get_domain (priv->domain_ontology, "Tracker3.Miner");
 
 	g_variant_get (v, "(as)", &iter);
 	while (g_variant_iter_loop (iter, "&s", &str)) {
@@ -766,7 +766,7 @@ check_file (GFile    *file,
 	data->dbus_path = dbus_path;
 	data->name_suffix = name_suffix;
 
-	full_name_suffix = g_strconcat ("Tracker1.", name_suffix, NULL);
+	full_name_suffix = g_strconcat ("Tracker3.", name_suffix, NULL);
 	data->dbus_name = tracker_domain_ontology_get_domain (priv->domain_ontology,
 	                                                      full_name_suffix);
 	g_free (full_name_suffix);
@@ -1435,7 +1435,7 @@ tracker_miner_manager_reindex_by_mimetype (TrackerMinerManager  *manager,
 	g_return_val_if_fail (mimetypes != NULL, FALSE);
 
 	if (!tracker_miner_manager_is_active (manager,
-	                                      "org.freedesktop.Tracker1.Miner.Files")) {
+	                                      "org.freedesktop.Tracker3.Miner.Files")) {
 		g_set_error_literal (error,
 		                     TRACKER_MINER_MANAGER_ERROR,
 		                     TRACKER_MINER_MANAGER_ERROR_NOT_AVAILABLE,
@@ -1446,9 +1446,9 @@ tracker_miner_manager_reindex_by_mimetype (TrackerMinerManager  *manager,
 	priv = tracker_miner_manager_get_instance_private (manager);
 
 	v = g_dbus_connection_call_sync (priv->connection,
-	                                 "org.freedesktop.Tracker1.Miner.Files",
-	                                 "/org/freedesktop/Tracker1/Miner/Files/Index",
-	                                 "org.freedesktop.Tracker1.Miner.Files.Index",
+	                                 "org.freedesktop.Tracker3.Miner.Files",
+	                                 "/org/freedesktop/Tracker3/Miner/Files/Index",
+	                                 "org.freedesktop.Tracker3.Miner.Files.Index",
 	                                 "ReindexMimeTypes",
 	                                 g_variant_new ("(^as)", mimetypes),
 	                                 NULL,
@@ -1488,7 +1488,7 @@ miner_manager_index_file_sync (TrackerMinerManager *manager,
 	}
 
 	if (!tracker_miner_manager_is_active (manager,
-	                                      "org.freedesktop.Tracker1.Miner.Files")) {
+	                                      "org.freedesktop.Tracker3.Miner.Files")) {
 		g_set_error_literal (error,
 		                     TRACKER_MINER_MANAGER_ERROR,
 		                     TRACKER_MINER_MANAGER_ERROR_NOT_AVAILABLE,
@@ -1501,9 +1501,9 @@ miner_manager_index_file_sync (TrackerMinerManager *manager,
 	uri = g_file_get_uri (file);
 
 	v = g_dbus_connection_call_sync (priv->connection,
-	                                 "org.freedesktop.Tracker1.Miner.Files",
-	                                 "/org/freedesktop/Tracker1/Miner/Files/Index",
-	                                 "org.freedesktop.Tracker1.Miner.Files.Index",
+	                                 "org.freedesktop.Tracker3.Miner.Files",
+	                                 "/org/freedesktop/Tracker3/Miner/Files/Index",
+	                                 "org.freedesktop.Tracker3.Miner.Files.Index",
 	                                 method_name,
 	                                 g_variant_new ("(s)", uri),
 	                                 NULL,

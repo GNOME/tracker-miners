@@ -29,7 +29,7 @@
 
 static const gchar introspection_xml[] =
   "<node>"
-  "  <interface name='org.freedesktop.Tracker1.Miner.Files.Index'>"
+  "  <interface name='org.freedesktop.Tracker3.Miner.Files.Index'>"
   "    <method name='ReindexMimeTypes'>"
   "      <arg type='as' name='mime_types' direction='in' />"
   "    </method>"

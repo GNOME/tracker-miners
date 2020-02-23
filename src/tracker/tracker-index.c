@@ -188,7 +188,7 @@ import_turtle_files (void)
 	GError *error = NULL;
 	gchar **p;
 
-	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.Files",
+	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker3.Miner.Files",
 	                                                NULL, NULL, &error);
 
 	if (!connection) {
@@ -245,9 +245,9 @@ backup_index (void)
 	GVariant *v;
 	gchar *uri;
 
-	if (!tracker_dbus_get_connection ("org.freedesktop.Tracker1",
-	                                  "/org/freedesktop/Tracker1/Backup",
-	                                  "org.freedesktop.Tracker1.Backup",
+	if (!tracker_dbus_get_connection ("org.freedesktop.Tracker3",
+	                                  "/org/freedesktop/Tracker3/Backup",
+	                                  "org.freedesktop.Tracker3.Backup",
 	                                  G_DBUS_PROXY_FLAGS_NONE,
 	                                  &connection,
 	                                  &proxy)) {
@@ -302,9 +302,9 @@ restore_index (void)
 	GVariant *v;
 	gchar *uri;
 
-	if (!tracker_dbus_get_connection ("org.freedesktop.Tracker1",
-	                                  "/org/freedesktop/Tracker1/Backup",
-	                                  "org.freedesktop.Tracker1.Backup",
+	if (!tracker_dbus_get_connection ("org.freedesktop.Tracker3",
+	                                  "/org/freedesktop/Tracker3/Backup",
+	                                  "org.freedesktop.Tracker3.Backup",
 	                                  G_DBUS_PROXY_FLAGS_NONE,
 	                                  &connection,
 	                                  &proxy)) {
