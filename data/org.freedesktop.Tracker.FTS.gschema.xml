@@ -18,7 +18,7 @@ Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 Boston, MA  02110-1301, USA.
 -->
 <schemalist>
-  <schema id="org.freedesktop.Tracker.FTS" path="/org/freedesktop/tracker/fts/" gettext-domain="tracker-miners">
+  <schema id="org.freedesktop.Tracker3.FTS" path="/org/freedesktop/tracker/fts/" gettext-domain="tracker-miners">
 
     <key name="enable-stemmer" type="b">
       <summary>Enable stemmer</summary>
