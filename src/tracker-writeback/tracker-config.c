@@ -33,7 +33,7 @@
 
 #include "tracker-config.h"
 
-#define CONFIG_SCHEMA "org.freedesktop.Tracker.Writeback"
+#define CONFIG_SCHEMA "org.freedesktop.Tracker3.Writeback"
 #define CONFIG_PATH   "/org/freedesktop/tracker/writeback/"
 
 static void     config_set_property         (GObject           *object,

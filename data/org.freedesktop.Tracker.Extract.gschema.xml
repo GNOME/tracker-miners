@@ -18,14 +18,14 @@ Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 Boston, MA  02110-1301, USA.
 -->
 <schemalist>
-  <schema id="org.freedesktop.Tracker.Extract" path="/org/freedesktop/tracker/extract/" gettext-domain="tracker-miners">
-    <key name="verbosity" enum="org.freedesktop.TrackerMiners.TrackerVerbosity">
+  <schema id="org.freedesktop.Tracker3.Extract" path="/org/freedesktop/tracker/extract/" gettext-domain="tracker-miners">
+    <key name="verbosity" enum="org.freedesktop.TrackerMiners3.TrackerVerbosity">
       <default>'errors'</default>
       <summary>Log verbosity</summary>
       <description>Log verbosity.</description>
     </key>
 
-    <key name="sched-idle" enum="org.freedesktop.TrackerMiners.TrackerSchedIdle">
+    <key name="sched-idle" enum="org.freedesktop.TrackerMiners3.TrackerSchedIdle">
       <default>'first-index'</default>
       <summary>Scheduler priority when idle</summary>
       <description>
