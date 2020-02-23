@@ -37,7 +37,10 @@ endif
 libtracker_miners_common = static_library('tracker-miners-common',
   tracker_miners_common_sources,
   dependencies: tracker_miners_common_dependencies + tracker_miners_common_private_dependencies,
-  c_args: tracker_c_args,
+  c_args: tracker_c_args + [
+      '-DTRACKERSHAREDIR="@0@"'.format(tracker_versioned_name),
+      '-DONTOLOGIESDIR="@0@"'.format(join_paths(tracker_sparql.get_pkgconfig_variable('ontologies_dir'))),
+  ],
   include_directories: [configinc, srcinc],
 )
 
