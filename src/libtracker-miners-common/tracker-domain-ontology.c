@@ -28,7 +28,6 @@ struct _TrackerDomainOntology {
 	gint ref_count;
 	/* DomainOntologies section */
 	GFile *cache_location;
-	GFile *journal_location;
 	GFile *ontology_location;
 	gchar *name;
 	gchar *domain;
@@ -86,7 +85,6 @@ tracker_domain_ontology_unref (TrackerDomainOntology *domain_ontology)
 		return;
 
 	g_clear_object (&domain_ontology->cache_location);
-	g_clear_object (&domain_ontology->journal_location);
 	g_clear_object (&domain_ontology->ontology_location);
 	g_free (domain_ontology->ontology_name);
 	g_free (domain_ontology->name);
@@ -285,12 +283,6 @@ tracker_domain_ontology_new (const gchar   *domain_name,
 	if (inner_error)
 		goto end;
 
-	domain_ontology->journal_location =
-		key_file_get_location (key_file, DOMAIN_ONTOLOGY_SECTION,
-		                       JOURNAL_KEY, FALSE, FALSE, &inner_error);
-	if (inner_error)
-		goto end;
-
 	domain_ontology->ontology_location =
 		key_file_get_location (key_file, DOMAIN_ONTOLOGY_SECTION,
 		                       ONTOLOGY_KEY, FALSE, TRUE, &inner_error);
@@ -345,12 +337,6 @@ GFile *
 tracker_domain_ontology_get_cache (TrackerDomainOntology *domain_ontology)
 {
 	return domain_ontology->cache_location;
-}
-
-GFile *
-tracker_domain_ontology_get_journal (TrackerDomainOntology *domain_ontology)
-{
-	return domain_ontology->journal_location;
 }
 
 GFile *
