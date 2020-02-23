@@ -92,7 +92,6 @@ namespace Tracker {
 	public class DomainOntology : GLib.Object, GLib.Initable {
 		public DomainOntology (string? name, GLib.Cancellable? cancellable) throws GLib.Error;
 		public GLib.File get_cache ();
-		public GLib.File? get_journal ();
 		public GLib.File get_ontology ();
 		public string get_domain (string? suffix = null);
 	}
