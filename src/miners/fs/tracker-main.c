@@ -678,9 +678,7 @@ miner_needs_check (TrackerMiner *miner)
 	 * 1. Still crawling or with files to process in our queues.
 	 * 2. We crash (out of our control usually anyway).
 	 * 3. At least one of the miners is PAUSED, we have
-	 *    to exclude the situations where the miner is
-	 *    exclusively paused due to the store not being
-	 *    available, but the miner is actually done.
+	 *    to exclude the situations where the miner is actually done.
 	 */
 	if (!tracker_miner_is_paused (miner)) {
 		if (tracker_miner_fs_has_items_to_process (TRACKER_MINER_FS (miner))) {
