@@ -160,7 +160,7 @@ if libgsf.found()
   tracker_extract_dependencies += libgsf
 endif
 
-executable('tracker-extract',
+executable('tracker-extract-@0@'.format(tracker_api_major),
   tracker_extract_sources,
   # Manually add the root dir to work around https://github.com/mesonbuild/meson/issues/1387
   c_args: tracker_c_args + ['-I' + meson.build_root()],
@@ -188,7 +188,7 @@ desktop_file_untranslated = configure_file(
 
 desktop_file = custom_target('tracker-extract-desktop-file',
   input: desktop_file_untranslated,
-  output: 'tracker-extract.desktop',
+  output: 'tracker-extract-@0@.desktop'.format(tracker_api_major),
   command: ['intltool-merge', '--quiet', '--desktop-style', '--utf8', join_paths(meson.source_root(), 'po'), '@INPUT@', '@OUTPUT@'],
   install: true,
   install_dir: join_paths(get_option('sysconfdir'), 'xdg/autostart'))
@@ -196,7 +196,7 @@ desktop_file = custom_target('tracker-extract-desktop-file',
 if get_option('systemd_user_services')
   configure_file(
     input: 'tracker-extract.service.in',
-    output: 'tracker-extract.service',
+    output: 'tracker-extract-@0@.service'.format(tracker_api_major),
     configuration: conf,
     install: true,
     install_dir: systemd_user_services_dir)
