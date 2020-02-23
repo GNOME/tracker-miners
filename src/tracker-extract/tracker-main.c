@@ -134,25 +134,6 @@ initialize_priority_and_scheduling (void)
 	}
 }
 
-static void
-initialize_directories (void)
-{
-	gchar *user_data_dir;
-
-	/* NOTE: We don't create the database directories here, the
-	 * tracker-db-manager does that for us.
-	 */
-
-	user_data_dir = g_build_filename (g_get_user_data_dir (),
-	                                  "tracker",
-	                                  NULL);
-
-	/* g_message ("Checking directory exists:'%s'", user_data_dir); */
-	g_mkdir_with_parents (user_data_dir, 00755);
-
-	g_free (user_data_dir);
-}
-
 static gboolean
 signal_handler (gpointer user_data)
 {
@@ -395,9 +376,6 @@ main (int argc, char *argv[])
 	if (filename) {
 		return run_standalone (config);
 	}
-
-	/* Initialize subsystems */
-	initialize_directories ();
 
 	extract = tracker_extract_new (TRUE, force_module);
 
