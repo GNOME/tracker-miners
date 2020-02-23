@@ -201,7 +201,7 @@ find_rule_in_data_dirs (const gchar *name)
 
 	for (i = 0; data_dirs[i] != NULL; i++) {
 		path = g_build_filename (data_dirs[i],
-		                         "tracker", "domain-ontologies",
+		                         TRACKERSHAREDIR, "domain-ontologies",
 		                         rule_name, NULL);
 		if (g_file_test (path, G_FILE_TEST_IS_REGULAR)) {
 			g_free (rule_name);
@@ -251,7 +251,7 @@ tracker_domain_ontology_new (const gchar   *domain_name,
 			goto end;
 		}
 	} else {
-		path = g_build_filename (SHAREDIR, "tracker", "domain-ontologies",
+		path = g_build_filename (SHAREDIR, TRACKERSHAREDIR, "domain-ontologies",
 		                         DEFAULT_RULE, NULL);
 
 		if (!g_file_test (path, G_FILE_TEST_IS_REGULAR)) {
@@ -316,7 +316,7 @@ tracker_domain_ontology_new (const gchar   *domain_name,
 	if (!domain_ontology->ontology_location) {
 		gchar *ontology_path;
 
-		ontology_path = g_build_filename (SHAREDIR, "tracker", "ontologies",
+		ontology_path = g_build_filename (ONTOLOGIESDIR,
 		                                  domain_ontology->ontology_name, NULL);
 
 		if (!g_file_test (ontology_path, G_FILE_TEST_IS_DIR)) {
