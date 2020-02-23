@@ -2,7 +2,6 @@ miner_enums = gnome.mkenums('tracker-miner-enum-types',
     sources: 'tracker-miner-enums.h',
     c_template: 'tracker-miner-enum-types.c.template',
     h_template: 'tracker-miner-enum-types.h.template',
-    install_header: true,
     install_dir: join_paths(get_option('includedir'), 'tracker-@0@'.format(tracker_api_version), 'libtracker-miner'),
 )
 
@@ -16,19 +15,6 @@ private_sources = [
     'tracker-task-pool.c',
     'tracker-sparql-buffer.c',
     'tracker-utils.c']
-
-miner_headers = [
-    'tracker-miner-online.h',
-    'tracker-data-provider.h',
-    'tracker-indexing-tree.h',
-    'tracker-decorator-fs.h',
-    'tracker-miner-fs.h',
-    'tracker-miner-object.h',
-    'tracker-miner-proxy.h',
-    'tracker-decorator.h',
-    'tracker-miner-enums.h',
-    'tracker-miner.h',
-]
 
 miner_sources = (
     ['tracker-data-provider.c',
