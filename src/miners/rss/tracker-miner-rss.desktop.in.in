@@ -2,7 +2,7 @@
 _Name=Tracker RSS/ATOM Feeds Miner
 _Comment=Fetch RSS/ATOM feeds
 Icon=
-Exec=@libexecdir@/tracker-miner-rss
+Exec=@libexecdir@/tracker-miner-rss-3
 Terminal=false
 Type=Application
 Categories=Utility;
