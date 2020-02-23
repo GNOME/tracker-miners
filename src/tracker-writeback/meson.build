@@ -39,7 +39,7 @@ tracker_writeback_sources = [
   'tracker-main.c'
 ]
 
-executable('tracker-writeback',
+executable('tracker-writeback-@0@'.format(tracker_api_major),
   tracker_writeback_sources,
   c_args: tracker_c_args + [
     '-DWRITEBACK_MODULES_DIR="@0@"'.format(tracker_writeback_modules_dir),
@@ -59,7 +59,7 @@ dbus_service_file = configure_file(
 if get_option('systemd_user_services')
   configure_file(
     input: 'tracker-writeback.service.in',
-    output: 'tracker-writeback.service',
+    output: 'tracker-writeback-@0@.service'.format(tracker_api_major),
     configuration: conf,
     install: true,
     install_dir: systemd_user_services_dir)
