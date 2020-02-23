@@ -60,5 +60,5 @@ tracker_miner = declare_dependency(
 )
 
 install_data(
-    'tracker-miner.xml',
-    install_dir: join_paths(get_option('prefix'), get_option('datadir'), 'tracker'))
+    'org.freedesktop.Tracker3.Miner.xml',
+    install_dir: join_paths(get_option('prefix'), get_option('datadir'), 'dbus-1', 'interfaces'))
