@@ -2,7 +2,7 @@
 _Name=Tracker Metadata Extractor
 _Comment=Extracts metadata from local files
 Icon=
-Exec=@libexecdir@/tracker-extract
+Exec=@libexecdir@/tracker-extract-3
 Terminal=false
 Type=Application
 Categories=Utility;
