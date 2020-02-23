@@ -1,9 +1,9 @@
 [D-BUS Service]
-Name=org.freedesktop.Tracker1.Miner.Files
+Name=org.freedesktop.Tracker3.Miner.Files
 Exec=@abs_top_builddir@/src/miners/fs/tracker-miner-fs --initial-sleep=0
 SystemdService=tracker-miner-fs.service
 
 # Miner details needed for tracker-control
-Path=/org/freedesktop/Tracker1/Miner/Files
+Path=/org/freedesktop/Tracker3/Miner/Files
 NameSuffix=Miner.Files
 DisplayName=File System
