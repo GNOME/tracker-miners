@@ -2,7 +2,7 @@
 _Name=Tracker File System Miner
 _Comment=Crawls and processes files on the file system
 Icon=
-Exec=@libexecdir@/tracker-miner-fs
+Exec=@libexecdir@/tracker-miner-fs-3
 Terminal=false
 Type=Application
 Categories=Utility;
