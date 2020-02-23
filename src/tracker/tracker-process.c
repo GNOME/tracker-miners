@@ -224,8 +224,7 @@ tracker_process_find_all (void)
 
 			basename = g_path_get_basename (strv[0]);
 
-			if ((g_str_has_prefix (basename, "tracker") ||
-			     g_str_has_prefix (basename, "lt-tracker"))) {
+			if (g_str_has_prefix (basename, "tracker")) {
 				found_pids = g_slist_prepend (found_pids, process_data_new (basename, pid));
 			} else {
 				g_free (basename);
@@ -275,8 +274,7 @@ tracker_process_find_all (void)
 
 		basename = g_path_get_basename (strv[0]);
 
-		if ((g_str_has_prefix (basename, "tracker") ||
-		     g_str_has_prefix (basename, "lt-tracker"))) {
+		if (g_str_has_prefix (basename, "tracker")) {
 			found_pids = g_slist_prepend (found_pids, process_data_new (basename, pid));
 		} else {
 			g_free (basename);
