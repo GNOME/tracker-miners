@@ -27,7 +27,7 @@
 
 #include "tracker-config.h"
 
-#define CONFIG_SCHEMA "org.freedesktop.Tracker.Extract"
+#define CONFIG_SCHEMA "org.freedesktop.Tracker3.Extract"
 #define CONFIG_PATH   "/org/freedesktop/tracker/extract/"
 
 static void     config_set_property         (GObject       *object,
