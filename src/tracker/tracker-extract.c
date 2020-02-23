@@ -62,7 +62,7 @@ extract_files (TrackerVerbosity  verbosity,
 
 	snprintf (verbosity_str, 2, "%i", verbosity);
 
-	tracker_extract_path = g_build_filename(LIBEXECDIR, "tracker-extract", NULL);
+	tracker_extract_path = g_build_filename(LIBEXECDIR, "tracker-extract-3", NULL);
 
 	for (p = filenames; *p; p++) {
 		char *argv[] = {tracker_extract_path,
