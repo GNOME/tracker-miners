@@ -5,7 +5,7 @@ ConditionUser=!root
 [Service]
 Type=dbus
 BusName=org.freedesktop.Tracker3.Miner.Extract
-ExecStart=@libexecdir@/tracker-extract
+ExecStart=@libexecdir@/tracker-extract-3
 Restart=on-abnormal
 # Don't restart after tracker daemon -k (aka tracker-control -k)
 RestartPreventExitStatus=SIGKILL
