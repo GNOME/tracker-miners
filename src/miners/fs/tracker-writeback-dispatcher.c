@@ -25,9 +25,9 @@
 #include "tracker-writeback-dispatcher.h"
 #include "tracker-miner-files.h"
 
-#define TRACKER_WRITEBACK_SERVICE   "org.freedesktop.Tracker1.Writeback"
-#define TRACKER_WRITEBACK_PATH      "/org/freedesktop/Tracker1/Writeback"
-#define TRACKER_WRITEBACK_INTERFACE "org.freedesktop.Tracker1.Writeback"
+#define TRACKER_WRITEBACK_SERVICE   "org.freedesktop.Tracker3.Writeback"
+#define TRACKER_WRITEBACK_PATH      "/org/freedesktop/Tracker3/Writeback"
+#define TRACKER_WRITEBACK_INTERFACE "org.freedesktop.Tracker3.Writeback"
 
 typedef struct {
 	GFile *file;

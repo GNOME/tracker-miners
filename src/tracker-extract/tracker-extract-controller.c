@@ -97,9 +97,9 @@ appeared_cb (GDBusConnection *connection,
 	/* Get initial status */
 	self->priv->cancellable = g_cancellable_new ();
 	g_dbus_connection_call (connection,
-	                        "org.freedesktop.Tracker1.Miner.Files",
-	                        "/org/freedesktop/Tracker1/Miner/Files",
-	                        "org.freedesktop.Tracker1.Miner",
+	                        "org.freedesktop.Tracker3.Miner.Files",
+	                        "/org/freedesktop/Tracker3/Miner/Files",
+	                        "org.freedesktop.Tracker3.Miner",
 	                        "GetStatus",
 	                        NULL,
 	                        G_VARIANT_TYPE ("(s)"),
@@ -171,10 +171,10 @@ update_wait_for_miner_fs (TrackerExtractController *self)
 	if (tracker_config_get_wait_for_miner_fs (self->priv->config)) {
 		self->priv->progress_signal_id =
 			g_dbus_connection_signal_subscribe (conn,
-			                                    "org.freedesktop.Tracker1.Miner.Files",
-			                                    "org.freedesktop.Tracker1.Miner",
+			                                    "org.freedesktop.Tracker3.Miner.Files",
+			                                    "org.freedesktop.Tracker3.Miner",
 			                                    "Progress",
-			                                    "/org/freedesktop/Tracker1/Miner/Files",
+			                                    "/org/freedesktop/Tracker3/Miner/Files",
 			                                    NULL,
 			                                    G_DBUS_SIGNAL_FLAGS_NONE,
 			                                    files_miner_progress_cb,
@@ -183,7 +183,7 @@ update_wait_for_miner_fs (TrackerExtractController *self)
 		/* appeared_cb is guaranteed to be called even if the service
 		 * was already running, so we'll start the miner from there. */
 		self->priv->watch_id = g_bus_watch_name_on_connection (conn,
-		                                                       "org.freedesktop.Tracker1.Miner.Files",
+		                                                       "org.freedesktop.Tracker3.Miner.Files",
 		                                                       G_BUS_NAME_WATCHER_FLAGS_NONE,
 		                                                       appeared_cb,
 		                                                       vanished_cb,

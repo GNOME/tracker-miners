@@ -3,7 +3,7 @@ Description=Tracker data writeback service
 
 [Service]
 Type=dbus
-BusName=org.freedesktop.Tracker1.Writeback
+BusName=org.freedesktop.Tracker3.Writeback
 ExecStart=@libexecdir@/tracker-writeback
 Restart=on-failure
 # Don't restart after tracker daemon -k (aka tracker-control -k)

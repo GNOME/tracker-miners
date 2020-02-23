@@ -29,8 +29,8 @@
 
 #include "tracker-miner-rss.h"
 
-#define DBUS_NAME_SUFFIX "Tracker1.Miner.RSS"
-#define DBUS_PATH "/org/freedesktop/Tracker1/Miner/RSS"
+#define DBUS_NAME_SUFFIX "Tracker3.Miner.RSS"
+#define DBUS_PATH "/org/freedesktop/Tracker3/Miner/RSS"
 
 static gint verbosity = -1;
 static gchar *add_feed;
@@ -172,7 +172,7 @@ main (int argc, char **argv)
 		         title,
 		         add_feed);
 
-		connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.RSS",
+		connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker3.Miner.RSS",
 		                                                NULL, NULL, &error);
 
 		if (!connection) {

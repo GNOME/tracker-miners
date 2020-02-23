@@ -1572,7 +1572,7 @@ search_run (void)
 	disable_snippets = TRUE;
 #endif
 
-	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.Files",
+	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker3.Miner.Files",
 							NULL, NULL, &error);
 
 	if (!connection) {

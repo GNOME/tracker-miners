@@ -39,11 +39,11 @@ class WakeupCycleTimeoutException(RuntimeError):
 
 class MinerFsHelper ():
 
-    MINERFS_BUSNAME = "org.freedesktop.Tracker1.Miner.Files"
-    MINERFS_OBJ_PATH = "/org/freedesktop/Tracker1/Miner/Files"
-    MINER_IFACE = "org.freedesktop.Tracker1.Miner"
-    MINERFS_INDEX_OBJ_PATH = "/org/freedesktop/Tracker1/Miner/Files/Index"
-    MINER_INDEX_IFACE = "org.freedesktop.Tracker1.Miner.Files.Index"
+    MINERFS_BUSNAME = "org.freedesktop.Tracker3.Miner.Files"
+    MINERFS_OBJ_PATH = "/org/freedesktop/Tracker3/Miner/Files"
+    MINER_IFACE = "org.freedesktop.Tracker3.Miner"
+    MINERFS_INDEX_OBJ_PATH = "/org/freedesktop/Tracker3/Miner/Files/Index"
+    MINER_INDEX_IFACE = "org.freedesktop.Tracker3.Miner.Files.Index"
 
     def __init__(self, dbus_connection):
         self.log = logging.getLogger(__name__)
@@ -68,7 +68,7 @@ class MinerFsHelper ():
 
     def get_sparql_connection(self):
         return Tracker.SparqlConnection.bus_new(
-            'org.freedesktop.Tracker1.Miner.Files', None, self.bus)
+            'org.freedesktop.Tracker3.Miner.Files', None, self.bus)
 
     def start_watching_progress(self):
         self._previous_status = None

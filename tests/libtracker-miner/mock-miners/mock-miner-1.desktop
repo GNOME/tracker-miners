@@ -1,5 +1,5 @@
 [Desktop Entry]
 Name=Mock miner for testing
 Comment=Comment in the mock miner
-DBusName=org.freedesktop.Tracker1.Miner.Mock1
-DBusPath=/org/freedesktop/Tracker1/Miner/Mock1
+DBusName=org.freedesktop.Tracker3.Miner.Mock1
+DBusPath=/org/freedesktop/Tracker3/Miner/Mock1
