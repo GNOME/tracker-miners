@@ -381,7 +381,7 @@ tracker_install_rpath = ':'.join([tracker_internal_libs_dir, libdir])
 tracker_extract_modules_dir = join_paths(get_option('prefix'), get_option('libdir'), tracker_versioned_name, 'extract-modules')
 tracker_extract_rules_dir = join_paths(get_option('prefix'), get_option('datadir'), tracker_versioned_name, 'extract-rules')
 tracker_miner_services_dir = join_paths(get_option('prefix'), get_option('datadir'), 'tracker/miners')
-tracker_writeback_modules_dir = join_paths(get_option('prefix'), get_option('libdir'), 'tracker-miners-@0@/writeback-modules'.format(tracker_api_version))
+tracker_writeback_modules_dir = join_paths(get_option('prefix'), get_option('libdir'), tracker_versioned_name, 'writeback-modules')
 
 tracker_uninstalled_extract_rules_dir = join_paths(meson.current_build_dir(), 'src', 'tracker-extract', 'uninstalled-rules')
 tracker_uninstalled_writeback_modules_dir = join_paths(meson.current_build_dir(), 'src', 'tracker-writeback')
