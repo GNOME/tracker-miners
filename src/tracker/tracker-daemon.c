@@ -970,7 +970,7 @@ daemon_run (void)
 		TrackerNotifier *notifier;
 		GError *error = NULL;
 
-		sparql_connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.Files",
+		sparql_connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker3.Miner.Files",
 		                                                       NULL, NULL, &error);
 
 		if (!sparql_connection) {
@@ -1043,9 +1043,9 @@ daemon_run (void)
 		/* Display states */
 		g_print ("%s:\n", _("Store"));
 
-		if (!tracker_dbus_get_connection ("org.freedesktop.Tracker1",
-		                                  "/org/freedesktop/Tracker1/Status",
-		                                  "org.freedesktop.Tracker1.Status",
+		if (!tracker_dbus_get_connection ("org.freedesktop.Tracker3",
+		                                  "/org/freedesktop/Tracker3/Status",
+		                                  "org.freedesktop.Tracker3.Status",
 		                                  G_DBUS_PROXY_FLAGS_DO_NOT_AUTO_START,
 		                                  &connection,
 		                                  &proxy)) {
@@ -1053,10 +1053,10 @@ daemon_run (void)
 		}
 
 		g_dbus_connection_signal_subscribe (connection,
-		                                    "org.freedesktop.Tracker1",
-		                                    "org.freedesktop.Tracker1.Status",
+		                                    "org.freedesktop.Tracker3",
+		                                    "org.freedesktop.Tracker3.Status",
 		                                    "Progress",
-		                                    "/org/freedesktop/Tracker1/Status",
+		                                    "/org/freedesktop/Tracker3/Status",
 		                                    NULL,
 		                                    G_DBUS_SIGNAL_FLAGS_NONE,
 		                                    store_progress,

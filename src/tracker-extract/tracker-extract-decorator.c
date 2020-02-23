@@ -654,7 +654,7 @@ tracker_extract_decorator_initable_init (GInitable     *initable,
 
 	if (!g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (priv->iface),
 	                                       conn,
-	                                       "/org/freedesktop/Tracker1/Extract/Priority",
+	                                       "/org/freedesktop/Tracker3/Extract/Priority",
 	                                       error)) {
 		ret = FALSE;
 		goto out;
