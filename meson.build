@@ -375,7 +375,7 @@ srcinc = include_directories('src/')
 
 build_root = meson.current_build_dir()
 
-tracker_internal_libs_dir = join_paths(get_option('prefix'), get_option('libdir'), 'tracker-miners-' + tracker_api_version)
+tracker_internal_libs_dir = join_paths(get_option('prefix'), get_option('libdir'), tracker_versioned_name)
 tracker_install_rpath = ':'.join([tracker_internal_libs_dir, libdir])
 
 tracker_extract_modules_dir = join_paths(get_option('prefix'), get_option('libdir'), tracker_versioned_name, 'extract-modules')
