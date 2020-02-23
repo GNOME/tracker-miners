@@ -24,7 +24,7 @@
  * @short_description: Proxies a #TrackerMiner on DBus
  * @include: libtracker-miner/tracker-miner.h
  *
- * #TrackerMinerProxy is a helper object to expose org.freedesktop.Tracker1.Miner
+ * #TrackerMinerProxy is a helper object to expose org.freedesktop.Tracker3.Miner
  * DBus interfaces for the given #TrackerMiner object. This is used to implement
  * miners as DBus services.
  *
@@ -77,7 +77,7 @@ G_DEFINE_TYPE_WITH_CODE (TrackerMinerProxy, tracker_miner_proxy, G_TYPE_OBJECT,
 
 static const gchar introspection_xml[] =
   "<node>"
-  "  <interface name='org.freedesktop.Tracker1.Miner'>"
+  "  <interface name='org.freedesktop.Tracker3.Miner'>"
   "    <method name='Start'>"
   "    </method>"
   "    <method name='GetStatus'>"
@@ -118,7 +118,7 @@ static const gchar introspection_xml[] =
   "  </interface>"
   "</node>";
 
-#define TRACKER_SERVICE "org.freedesktop.Tracker1"
+#define TRACKER_SERVICE "org.freedesktop.Tracker3"
 
 static PauseData *
 pause_data_new (const gchar *application,

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <node name="/">
-  <interface name="org.freedesktop.Tracker1.Extract.Priority">
+  <interface name="org.freedesktop.Tracker3.Extract.Priority">
     <method name="SetRdfTypes">
       <arg type="as" name="rdf_types" direction="in" />
     </method>

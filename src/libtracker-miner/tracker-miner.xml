@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <node name="/">
-  <interface name="org.freedesktop.Tracker1.Miner">
+  <interface name="org.freedesktop.Tracker3.Miner">
     <annotation name="org.freedesktop.DBus.GLib.CSymbol" value="_tracker_miner_dbus"/>
     <method name="Start">
       <annotation name="org.freedesktop.DBus.GLib.Async"  value="true"/>

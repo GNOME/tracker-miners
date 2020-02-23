@@ -3,13 +3,13 @@
 # when running Tracker from the build tree.
 
 tracker_extract_test_dbus_service_file = configure_file(
-    input: '../org.freedesktop.Tracker1.Miner.Extract.service.in',
-    output: 'org.freedesktop.Tracker1.Miner.Extract.service',
+    input: '../org.freedesktop.Tracker3.Miner.Extract.service.in',
+    output: 'org.freedesktop.Tracker3.Miner.Extract.service',
     configuration: conf)
 
 tracker_miner_fs_test_dbus_service_file = configure_file(
-    input: '../org.freedesktop.Tracker1.Miner.Files.service.in',
-    output: 'org.freedesktop.Tracker1.Miner.Files.service',
+    input: '../org.freedesktop.Tracker3.Miner.Files.service.in',
+    output: 'org.freedesktop.Tracker3.Miner.Files.service',
     configuration: conf)
 
 tracker_uninstalled_miner_services_dir = meson.current_build_dir()
