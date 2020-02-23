@@ -336,7 +336,7 @@ conf.set('HAVE_STRNLEN', cc.has_function('strnlen', prefix : '#include <string.h
 
 conf.set('LOCALEDIR', '"@0@/@1@"'.format(get_option('prefix'), get_option('localedir')))
 conf.set('SHAREDIR', '"@0@/@1@"'.format(get_option('prefix'), get_option('datadir')))
-conf.set('TRACKER_MINERS_DIR', '"@0@/@1@/tracker/miners"'.format(get_option('prefix'), get_option('datadir')))
+conf.set('TRACKER_MINERS_DIR', '"@0@"'.format(join_paths(get_option('prefix'), get_option('datadir'), tracker_versioned_name, 'miners')))
 conf.set('TRACKER_UI_DIR', '"@0@/@1@/tracker/"'.format(get_option('prefix'), get_option('datadir')))
 
 conf.set('GETTEXT_PACKAGE', '"@0@"'.format(tracker_versioned_name))
@@ -380,7 +380,7 @@ tracker_install_rpath = ':'.join([tracker_internal_libs_dir, libdir])
 
 tracker_extract_modules_dir = join_paths(get_option('prefix'), get_option('libdir'), tracker_versioned_name, 'extract-modules')
 tracker_extract_rules_dir = join_paths(get_option('prefix'), get_option('datadir'), tracker_versioned_name, 'extract-rules')
-tracker_miner_services_dir = join_paths(get_option('prefix'), get_option('datadir'), 'tracker/miners')
+tracker_miner_services_dir = join_paths(get_option('prefix'), get_option('datadir'), tracker_versioned_name, 'miners')
 tracker_writeback_modules_dir = join_paths(get_option('prefix'), get_option('libdir'), tracker_versioned_name, 'writeback-modules')
 
 tracker_uninstalled_extract_rules_dir = join_paths(meson.current_build_dir(), 'src', 'tracker-extract', 'uninstalled-rules')
