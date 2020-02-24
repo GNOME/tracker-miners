@@ -312,7 +312,6 @@ endif
 conf = configuration_data()
 
 # Config that goes in config.h
-conf.set('DISABLE_JOURNAL', get_option('journal') == false)
 conf.set('GUARANTEE_METADATA', get_option('guarantee_metadata') == true)
 conf.set('USING_UNZIPPSFILES', get_option('unzip_ps_gz_files') == true)
 
@@ -339,7 +338,6 @@ conf.set('HAVE_STRNLEN', cc.has_function('strnlen', prefix : '#include <string.h
 conf.set('LOCALEDIR', '"@0@/@1@"'.format(get_option('prefix'), get_option('localedir')))
 conf.set('SHAREDIR', '"@0@/@1@"'.format(get_option('prefix'), get_option('datadir')))
 conf.set('TRACKER_MINERS_DIR', '"@0@"'.format(join_paths(get_option('prefix'), get_option('datadir'), tracker_versioned_name, 'miners')))
-conf.set('TRACKER_UI_DIR', '"@0@/@1@/tracker/"'.format(get_option('prefix'), get_option('datadir')))
 
 conf.set('GETTEXT_PACKAGE', '"@0@"'.format(tracker_versioned_name))
 conf.set('PACKAGE_VERSION', '"@0@"'.format(meson.project_version()))
@@ -436,7 +434,6 @@ summary = [
   '    Compiler:                               ' + cc.get_id(),
   '\nFeature Support:',
   '    Battery/mains power detection:          ' + battery_detection_library_name,
-  '    Build with Journal support:             ' + get_option('journal').to_string(),
   '    Support for network status detection:   ' + have_network_manager.to_string(),
   '\nData Miners / Writebacks:',
   '    FS (File System):                       ' + have_tracker_miner_fs.to_string(),
