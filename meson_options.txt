@@ -9,8 +9,6 @@ option('functional_tests', type: 'boolean', value: true,
        description: 'Enable the Tracker functional test suite')
 option('guarantee_metadata', type: 'boolean', value: false,
        description: 'Set nie:title and nie:contentCreated from filename and mtime if no metadata available')
-option('journal', type: 'boolean', value: true,
-       description: 'Enable database journal backup mechanism')
 option('miner_fs', type: 'boolean', value: true,
        description: 'Enable the Tracker filesystem miner')
 option('miner_rss', type: 'boolean', value: true,
