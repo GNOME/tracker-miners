@@ -248,9 +248,9 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 		tracker_resource_set_relation (metadata, "nmm:musicAlbum", album);
 		tracker_resource_set_relation (metadata, "nmm:musicAlbumDisc", album_disc);
 
-		g_object_unref (album_disc);
-		g_object_unref (mb_release);
-		g_object_unref (mb_release_group);
+		g_clear_object (&album_disc);
+		g_clear_object (&mb_release);
+		g_clear_object (&mb_release_group);
 	}
 
 	g_free (vd.track_count);
