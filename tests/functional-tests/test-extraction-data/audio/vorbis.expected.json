@@ -1,29 +1,37 @@
 {
     "test": {
-        "Filename": "vorbis.ogg",
-        "Bugzilla": "",
-        "Comment": "Basic OGG example"
+        "Filename": "vorbis.ogg"
     },
     "metadata": {
-        "@type": "nmm:MusicPiece",
+        "@type": ["nfo:Audio", "nmm:MusicPiece"],
         "nie:title": "Simply Juvenile",
         "nfo:genre": "Pop",
         "nie:copyright": "none",
         "nie:comment": "I am for simple OGG testing",
         "nmm:trackNumber": "18",
+        "nfo:channels": 1,
+        "nfo:sampleRate": 22050,
         "nfo:duration": "15",
         "nmm:performer": {
+            "@id": "urn:artist:AbBaby",
             "@type": "nmm:Artist",
             "nmm:artistName": "AbBaby",
-            "tracker:hasExternalReference": {
-                "@id": "https://musicbrainz.org/artist/234561",
-                "@type": "tracker:ExternalReference",
-                "tracker:referenceSource": "https://musicbrainz.org/doc/Artist",
-                "tracker:referenceIdentifier": "234561"
-            }
+            "tracker:hasExternalReference": [
+                {
+                    "@id": "https://musicbrainz.org/artist/234561",
+                    "@type": "tracker:ExternalReference",
+                    "tracker:referenceSource": "https://musicbrainz.org/doc/Artist",
+                    "tracker:referenceIdentifier": "234561"
+                }
+            ]
+        },
+        "nmm:composer": {
+            "@id": "urn:artist:Ab",
+            "@type": "nmm:Artist",
+            "nmm:artistName": "Ab"
         },
         "nmm:musicAlbum": {
-            "@id": "urn:album:SinCos:2008-01-01T00:00:00Z",
+            "@id": "urn:album:SinCos:2008-01-01T00:00:00+00:00",
             "@type": "nmm:MusicAlbum",
             "nie:title": "SinCos",
             "tracker:hasExternalReference": [
@@ -32,18 +40,13 @@
                     "@type": "tracker:ExternalReference",
                     "tracker:referenceSource": "https://musicbrainz.org/doc/Release",
                     "tracker:referenceIdentifier": "345612"
-                },
-                {
-                    "@id": "https://musicbrainz.org/release-group/561234",
-                    "@type": "tracker:ExternalReference",
-                    "tracker:referenceSource": "https://musicbrainz.org/doc/Release_Group",
-                    "tracker:referenceIdentifier": "561234"
                 }
             ]
         },
         "nmm:musicAlbumDisc": {
-            "@id": "urn:album-disc:SinCos:2008-01-01T00:00:00Z:Disc1",
+            "@id": "urn:album-disc:SinCos:2008-01-01T00:00:00+00:00:Disc1",
             "@type": "nmm:MusicAlbumDisc",
+            "nmm:albumDiscAlbum": "urn:album:SinCos:2008-01-01T00:00:00+00:00",
             "nmm:setNumber": 1
         },
         "tracker:hasExternalReference": [
@@ -52,21 +55,6 @@
                 "@type": "tracker:ExternalReference",
                 "tracker:referenceSource": "https://musicbrainz.org/doc/Recording",
                 "tracker:referenceIdentifier": "456123"
-            },
-            {
-                "@id": "https://musicbrainz.org/track/123456",
-                "@type": "tracker:ExternalReference",
-                "tracker:referenceSource": "https://musicbrainz.org/doc/Track",
-                "tracker:referenceIdentifier": "123456"
-            }
-        ],
-        "nie:isStoredAs": [
-            {
-                "nfo:hasHash": {
-                    "nfo:hashValue": "111222",
-                    "nfo:hashAlgorithm": "chromaprint",
-                    "@type": "nfo:FileHash"
-                }
             }
         ]
     }

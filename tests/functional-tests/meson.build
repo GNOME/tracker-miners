@@ -42,11 +42,9 @@ extractor_tests = [
 # MusicBrainz tags
 if gstreamer.found() and gstreamer.version() >= '1.18.0'
   extractor_tests += 'audio/flac-musicbrainz'
+  extractor_tests += 'audio/vorbis-musicbrainz'
 else
   extractor_tests += 'audio/flac'
-endif
-
-if libvorbis.found()
   extractor_tests += 'audio/vorbis'
 endif
 
@@ -129,7 +127,7 @@ if libjpeg.found() and libgif.found() and libpng.found() and libtiff.found() and
   ]
 endif
 
-if libvorbis.found() and flac.found() and generic_media_handler_name != 'none'
+if generic_media_handler_name != 'none'
   functional_tests += 'writeback-audio'
 endif
 
