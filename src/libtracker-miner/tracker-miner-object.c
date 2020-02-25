@@ -84,6 +84,7 @@ enum {
 	PAUSED,
 	RESUMED,
 	PROGRESS,
+	FILE_PROCESSED,
 	LAST_SIGNAL
 };
 
@@ -230,6 +231,32 @@ tracker_miner_class_init (TrackerMinerClass *klass)
 		              G_TYPE_STRING,
 		              G_TYPE_DOUBLE,
 		              G_TYPE_INT);
+
+	/**
+	 * TrackerMiner::file-processed:
+	 * @miner: the #TrackerMiner
+	 * @uri: URI of the file that was processed
+	 * @status: %FALSE if there was a problem processing this file, %TRUE otherwise
+	 * @error: a #GError detailing the error, if any
+	 *
+	 * each time a file is processed, this signal is emitted and gives status
+	 * information. It is useful for notifying the user of any error that
+	 * occurred processing a given file. Use of #TrackerNotifier instead if you
+	 * want the metadata from the file, not the status info.
+	 *
+	 * Since: 3.0
+	 **/
+	signals[FILE_PROCESSED] =
+		g_signal_new ("file-processed",
+		              G_OBJECT_CLASS_TYPE (object_class),
+		              G_SIGNAL_RUN_LAST,
+		              G_STRUCT_OFFSET (TrackerMinerClass, file_processed),
+		              NULL, NULL,
+		              NULL,
+		              G_TYPE_NONE, 3,
+		              G_TYPE_STRING,
+		              G_TYPE_BOOLEAN,
+		              G_TYPE_STRING);
 
 	g_object_class_install_property (object_class,
 	                                 PROP_STATUS,
@@ -620,6 +647,30 @@ TrackerSparqlConnection *
 tracker_miner_get_connection (TrackerMiner *miner)
 {
 	return miner->priv->connection;
+}
+
+void
+tracker_miner_file_processed (TrackerMiner *miner,
+                              GFile        *file,
+                              gboolean      success,
+                              const gchar  *message)
+{
+	gchar *uri;
+
+	g_return_if_fail (G_IS_FILE (file));
+
+	uri = g_file_get_uri (file);
+
+	trace ("(Miner:'%s') File %s processed %s.%s%s",
+	       G_OBJECT_TYPE_NAME (miner),
+	       uri,
+	       success ? "successfully": "unsuccessfully",
+	       message && message[0] != '\0' ? " Message: " : "",
+	       message ? message : "");
+
+	g_signal_emit (miner, signals[FILE_PROCESSED], 0, uri, success, message);
+
+	g_free (uri);
 }
 
 static void
