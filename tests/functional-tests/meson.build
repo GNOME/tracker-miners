@@ -36,9 +36,7 @@ extractor_tests = [
   'audio/mp3-id3v2.4-2',
 ]
 
-if libvorbis.found()
-  extractor_tests += 'audio/vorbis'
-endif
+extractor_tests += 'audio/vorbis'
 
 if libjpeg.found() and exempi.found() and libexif.found()
   extractor_tests += [
@@ -120,7 +118,7 @@ if libjpeg.found() and libgif.found() and libpng.found() and libtiff.found() and
   ]
 endif
 
-if libvorbis.found() and flac.found() and generic_media_handler_name != 'none'
+if generic_media_handler_name != 'none'
   functional_tests += 'writeback-audio'
 endif
 

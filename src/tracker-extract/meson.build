@@ -25,10 +25,6 @@ if libgsf.found()
   modules += [['extract-oasis', 'tracker-extract-oasis.c', ['10-oasis.rule'], [libgsf, tracker_miners_common_dep]]]
 endif
 
-if flac.found()
-  modules += [['extract-flac', 'tracker-extract-flac.c', ['10-flac.rule'], [flac, tracker_miners_common_dep]]]
-endif
-
 if gexiv2.found()
   modules += [['extract-raw', 'tracker-extract-raw.c', ['10-raw.rule'], [gexiv2, tracker_miners_common_dep]]]
 endif
@@ -100,10 +96,6 @@ endif
 
 if libtiff.found()
   modules += [['extract-tiff', 'tracker-extract-tiff.c', ['10-tiff.rule'], [libtiff, tracker_miners_common_dep]]]
-endif
-
-if libvorbis.found()
-  modules += [['extract-vorbis', 'tracker-extract-vorbis.c', ['10-vorbis.rule'], [libvorbis, tracker_miners_common_dep]]]
 endif
 
 if exempi.found()
