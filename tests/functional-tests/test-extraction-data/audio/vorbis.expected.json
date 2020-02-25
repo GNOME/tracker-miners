@@ -24,36 +24,8 @@
         },
         "nmm:musicAlbum": {
             "@type": "nmm:MusicAlbum",
-            "nie:title": "SinCos",
-            "tracker:hasExternalReference": [
-                {
-                    "@id": "https://musicbrainz.org/release/345612",
-                    "@type": "tracker:ExternalReference",
-                    "tracker:referenceSource": "https://musicbrainz.org/doc/Release",
-                    "tracker:referenceIdentifier": "345612"
-                },
-                {
-                    "@id": "https://musicbrainz.org/release-group/561234",
-                    "@type": "tracker:ExternalReference",
-                    "tracker:referenceSource": "https://musicbrainz.org/doc/Release_Group",
-                    "tracker:referenceIdentifier": "561234"
-                }
-            ]
+            "nie:title": "SinCos"
         },
-        "tracker:hasExternalReference": [
-            {
-                "@id": "https://musicbrainz.org/recording/456123",
-                "@type": "tracker:ExternalReference",
-                "tracker:referenceSource": "https://musicbrainz.org/doc/Recording",
-                "tracker:referenceIdentifier": "456123"
-            },
-            {
-                "@id": "https://musicbrainz.org/track/123456",
-                "@type": "tracker:ExternalReference",
-                "tracker:referenceSource": "https://musicbrainz.org/doc/Track",
-                "tracker:referenceIdentifier": "123456"
-            }
-        ],
         "nie:isStoredAs": [
             {
                 "nfo:hasHash": {
