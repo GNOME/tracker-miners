@@ -64,6 +64,7 @@ struct _ClassInfo {
 struct _SparqlUpdate {
 	gchar *sparql;
 	gint id;
+	GFile *file;
 };
 
 struct _TrackerDecoratorPrivate {
@@ -354,8 +355,19 @@ decorator_commit_cb (GObject      *object,
 			SparqlUpdate *update;
 
 			update = &g_array_index (priv->commit_buffer, SparqlUpdate, i);
+
+			tracker_miner_file_processed (TRACKER_MINER (decorator), update->file, FALSE, error->message);
 			decorator_blacklist_add (decorator, update->id);
 			item_warn (conn, update->id, update->sparql, error);
+		}
+	} else {
+		/* Notify success */
+		for (i = 0; i < priv->commit_buffer->len; i++) {
+			SparqlUpdate *update;
+
+			update = &g_array_index (priv->commit_buffer, SparqlUpdate, i);
+
+			tracker_miner_file_processed (TRACKER_MINER (decorator), update->file, TRUE, "");
 		}
 	}
 
@@ -369,6 +381,7 @@ static void
 sparql_update_clear (SparqlUpdate *update)
 {
 	g_free (update->sparql);
+	g_object_unref (update->file);
 }
 
 static GArray *
@@ -517,26 +530,36 @@ decorator_task_done (GObject      *object,
 	TrackerDecoratorInfo *info = user_data;
 	TrackerDecoratorPrivate *priv;
 	GError *error = NULL;
+	GFile *file;
 	gchar *sparql;
 
 	priv = decorator->priv;
 	sparql = g_task_propagate_pointer (G_TASK (result), &error);
 
 	if (!sparql) {
+		file = g_file_new_for_uri (info->url);
+
 		/* Blacklist item */
 		decorator_blacklist_add (decorator, info->id);
 
 		if (error) {
+			tracker_miner_file_processed (TRACKER_MINER (object), file, FALSE, error->message);
+
 			g_warning ("Task for '%s' finished with error: %s\n",
 			           info->url, error->message);
 			g_error_free (error);
+		} else {
+			tracker_miner_file_processed (TRACKER_MINER (object), file, FALSE, "no SPARQL was generated for this item");
 		}
+
+		g_object_unref (file);
 	} else {
 		SparqlUpdate update;
 
 		/* Add resulting sparql to buffer and check whether flushing */
 		update.sparql = sparql;
 		update.id = info->id;
+		update.file = g_file_new_for_uri (info->url);
 
 		if (!priv->sparql_buffer)
 			priv->sparql_buffer = sparql_buffer_new ();
