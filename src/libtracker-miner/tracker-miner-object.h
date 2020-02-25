@@ -132,6 +132,11 @@ typedef struct {
 	                             gdouble       progress,
 	                             gint          remaining_time);
 
+	void (* file_processed)     (TrackerMiner *miner,
+	                             const gchar  *uri,
+	                             gboolean      status,
+	                             GError       *error);
+
 	/* <Private> */
 	gpointer padding[10];
 } TrackerMinerClass;
@@ -179,6 +184,11 @@ void                     tracker_miner_pause               (TrackerMiner        
 gboolean                 tracker_miner_resume              (TrackerMiner         *miner);
 
 TrackerSparqlConnection *tracker_miner_get_connection      (TrackerMiner         *miner);
+
+void                     tracker_miner_file_processed      (TrackerMiner         *miner,
+                                                            GFile                *file,
+                                                            gboolean              success,
+                                                            const gchar          *message);
 
 G_END_DECLS
 

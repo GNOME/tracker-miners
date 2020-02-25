@@ -115,6 +115,11 @@ static const gchar introspection_xml[] =
   "      <arg type='d' name='progress' />"
   "      <arg type='i' name='remaining_time' />"
   "    </signal>"
+  "    <signal name='FileProcessed'>"
+  "      <arg type='s' name='uri' />"
+  "      <arg type='b' name='success' />"
+  "      <arg type='s' name='error' />"
+  "    </signal>"
   "  </interface>"
   "</node>";
 
@@ -729,6 +734,20 @@ miner_progress_cb (TrackerMiner      *miner,
 	emit_dbus_signal (proxy, "Progress", variant);
 }
 
+static void
+miner_file_processed_cb (TrackerMiner      *miner,
+                         const gchar       *uri,
+                         gboolean           success,
+                         const gchar       *message,
+                         TrackerMinerProxy *proxy)
+{
+	GVariant *variant;
+
+	variant = g_variant_new ("(sbs)", uri, success, message ? message : "");
+	/* variant reference is sunk here */
+	emit_dbus_signal (proxy, "FileProcessed", variant);
+}
+
 static gboolean
 tracker_miner_proxy_initable_init (GInitable     *initable,
                                    GCancellable  *cancellable,
@@ -773,6 +792,8 @@ tracker_miner_proxy_initable_init (GInitable     *initable,
 	                  G_CALLBACK (miner_resumed_cb), proxy);
 	g_signal_connect (priv->miner, "progress",
 	                  G_CALLBACK (miner_progress_cb), proxy);
+	g_signal_connect (priv->miner, "file-processed",
+	                  G_CALLBACK (miner_file_processed_cb), proxy);
 
 	return TRUE;
 }
