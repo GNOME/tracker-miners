@@ -40,6 +40,10 @@ if libvorbis.found()
   extractor_tests += 'audio/vorbis'
 endif
 
+if flac.found()
+  extractor_tests += 'audio/flac-extraction'
+endif
+
 if libjpeg.found() and exempi.found() and libexif.found()
   extractor_tests += [
     'images/jpeg-basic',
