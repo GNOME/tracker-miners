@@ -55,39 +55,6 @@
 
 #include "tracker-cue-sheet.h"
 
-/* We wait this long (seconds) for NULL state before freeing */
-#define TRACKER_EXTRACT_GUARD_TIMEOUT 3
-
-/* An additional tag in gstreamer for the content source. Remove when in upstream */
-#ifndef GST_TAG_CLASSIFICATION
-#define GST_TAG_CLASSIFICATION "classification"
-#endif
-
-/* Some additional tagreadbin tags (FIXME until they are defined upstream)*/
-#ifndef GST_TAG_CHANNEL
-#define GST_TAG_CHANNEL "channels"
-#endif
-
-#ifndef GST_TAG_RATE
-#define GST_TAG_RATE "rate"
-#endif
-
-#ifndef GST_TAG_WIDTH
-#define GST_TAG_WIDTH "width"
-#endif
-
-#ifndef GST_TAG_HEIGHT
-#define GST_TAG_HEIGHT "height"
-#endif
-
-#ifndef GST_TAG_PIXEL_RATIO
-#define GST_TAG_PIXEL_RATIO "pixel-aspect-ratio"
-#endif
-
-#ifndef GST_TAG_FRAMERATE
-#define GST_TAG_FRAMERATE "framerate"
-#endif
-
 typedef enum {
 	EXTRACT_MIME_AUDIO,
 	EXTRACT_MIME_VIDEO,
@@ -653,8 +620,6 @@ extractor_apply_video_metadata (MetadataExtractor *extractor,
                                 TrackerResource   *performer,
                                 TrackerResource   *composer)
 {
-	set_property_from_gst_tag (video, "dc:source", tag_list, GST_TAG_CLASSIFICATION);
-
 	if (performer) {
 		tracker_resource_set_relation (video, "nmm:leadActor", performer);
 	}

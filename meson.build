@@ -222,7 +222,7 @@ elif get_option('generic_media_extractor') == 'libav'
 endif
 
 ###########################################################################
-# Check for gstreamer backend: tagreadbin/decodebin2/discoverer/gupnp-dlna
+# Check for gstreamer backend: decodebin2/discoverer/gupnp-dlna
 ###########################################################################
 
 gstreamer_backend_name = ''
