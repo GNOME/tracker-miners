@@ -1,0 +1,39 @@
+{
+    "test": {
+        "Filename": "flac.flac"
+    },
+    "metadata": {
+        "@type": [
+            "nfo:Audio",
+            "nmm:MusicPiece"
+        ],
+        "nfo:channels": "2",
+        "nfo:duration": "10",
+        "nfo:genre": "Rock",
+        "nfo:sampleRate": "44100",
+        "nie:comment": "no comment",
+        "nie:contentCreated": "2020-01-01T00:00:00+00:00",
+        "nie:copyright": "none",
+        "nie:title": "track title",
+        "nmm:trackNumber": "12",
+        "nmm:musicAlbum": {
+            "@type": "nmm:MusicAlbum",
+            "nie:title": "awesome album",
+            "nmm:albumTrackCount": "28",
+            "nmm:albumArtist": [
+                {
+                    "@type": "nmm:Artist",
+                    "nmm:artistName": "my album artist"
+                }
+            ]
+        },
+        "nmm:musicAlbumDisc": {
+            "@type": "nmm:MusicAlbumDisc",
+            "nmm:setNumber": 1
+        },
+        "nmm:performer": {
+            "@type": "nmm:Artist",
+            "nmm:artistName": "my artist"
+        }
+    }
+}
