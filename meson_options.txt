@@ -79,7 +79,9 @@ option('generic_media_extractor', type: 'combo', choices: ['auto', 'gstreamer', 
 option('gstreamer_backend', type: 'combo', choices: ['discoverer', 'gupnp'], value: 'discoverer',
        description: 'When GStreamer is used, this enables one of the (discoverer, gupnp) GStreamer backends')
 
-option('dbus_services', type: 'string', value: '',
-       description: 'Directory to install D-Bus .service files (leave blank to use the value from dbus-1.pc)')
-option('systemd_user_services', type: 'string', value: 'yes',
-       description: 'Directory to install systemd user .service files (or "yes" for default directory, "no" to disable installation)')
+option('dbus_services_dir', type: 'string',
+       description: 'Directory to install D-Bus .service files (value from dbus-1.pc is used by default)')
+option('systemd_user_services', type: 'boolean', value: true,
+       description: 'Whether to install systemd user .service files')
+option('systemd_user_services_dir', type: 'string',
+       description: 'Directory to install systemd user .service files (value from systemd.pc is used by default)')

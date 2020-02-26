@@ -193,7 +193,7 @@ desktop_file = custom_target('tracker-extract-desktop-file',
   install: true,
   install_dir: join_paths(get_option('sysconfdir'), 'xdg/autostart'))
 
-if install_systemd_user_services
+if get_option('systemd_user_services')
   configure_file(
     input: 'tracker-extract.service.in',
     output: 'tracker-extract.service',

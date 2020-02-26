@@ -33,12 +33,7 @@ if get_option('tracker_core') == 'system'
   tracker_uninstalled_testutils_dir = tracker_testutils.get_pkgconfig_variable('python_path')
   tracker_uninstalled_nepomuk_ontologies_dir = join_paths(tracker_sparql.get_pkgconfig_variable('ontologies_dir'), 'nepomuk')
 else
-  tracker_subproject = subproject('tracker',
-    default_options: [
-       'dbus_services=@0@'.format(get_option('dbus_services')),
-       'docs=@0@'.format(get_option('docs')),
-       'systemd_user_services=@0@'.format(get_option('systemd_user_services')),
-    ])
+  tracker_subproject = subproject('tracker')
 
   tracker_sparql = tracker_subproject.get_variable('tracker_sparql_dep')
 
@@ -281,34 +276,33 @@ endif
 # D-Bus service files
 ####################################################################
 
-if get_option('dbus_services') == ''
+dbus_services_dir = get_option('dbus_services_dir')
+if dbus_services_dir == ''
   dbus_services_dir = dbus.get_pkgconfig_variable('session_bus_services_dir',
                                                   define_variable: [ 'datadir', datadir ])
-else
-  dbus_services_dir = get_option('dbus_services')
 endif
 
 ####################################################################
 # systemd user services
 ####################################################################
 
-install_systemd_user_services = false
-if get_option('systemd_user_services') == 'yes' or get_option('systemd_user_services') == 'auto'
-  systemd = dependency('systemd', required: false)
-  if systemd.found()
-    install_systemd_user_services = true
-    systemd_user_services_dir = join_paths(libdir, 'systemd', 'user')
-  else
-    install_systemd_user_services = false
-    systemd_user_services_dir = '(not found)'
+if get_option('systemd_user_services')
+  systemd_user_services_dir = get_option('systemd_user_services_dir')
+
+  if systemd_user_services_dir == ''
+    systemd = dependency('systemd', required: false)
+    if systemd.found()
+      # FIXME: this would ideally use the systemduserunitdir pkgconfig variable, but
+      # it does not depend on variables we can override to install within prefix.
+      systemd_user_services_dir = join_paths(libdir, 'systemd', 'user')
+    else
+      error('systemd user services were enabled, but systemd was not found. ' +
+            'Please set the systemd_user_services_dir option if you want to ' +
+            'install them, or set systemd_user_services=false to disable.')
+    endif
   endif
-elif get_option('systemd_user_services') == 'no' or get_option('systemd_user_services') == ''
-  install_systemd_user_services = false
-  systemd_user_services_dir = '(disabled)'
-else
-  install_systemd_user_services = true
-  systemd_user_services_dir = get_option('systemd_user_services')
 endif
+
 
 conf = configuration_data()
 

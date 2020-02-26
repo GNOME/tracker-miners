@@ -35,7 +35,7 @@ desktop_file = custom_target('tracker-miner-rss-desktop-file',
     install: true,
     install_dir: join_paths(get_option('sysconfdir'), 'xdg/autostart'))
 
-if install_systemd_user_services
+if get_option('systemd_user_services')
   configure_file(
       input: 'tracker-miner-rss.service.in',
       output: 'tracker-miner-rss.service',
