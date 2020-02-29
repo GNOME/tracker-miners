@@ -15,8 +15,8 @@ datadir = join_paths(get_option('prefix'), get_option('datadir'))
 glib_required = '2.40.0'
 
 if get_option('tracker_core') == 'system'
-  tracker_sparql = dependency('tracker-sparql-2.0', version: '>= 2.2.0', required: false)
-  tracker_testutils = dependency('tracker-testutils-2.0', required: false)
+  tracker_sparql = dependency('tracker-sparql-3.0', version: '>= 2.2.0', required: false)
+  tracker_testutils = dependency('tracker-testutils-3.0', required: false)
 
   if not tracker_sparql.found() or not tracker_testutils.found()
     error('Did not find the required versions of the Tracker core libraries ' +
