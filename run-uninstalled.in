@@ -26,6 +26,7 @@ import pathlib
 import sys
 
 cli_dir = "@tracker_uninstalled_cli_dir@"
+tracker_sparql_dir = "@tracker_sparql_uninstalled_dir@"
 testutils_dir = "@tracker_uninstalled_testutils_dir@"
 
 build_directory = pathlib.Path(__file__).parent
@@ -37,17 +38,22 @@ env = os.environ
 path = env.get('PATH', '').split(':')
 env['PATH'] = ':'.join([cli_dir] + path)
 
+# Add GObject typelib to GI_TYPELIB_PATH
+gipath = env.get('GI_TYPELIB_PATH', '').split(':')
+env['GI_TYPELIB_PATH'] = ':'.join([tracker_sparql_dir] + gipath)
+
 # Add trackertestutils module to PYTHONPATH
 pythonpath = env.get('PYTHONPATH', '').split(':')
 env['PYTHONPATH'] = ':'.join([testutils_dir] + pythonpath)
 
 env['GSETTINGS_SCHEMA_DIR'] = '@uninstalled_gsettings_schema_dir@'
 
-env['TRACKER_DB_ONTOLOGIES_DIR'] = "@tracker_uninstalled_nepomuk_ontologies_dir@"
+env['TRACKER_CLI_SUBCOMMANDS_DIR'] = "@tracker_uninstalled_cli_subcommands_dir@"
 env['TRACKER_EXTRACTOR_RULES_DIR'] = "@tracker_uninstalled_extract_rules_dir@"
 env['TRACKER_EXTRACTORS_DIR'] = "@tracker_uninstalled_extractors_dir@"
 env['TRACKER_LANGUAGE_STOP_WORDS_DIR'] = "@tracker_uninstalled_stop_words_dir@"
 env['TRACKER_MINER_SERVICES_DIR'] = "@tracker_uninstalled_miner_services_dir@"
+env['TRACKER_TEST_DOMAIN_ONTOLOGY_RULE'] = "@tracker_uninstalled_domain_rule@"
 env['TRACKER_WRITEBACK_MODULES_DIR'] = "@tracker_uninstalled_writeback_modules_dir@"
 
 args = [sys.executable, '-m', 'trackertestutils', '--dbus-config', dbus_config] + sys.argv[1:]

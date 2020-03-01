@@ -30,3 +30,6 @@ foreach m: modules
         include_directories: [commoninc, configinc, srcinc],
     )
 endforeach
+
+run_command('./make-uninstalled-command-links.sh', tracker_uninstalled_cli_dir, modules,
+            check: true)
