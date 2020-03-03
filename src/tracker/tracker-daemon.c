@@ -46,8 +46,6 @@ typedef struct {
 	GStrv filter;
 } WatchData;
 
-static GDBusConnection *connection = NULL;
-static GDBusProxy *proxy = NULL;
 static GMainLoop *main_loop;
 static GHashTable *miners_progress;
 static GHashTable *miners_status;
@@ -55,11 +53,6 @@ static gint longest_miner_name_length = 0;
 static gint paused_length = 0;
 
 static gboolean full_namespaces = FALSE; /* Can be turned on if needed, or made cmd line option */
-
-#define OPTION_TERM_ALL "all"
-#define OPTION_TERM_STORE "store"
-#define OPTION_TERM_MINERS "miners"
-
 
 /* Note:
  * Every time a new option is added, make sure it is considered in the
@@ -79,11 +72,11 @@ static gboolean list_miners_available;
 static gboolean pause_details;
 
 static gboolean list_processes;
-static TrackerProcessTypes daemons_to_kill = TRACKER_PROCESS_TYPE_NONE;
-static TrackerProcessTypes daemons_to_term = TRACKER_PROCESS_TYPE_NONE;
 static gchar *set_log_verbosity;
 static gboolean get_log_verbosity;
 static gboolean start;
+static gboolean kill_miners;
+static gboolean terminate_miners;
 static gchar *backup;
 static gchar *restore;
 
@@ -97,19 +90,13 @@ static gchar *restore;
 	  list_miners_available || \
 	  pause_details) || \
 	 (list_processes || \
-	  daemons_to_kill != TRACKER_PROCESS_TYPE_NONE || \
-	  daemons_to_term != TRACKER_PROCESS_TYPE_NONE || \
 	  get_log_verbosity || \
 	  set_log_verbosity || \
 	  start || \
+	  kill_miners || \
+	  terminate_miners || \
 	  backup || \
 	  restore));
-
-static gboolean term_option_arg_func (const gchar  *option_value,
-                                      const gchar  *value,
-                                      gpointer      data,
-                                      GError      **error);
-
 
 /* Make sure our statuses are translated (most from libtracker-miner) */
 static const gchar *statuses[8] = {
@@ -134,7 +121,7 @@ static GOptionEntry entries[] = {
 	  NULL
 	},
 	{ "list-common-statuses", 0, 0, G_OPTION_ARG_NONE, &list_common_statuses,
-	  N_("List common statuses for miners and the store"),
+	  N_("List common statuses for miners"),
 	  NULL
 	},
 	/* Miners */
@@ -169,14 +156,14 @@ static GOptionEntry entries[] = {
 	/* Processes */
 	{ "list-processes", 'p', 0, G_OPTION_ARG_NONE, &list_processes,
 	  N_("List all Tracker processes") },
-	{ "kill", 'k', G_OPTION_FLAG_OPTIONAL_ARG, G_OPTION_ARG_CALLBACK, term_option_arg_func,
-	  N_("Use SIGKILL to stop all matching processes, either “store”, “miners” or “all” may be used, no parameter equals “all”"),
+	{ "kill", 'k', 0, G_OPTION_ARG_NONE, &kill_miners,
+	  N_("Use SIGKILL to stop all miners"),
 	  N_("APPS") },
-	{ "terminate", 't', G_OPTION_FLAG_OPTIONAL_ARG, G_OPTION_ARG_CALLBACK, term_option_arg_func,
-	  N_("Use SIGTERM to stop all matching processes, either “store”, “miners” or “all” may be used, no parameter equals “all”"),
+	{ "terminate", 't', 0, G_OPTION_ARG_NONE, &terminate_miners,
+	  N_("Use SIGTERM to stop all miners"),
 	  N_("APPS") },
 	{ "start", 's', 0, G_OPTION_ARG_NONE, &start,
-	  N_("Starts miners (which indirectly starts tracker-store too)"),
+	  N_("Starts miners"),
 	  NULL },
 	{ "set-log-verbosity", 0, 0, G_OPTION_ARG_STRING, &set_log_verbosity,
 	  N_("Sets the logging verbosity to LEVEL (“debug”, “detailed”, “minimal”, “errors”) for all processes"),
@@ -340,138 +327,6 @@ miner_print_state (TrackerMinerManager *manager,
 }
 
 static void
-store_print_state (const gchar *status,
-                   gdouble      progress)
-{
-	gchar time_str[64];
-	struct tm *local_time;
-	time_t now;
-	size_t len;
-
-	now = time ((time_t *) NULL);
-	local_time = localtime (&now);
-	len = strftime (time_str,
-	                sizeof (time_str) - 1,
-	                "%d %b %Y, %H:%M:%S:",
-	                local_time);
-	time_str[len] = '\0';
-
-	if (status) {
-		gchar *operation = NULL;
-		gchar *operation_status = NULL;
-		gchar *progress_str;
-
-		if (strstr (status, "-")) {
-			gchar **status_split;
-
-			status_split = g_strsplit (status, "-", 2);
-			if (status_split[0] && status_split[1]) {
-				operation = g_strstrip (status_split[0]);
-				operation_status = g_strstrip (status_split[1]);
-				/* Free the array, not the contents */
-				g_free (status_split);
-			} else {
-				/* Free everything */
-				g_strfreev (status_split);
-			}
-		}
-
-		if (progress >= 0.0 && progress < 1.0) {
-			progress_str = g_strdup_printf ("%3u%%", (guint)(progress * 100));
-		} else {
-			progress_str = g_strdup_printf ("✓   ");
-		}
-
-		g_print ("%s  %s  %-*.*s    - %s %s%s%s\n",
-		         time_str,
-		         progress_str ? progress_str : "    ",
-		         longest_miner_name_length + paused_length,
-		         longest_miner_name_length + paused_length,
-		         "Store",
-		         /*(operation ? _(operation) : _(status)),*/
-		         /*operation ? "-" : "",*/
-		         operation ? _(operation) : _(status),
-		         operation_status ? "(" : "",
-		         operation_status ? operation_status : "",
-		         operation_status ? ")" : "");
-
-		g_free (progress_str);
-		g_free (operation);
-		g_free (operation_status);
-	} else {
-		g_print ("%s  %s %-*.*s    - %s\n",
-		         time_str,
-		         "✗    ", /* Progress */
-		         longest_miner_name_length + paused_length,
-		         longest_miner_name_length + paused_length,
-		         "Store",
-		         _("Unavailable"));
-	}
-}
-
-static void
-store_get_and_print_state (void)
-{
-	GVariant *v_status, *v_progress;
-	const gchar *status = NULL;
-	gdouble progress = -1.0;
-	GError *error = NULL;
-	gchar *owner;
-
-	owner = g_dbus_proxy_get_name_owner (proxy);
-	if (!owner) {
-		/* Name is not owned yet, store is not running */
-		store_print_state (NULL, -1);
-		return;
-	}
-	g_free (owner);
-
-	/* Status */
-	v_status = g_dbus_proxy_call_sync (proxy,
-	                                   "GetStatus",
-	                                   NULL,
-	                                   G_DBUS_CALL_FLAGS_NONE,
-	                                   -1,
-	                                   NULL,
-	                                   &error);
-
-	if (!v_status || error) {
-		g_critical ("%s, %s",
-		            _("Could not retrieve tracker-store status"),
-		            error ? error->message : _("No error given"));
-		g_clear_error (&error);
-		return;
-	}
-
-	g_variant_get (v_status, "(&s)", &status);
-
-	/* Progress */
-	v_progress = g_dbus_proxy_call_sync (proxy,
-	                                     "GetProgress",
-	                                     NULL,
-	                                     G_DBUS_CALL_FLAGS_NONE,
-	                                     -1,
-	                                     NULL,
-	                                     &error);
-
-	g_variant_get (v_progress, "(d)", &progress);
-
-	if (progress < 0.0 || error) {
-		g_critical ("%s, %s",
-		            _("Could not retrieve tracker-store progress"),
-		            error ? error->message : _("No error given"));
-		g_clear_error (&error);
-		return;
-	}
-
-	/* Print */
-	store_print_state (status, progress);
-
-	g_variant_unref (v_progress);
-	g_variant_unref (v_status);
-}
-
-static void
 manager_miner_progress_cb (TrackerMinerManager *manager,
                            const gchar         *miner_name,
                            const gchar         *status,
@@ -573,22 +428,6 @@ print_key (GHashTable  *prefixes,
 		g_print ("'%s'\n", shorthand);
 		g_free (shorthand);
 	}
-}
-
-static void
-store_progress (GDBusConnection *connection,
-                const gchar     *sender_name,
-                const gchar     *object_path,
-                const gchar     *interface_name,
-                const gchar     *signal_name,
-                GVariant        *parameters,
-                gpointer         user_data)
-{
-	const gchar *status = NULL;
-	gdouble progress = 0.0;
-
-	g_variant_get (parameters, "(sd)", &status, &progress);
-	store_print_state (status, progress);
 }
 
 static void
@@ -920,41 +759,6 @@ tracker_gsettings_print_verbosity (GSList   *all,
 	}
 }
 
-static gboolean
-term_option_arg_func (const gchar  *option_value,
-                      const gchar  *value,
-                      gpointer      data,
-                      GError      **error)
-{
-	TrackerProcessTypes option;
-
-	if (!value) {
-		value = OPTION_TERM_ALL;
-	}
-
-	if (strcmp (value, OPTION_TERM_ALL) == 0) {
-		option = TRACKER_PROCESS_TYPE_ALL;
-	} else if (strcmp (value, OPTION_TERM_STORE) == 0) {
-		option = TRACKER_PROCESS_TYPE_STORE;
-	} else if (strcmp (value, OPTION_TERM_MINERS) == 0) {
-		option = TRACKER_PROCESS_TYPE_MINERS;
-	} else {
-		g_set_error_literal (error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
-		                     _("Only one of “all”, “store” and “miners” options are allowed"));
-		return FALSE;
-	}
-
-	if (strcmp (option_value, "-k") == 0 ||
-	    strcmp (option_value, "--kill") == 0) {
-		daemons_to_kill = option;
-	} else if (strcmp (option_value, "-t") == 0 ||
-	           strcmp (option_value, "--terminate") == 0) {
-		daemons_to_term = option;
-	}
-
-	return TRUE;
-}
-
 static gint
 daemon_run (void)
 {
@@ -1041,32 +845,6 @@ daemon_run (void)
 		}
 
 		/* Display states */
-		g_print ("%s:\n", _("Store"));
-
-		if (!tracker_dbus_get_connection ("org.freedesktop.Tracker3",
-		                                  "/org/freedesktop/Tracker3/Status",
-		                                  "org.freedesktop.Tracker3.Status",
-		                                  G_DBUS_PROXY_FLAGS_DO_NOT_AUTO_START,
-		                                  &connection,
-		                                  &proxy)) {
-			return EXIT_FAILURE;
-		}
-
-		g_dbus_connection_signal_subscribe (connection,
-		                                    "org.freedesktop.Tracker3",
-		                                    "org.freedesktop.Tracker3.Status",
-		                                    "Progress",
-		                                    "/org/freedesktop/Tracker3/Status",
-		                                    NULL,
-		                                    G_DBUS_SIGNAL_FLAGS_NONE,
-		                                    store_progress,
-		                                    NULL,
-		                                    NULL);
-
-		store_get_and_print_state ();
-
-		g_print ("\n");
-
 		g_print ("%s:\n", _("Miners"));
 
 		for (l = miners_available; l; l = l->next) {
@@ -1125,9 +903,6 @@ daemon_run (void)
 
 		if (!follow) {
 			/* Do nothing further */
-			if (proxy) {
-				g_object_unref (proxy);
-			}
 			g_print ("\n");
 			return EXIT_SUCCESS;
 		}
@@ -1158,10 +933,6 @@ daemon_run (void)
 
 		g_hash_table_unref (miners_progress);
 		g_hash_table_unref (miners_status);
-
-		if (proxy) {
-			g_object_unref (proxy);
-		}
 
 		if (manager) {
 			g_object_unref (manager);
@@ -1219,7 +990,7 @@ daemon_run (void)
 
 	/* Constraints */
 
-	if (daemons_to_kill != TRACKER_PROCESS_TYPE_NONE && daemons_to_term != TRACKER_PROCESS_TYPE_NONE) {
+	if (kill_miners && terminate_miners) {
 		g_printerr ("%s\n",
 		            _("You can not use the --kill and --terminate arguments together"));
 		return EXIT_FAILURE;
@@ -1291,9 +1062,15 @@ daemon_run (void)
 		return EXIT_SUCCESS;
 	}
 
-	if (daemons_to_kill != TRACKER_PROCESS_TYPE_NONE ||
-	    daemons_to_term != TRACKER_PROCESS_TYPE_NONE) {
-		exit (tracker_process_stop (daemons_to_term, daemons_to_kill));
+	if (kill_miners || terminate_miners) {
+		gint retval = 0;
+
+		if (kill_miners)
+			retval = tracker_process_stop (TRACKER_PROCESS_TYPE_NONE, TRACKER_PROCESS_TYPE_MINERS);
+		else if (terminate_miners)
+			retval = tracker_process_stop (TRACKER_PROCESS_TYPE_MINERS, TRACKER_PROCESS_TYPE_NONE);
+
+		return retval;
 	}
 
 	/* Deal with logging changes AFTER the config may have been
@@ -1456,7 +1233,7 @@ main (int argc, const char **argv)
 
 	context = g_option_context_new (NULL);
 	g_option_context_add_main_entries (context, entries, NULL);
-	g_option_context_set_summary (context, _("If no arguments are given, the status of the store and data miners is shown"));
+	g_option_context_set_summary (context, _("If no arguments are given, the status of the data miners is shown"));
 
 	argv[0] = "tracker daemon";
 
