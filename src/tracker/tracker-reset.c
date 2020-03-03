@@ -230,7 +230,7 @@ reset_run (void)
 
 	/* KILL processes first... */
 	if (hard_reset || soft_reset) {
-		tracker_process_stop (TRACKER_PROCESS_TYPE_NONE, TRACKER_PROCESS_TYPE_ALL);
+		tracker_process_stop (TRACKER_PROCESS_TYPE_NONE, TRACKER_PROCESS_TYPE_MINERS);
 	}
 
 	if (hard_reset || soft_reset) {
