@@ -5,7 +5,6 @@ tracker-index \- List, pause, resume and command data miners indexing content
 
 .SH SYNOPSIS
 .nf
-\fBtracker index\fR \-\-reindex\-mime\-type <\fImime1\fR> [[\-m [\fImime2\fR]] ...]
 \fBtracker index\fR \-\-file <\fIfile1\fR> [[\fIfile2\fR] ...]
 \fBtracker index\fR \-\-import <\fIfile1\fR> [[\fIfile2\fR] ...]
 \fBtracker index\fR \-\-backup <\fIfile\fR> | \-\-restore <\fIfile\fR>
@@ -29,13 +28,6 @@ Finally, there is an import feature which makes testing or applying a
 "base" data set for use much easier.
 
 .SH OPTIONS
-.TP
-.B \-m, \-\-reindex-mime\-type\fR=<\fImime1\fR> [[\-m [\fImime2\fR]] ...]
-Re-index files which match the \fImime\fR type supplied. This is
-usually used when installing new extractors which support \fImime\fR
-types previously unsupported. This forces Tracker to re-index those
-files. You can use \fB\-\-reindex\-mime\-type\fR more than once per
-\fImime\fR type.
 .TP
 .B \-f, \-\-index\fR=<\fIfile1\fR> [[\fIfile2\fR] ...]
 (Re)index a file matching the \fIfile\fR name(s) supplied.
