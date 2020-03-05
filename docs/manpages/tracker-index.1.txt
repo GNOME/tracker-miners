@@ -9,7 +9,6 @@ content
 == SYNOPSIS
 
 ....
-tracker index --reindex-mime-type <mime1> [[-m [mime2]] ...]
 tracker index --file <file1> [[file2] ...]
 tracker index --import <file1> [[file2] ...]
 tracker index --backup <file> | --restore <file>
@@ -34,11 +33,6 @@ Finally, there is an import feature which makes testing or applying a
 
 == OPTIONS
 
-*-m, --reindex-mime-type=<__mime1__> [[-m [_mime2_]] ...]*::
-  Re-index files which match the _mime_ type supplied. This is usually
-  used when installing new extractors which support _mime_ types
-  previously unsupported. This forces Tracker to re-index those files.
-  You can use *--reindex-mime-type* more than once per _mime_ type.
 *-f, --index=<__file1__> [[_file2_] ...]*::
   (Re)index a file matching the _file_ name(s) supplied.
 *-b, --backup=<__file__>*::
