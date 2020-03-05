@@ -115,6 +115,7 @@ tracker_seccomp_init (void)
 	ALLOW_RULE (sched_yield);
 	ALLOW_RULE (sched_getaffinity);
 	ALLOW_RULE (nanosleep);
+	ALLOW_RULE (clock_nanosleep);
 	ALLOW_RULE (waitid);
 	ALLOW_RULE (waitpid);
 	ALLOW_RULE (wait4);
