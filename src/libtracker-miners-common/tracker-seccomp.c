@@ -135,6 +135,7 @@ tracker_seccomp_init (void)
 	ALLOW_RULE (clock_gettime);
 	ALLOW_RULE (clock_getres);
 	ALLOW_RULE (gettimeofday);
+	ALLOW_RULE (clock_nanosleep);
 	/* Descriptors */
 	ALLOW_RULE (close);
 	ALLOW_RULE (read);
