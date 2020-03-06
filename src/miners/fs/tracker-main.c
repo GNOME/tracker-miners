@@ -343,7 +343,7 @@ should_crawl (TrackerConfig *config,
 			return FALSE;
 		} else {
 			g_message ("  (More than) %d days after last crawling, enabled", crawling_interval);
-			return FALSE;
+			return TRUE;
 		}
 	}
 }

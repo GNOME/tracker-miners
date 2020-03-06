@@ -3493,9 +3493,7 @@ tracker_miner_files_get_last_crawl_done (void)
 /**
  * tracker_miner_files_set_last_crawl_done:
  *
- * Set the status of the first full index of files. Should be set to
- *  %FALSE if the index was never done or if a reindex is needed. When
- *  the index is completed, should be set to %TRUE.
+ * Set the time stamp of the last full index of files.
  **/
 void
 tracker_miner_files_set_last_crawl_done (gboolean done)
@@ -3506,33 +3504,29 @@ tracker_miner_files_set_last_crawl_done (gboolean done)
 	filename = get_last_crawl_filename ();
 	already_exists = g_file_test (filename, G_FILE_TEST_EXISTS);
 
-	if (done && !already_exists) {
+	if (done) {
 		GError *error = NULL;
 		gchar *content;
-
 		content = g_strdup_printf ("%" G_GUINT64_FORMAT, (guint64) time (NULL));
-
-		/* If done, create stamp file if not already there */
+		if (already_exists) {
+			g_info ("  Overwriting last crawl file:'%s'", filename);
+		} else {
+			g_info ("  Creating last crawl file:'%s'", filename);
+		}
+		/* Create/update time stamp file */
 		if (!g_file_set_contents (filename, content, -1, &error)) {
-			g_warning ("  Could not create file:'%s' failed, %s",
+			g_warning ("  Could not create/overwrite file:'%s' failed, %s",
 			           filename,
 			           error->message);
 			g_error_free (error);
 		} else {
-			g_info ("  Last crawl file:'%s' created", filename);
+			g_info ("  Last crawl file:'%s' updated", filename);
 		}
 
 		g_free (content);
-	} else if (!done && already_exists) {
-		/* If NOT done, remove stamp file */
-		g_info ("  Removing last crawl file:'%s'", filename);
-
-		if (g_remove (filename)) {
-			g_warning ("    Could not remove file:'%s': %m",
-			           filename);
-		}
+	} else {
+		g_info ("  Crawl not done yet, doesn't update last crawl file.");
 	}
-
 	g_free (filename);
 }
 
