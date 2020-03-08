@@ -675,47 +675,7 @@ check_eligible (void)
 }
 
 static gboolean
-store_is_available (void)
-{
-	GDBusConnection *connection;
-	GDBusProxy *proxy;
-	gchar *name_owner;
-
-	connection = g_bus_get_sync (TRACKER_IPC_BUS, NULL, NULL);
-
-	if (!connection) {
-		return FALSE;
-	}
-
-	proxy = g_dbus_proxy_new_sync (connection,
-	                               G_DBUS_PROXY_FLAGS_DO_NOT_AUTO_START,
-	                               NULL,
-	                               "org.freedesktop.Tracker1",
-	                               "/org/freedesktop/Tracker1/Status",
-	                               "org.freedesktop.Tracker1.Status",
-	                               NULL, NULL);
-
-	if (!proxy) {
-		g_object_unref (connection);
-		return FALSE;
-	}
-
-	name_owner = g_dbus_proxy_get_name_owner (proxy);
-
-	g_object_unref (connection);
-	g_object_unref (proxy);
-
-	if (name_owner) {
-		g_free (name_owner);
-		return TRUE;
-	}
-
-	return FALSE;
-}
-
-static gboolean
-miner_needs_check (TrackerMiner *miner,
-                   gboolean      store_available)
+miner_needs_check (TrackerMiner *miner)
 {
 	/* Reasons to not mark ourselves as cleanly shutdown include:
 	 *
@@ -740,15 +700,8 @@ miner_needs_check (TrackerMiner *miner,
 		/* We consider the miner finished */
 		return FALSE;
 	} else {
-		if (store_available) {
-			/* Paused for other reasons, so probably not done */
-			return TRUE;
-		} else {
-			/* Check whether there are more pause
-			 * reasons than the store being out.
-			 */
-			return tracker_miner_is_paused (miner);
-		}
+		/* Paused for other reasons, so probably not done */
+		return TRUE;
 	}
 }
 
@@ -825,7 +778,6 @@ main (gint argc, gchar *argv[])
 	gchar *log_filename = NULL;
 	gboolean do_mtime_checking;
 	gboolean force_mtime_checking = FALSE;
-	gboolean store_available;
 	TrackerMinerProxy *proxy;
 	GDBusConnection *connection;
 	TrackerSparqlConnection *sparql_conn;
@@ -1049,10 +1001,7 @@ main (gint argc, gchar *argv[])
 
 	g_message ("Shutdown started");
 
-	store_available = store_is_available ();
-
-	if (miners_timeout_id == 0 &&
-	    !miner_needs_check (miner_files, store_available)) {
+	if (miners_timeout_id == 0 && !miner_needs_check (miner_files)) {
 		tracker_miner_files_set_need_mtime_check (FALSE);
 		save_current_locale ();
 	}
