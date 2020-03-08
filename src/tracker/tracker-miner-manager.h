@@ -26,18 +26,18 @@
 
 #include <gio/gio.h>
 
+#include <tracker-indexing-status.h>
+
 G_BEGIN_DECLS
 
 #define TRACKER_TYPE_MINER_MANAGER         (tracker_miner_manager_get_type())
-#define TRACKER_MINER_MANAGER(o)           (G_TYPE_CHECK_INSTANCE_CAST ((o), TRACKER_TYPE_MINER_MANAGER, TrackerMinerManager))
-#define TRACKER_MINER_MANAGER_CLASS(c)     (G_TYPE_CHECK_CLASS_CAST ((c),    TRACKER_TYPE_MINER_MANAGER, TrackerMinerManagerClass))
-#define TRACKER_IS_MINER_MANAGER(o)        (G_TYPE_CHECK_INSTANCE_TYPE ((o), TRACKER_TYPE_MINER_MANAGER))
-#define TRACKER_IS_MINER_MANAGER_CLASS(c)  (G_TYPE_CHECK_CLASS_TYPE ((c),    TRACKER_TYPE_MINER_MANAGER))
-#define TRACKER_MINER_MANAGER_GET_CLASS(o) (G_TYPE_INSTANCE_GET_CLASS ((o),  TRACKER_TYPE_MINER_MANAGER, TrackerMinerManagerClass))
+G_DECLARE_DERIVABLE_TYPE (TrackerMinerManager, tracker_miner_manager, TRACKER, MINER_MANAGER, GObject)
 
 #define TRACKER_MINER_MANAGER_ERROR tracker_miner_manager_error_quark ()
 
-typedef struct _TrackerMinerManager TrackerMinerManager;
+#define TRACKER_MINER_DBUS_INTERFACE "org.freedesktop.Tracker3.Miner"
+#define TRACKER_MINER_FS_DBUS_NAME "org.freedesktop.Tracker3.Miner.Files"
+#define TRACKER_EXTRACT_DBUS_NAME "org.freedesktop.Tracker3.Miner.Extract"
 
 /**
  * TrackerMinerManagerError:
@@ -45,6 +45,8 @@ typedef struct _TrackerMinerManager TrackerMinerManager;
  * is not active and can so can not be used.
  * @TRACKER_MINER_MANAGER_ERROR_NOENT: The resource that the
  * miner is handling (for example a file or URI) does not exist.
+ * @TRACKER_MINER_MANAGER_ERROR_INDEXING_ERROR: One or more errors
+ * were encountered during indexing.
  *
  * Enumeration values used in errors returned by the
  * #TrackerMinerManager API.
@@ -53,17 +55,10 @@ typedef struct _TrackerMinerManager TrackerMinerManager;
  **/
 typedef enum {
 	TRACKER_MINER_MANAGER_ERROR_NOT_AVAILABLE,
-	TRACKER_MINER_MANAGER_ERROR_NOENT
+	TRACKER_MINER_MANAGER_ERROR_NOENT,
+	TRACKER_MINER_MANAGER_ERROR_INDEXING_ERROR,
+	TRACKER_MINER_MANAGER_ERROR_NO_MINERS,
 } TrackerMinerManagerError;
-
-/**
- * TrackerMinerManager:
- *
- * Object to query and control miners.
- **/
-struct _TrackerMinerManager {
-	GObject parent_instance;
-};
 
 /**
  * TrackerMinerManagerClass:
@@ -75,8 +70,9 @@ struct _TrackerMinerManager {
  * indicates the miner is available on d-bus.
  * @miner_deactivated: The deactivate for all miners which indicates
  * the miner is no longer available on d-bus.
+ * @miner_file_processed: Status update for a single file or unit.
  **/
-typedef struct {
+struct _TrackerMinerManagerClass {
 	GObjectClass parent_class;
 
 	void (* miner_progress)    (TrackerMinerManager *manager,
@@ -91,7 +87,11 @@ typedef struct {
 	                            const gchar         *miner_name);
 	void (* miner_deactivated) (TrackerMinerManager *manager,
 	                            const gchar         *miner_name);
-} TrackerMinerManagerClass;
+	void (* miner_file_processed) (TrackerMinerManager *manager,
+	                               const gchar         *uri,
+	                               const gboolean      *status,
+	                               const gchar         *message);
+};
 
 GType                tracker_miner_manager_get_type           (void) G_GNUC_CONST;
 GQuark               tracker_miner_manager_error_quark        (void) G_GNUC_CONST;
@@ -127,31 +127,31 @@ const gchar *        tracker_miner_manager_get_display_name   (TrackerMinerManag
                                                                const gchar          *miner);
 const gchar *        tracker_miner_manager_get_description    (TrackerMinerManager  *manager,
                                                                const gchar          *miner);
+GDBusConnection *    tracker_miner_manager_get_dbus_connection (TrackerMinerManager *manager);
 
-gboolean             tracker_miner_manager_index_file          (TrackerMinerManager  *manager,
-                                                                GFile                *file,
+TrackerIndexingStatus * tracker_miner_manager_index_file       (TrackerMinerManager  *manager,                                                                GFile                *file,
                                                                 GCancellable         *cancellable,
                                                                 GError              **error);
-void                 tracker_miner_manager_index_file_async    (TrackerMinerManager  *manager,
+TrackerIndexingStatus * tracker_miner_manager_index_file_async (TrackerMinerManager  *manager,
                                                                 GFile                *file,
                                                                 GCancellable         *cancellable,
                                                                 GAsyncReadyCallback   callback,
                                                                 gpointer              user_data);
-gboolean             tracker_miner_manager_index_file_finish   (TrackerMinerManager  *manager,
-                                                                GAsyncResult         *result,
-                                                                GError              **error);
-gboolean             tracker_miner_manager_index_file_for_process        (TrackerMinerManager  *manager,
-                                                                          GFile                *file,
-                                                                          GCancellable         *cancellable,
-                                                                          GError              **error);
-void                 tracker_miner_manager_index_file_for_process_async  (TrackerMinerManager  *manager,
-                                                                          GFile                *file,
-                                                                          GCancellable         *cancellable,
-                                                                          GAsyncReadyCallback   callback,
-                                                                          gpointer              user_data);
-gboolean             tracker_miner_manager_index_file_for_process_finish (TrackerMinerManager  *manager,
-                                                                          GAsyncResult         *result,
-                                                                          GError              **error);
+gboolean                tracker_miner_manager_index_file_finish        (TrackerMinerManager  *manager,
+                                                                        GAsyncResult         *result,
+                                                                        GError              **error);
+TrackerIndexingStatus * tracker_miner_manager_index_file_for_process   (TrackerMinerManager  *manager,
+                                                                        GFile                *file,
+                                                                        GCancellable         *cancellable,
+                                                                        GError              **error);
+TrackerIndexingStatus * tracker_miner_manager_index_file_for_process_async  (TrackerMinerManager  *manager,
+                                                                             GFile                *file,
+                                                                             GCancellable         *cancellable,
+                                                                             GAsyncReadyCallback   callback,
+                                                                             gpointer              user_data);
+gboolean                tracker_miner_manager_index_file_for_process_finish (TrackerMinerManager  *manager,
+                                                                             GAsyncResult         *result,
+                                                                             GError              **error);
 
 G_END_DECLS
 

@@ -8,7 +8,8 @@ tracker-index - Index content using the Tracker filesystem miner
 == SYNOPSIS
 
 ....
-tracker index <path> [[path] ...]
+tracker index <PATH> [[PATH] ...]
+tracker index [--monitor] <DIR> [[DIR] ...]
 ....
 
 == DESCRIPTION
@@ -16,11 +17,23 @@ tracker index <path> [[path] ...]
 This command causes the Tracker filesystem miner to process the given
 files or directories.
 
-Usually you should configure the miner to automatically index your
-content, because it will monitor the content locations for changes and
-ensure that the index is kept up to date. Content that is added using
-`tracker index` will not be monitored for changes by default, so you can
-end up with stale data in your search results if you use this command.
+Content added using *tracker index* will not be monitored for changes by
+default, so you can end up with stale data in your search results.
+
+Use *--monitor* mode to avoid stale data. In this mode, the command will
+not exit until CTRL+C is pressed, and on exit the content will be
+removed from the store again.
+
+It's often more convenient to configure the filesystem miner to index
+your content automatically, rather than using this command.
+
+== OPTIONS
+
+*--no-wait*::
+  Exit as soon as the files are queued for indexing. Errors during
+  processing will not be reported in this mode.
+*-m, --monitor*::
+  Trigger indexing and wait for CTRL+C, removing the data again on exit.
 
 == SEE ALSO
 
