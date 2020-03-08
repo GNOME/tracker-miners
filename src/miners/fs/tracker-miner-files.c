@@ -1765,7 +1765,7 @@ get_cache_dir (TrackerMinerFiles *mf)
 	GFile *cache;
 
 	cache = tracker_domain_ontology_get_cache (mf->private->domain_ontology);
-	return g_object_ref (cache);
+	return g_file_get_child (cache, "files");
 }
 
 

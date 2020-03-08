@@ -157,7 +157,7 @@ get_cache_dir (TrackerDomainOntology *domain_ontology)
 	GFile *cache;
 
 	cache = tracker_domain_ontology_get_cache (domain_ontology);
-	return g_object_ref (cache);
+	return g_file_get_child (cache, "files");
 }
 
 static void
