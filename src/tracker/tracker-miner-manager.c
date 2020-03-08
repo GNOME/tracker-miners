@@ -66,6 +66,7 @@ struct MinerData {
 	guint progress_signal;
 	guint paused_signal;
 	guint resumed_signal;
+	guint file_processed_signal;
 	guint watch_name_id;
 	GObject *manager; /* weak */
 };
@@ -98,6 +99,8 @@ G_DEFINE_TYPE_WITH_CODE (TrackerMinerManager, tracker_miner_manager, G_TYPE_OBJE
                          G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE,
                                                 miner_manager_initable_iface_init));
 
+G_DEFINE_QUARK (tracker-miner-manager-error, tracker_miner_manager_error)
+
 enum {
 	PROP_0,
 	PROP_AUTO_START,
@@ -110,6 +113,7 @@ enum {
 	MINER_RESUMED,
 	MINER_ACTIVATED,
 	MINER_DEACTIVATED,
+	MINER_FILE_PROCESSED,
 	LAST_SIGNAL
 };
 
@@ -241,6 +245,32 @@ tracker_miner_manager_class_init (TrackerMinerManagerClass *klass)
 		              NULL, NULL,
 		              NULL,
 		              G_TYPE_NONE, 1,
+		              G_TYPE_STRING);
+
+	/**
+	 * TrackerMinerManager::miner-file-processed:
+	 * @manager: the #TrackerMinerManager
+	 * @miner: miner reference
+	 * @file: URI of the file processed
+	 * @status: Successfully indexed the resource.
+	 * @message: Error or warning message, if any.
+	 *
+	 * The ::miner-file-processed signal will be emitted whenever a
+	 * miner successfully processes a resource.
+	 *
+	 * Since: 3.0
+	 **/
+	signals [MINER_FILE_PROCESSED] =
+		g_signal_new ("miner-file-processed",
+		              G_OBJECT_CLASS_TYPE (object_class),
+		              G_SIGNAL_RUN_LAST,
+		              G_STRUCT_OFFSET (TrackerMinerManagerClass, miner_file_processed),
+		              NULL, NULL,
+		              NULL,
+		              G_TYPE_NONE, 4,
+		              G_TYPE_STRING,
+		              G_TYPE_STRING,
+		              G_TYPE_BOOLEAN,
 		              G_TYPE_STRING);
 }
 
@@ -389,8 +419,29 @@ miner_resumed (GDBusConnection *connection,
                gpointer         user_data)
 {
 	MinerData *data = user_data;
+
 	if (data->manager) {
 		g_signal_emit (data->manager, signals[MINER_RESUMED], 0, data->dbus_name);
+	}
+}
+
+static void
+miner_file_processed (GDBusConnection *connection,
+                      const gchar     *sender_name,
+                      const gchar     *object_path,
+                      const gchar     *interface_name,
+                      const gchar     *signal_name,
+                      GVariant        *parameters,
+                      gpointer         user_data)
+{
+	MinerData *data = user_data;
+	const gchar *url = NULL;
+	gboolean status = FALSE;
+	const gchar *message = NULL;
+
+	g_variant_get (parameters, "(&sbs)", &url, &status, &message);
+	if (data->manager) {
+		g_signal_emit (data->manager, signals[MINER_FILE_PROCESSED], 0, data->dbus_name, url, status, message);
 	}
 }
 
@@ -501,6 +552,17 @@ miner_manager_initable_init (GInitable     *initable,
 		                                                           miner_resumed,
 		                                                           data,
 		                                                           NULL);
+
+		data->file_processed_signal = g_dbus_connection_signal_subscribe (priv->connection,
+		                                                                  data->dbus_name,
+		                                                                  TRACKER_MINER_DBUS_INTERFACE,
+		                                                                  "FileProcessed",
+		                                                                  data->dbus_path,
+		                                                                  NULL,
+		                                                                  G_DBUS_SIGNAL_FLAGS_NONE,
+		                                                                  miner_file_processed,
+		                                                                  data,
+		                                                                  NULL);
 
 		g_hash_table_insert (priv->miner_proxies, proxy, g_strdup (data->dbus_name));
 
@@ -1384,26 +1446,6 @@ tracker_miner_manager_get_description (TrackerMinerManager *manager,
 	}
 
 	return NULL;
-}
-
-/**
- * tracker_miner_manager_error_quark:
- *
- * Returns: the #GQuark used to identify miner manager errors in
- * GError structures.
- *
- * Since: 0.8
- **/
-GQuark
-tracker_miner_manager_error_quark (void)
-{
-	static GQuark error_quark = 0;
-
-	if (G_UNLIKELY (error_quark == 0)) {
-		error_quark = g_quark_from_static_string ("tracker-miner-manager-error-quark");
-	}
-
-	return error_quark;
 }
 
 

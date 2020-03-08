@@ -29,15 +29,9 @@
 G_BEGIN_DECLS
 
 #define TRACKER_TYPE_MINER_MANAGER         (tracker_miner_manager_get_type())
-#define TRACKER_MINER_MANAGER(o)           (G_TYPE_CHECK_INSTANCE_CAST ((o), TRACKER_TYPE_MINER_MANAGER, TrackerMinerManager))
-#define TRACKER_MINER_MANAGER_CLASS(c)     (G_TYPE_CHECK_CLASS_CAST ((c),    TRACKER_TYPE_MINER_MANAGER, TrackerMinerManagerClass))
-#define TRACKER_IS_MINER_MANAGER(o)        (G_TYPE_CHECK_INSTANCE_TYPE ((o), TRACKER_TYPE_MINER_MANAGER))
-#define TRACKER_IS_MINER_MANAGER_CLASS(c)  (G_TYPE_CHECK_CLASS_TYPE ((c),    TRACKER_TYPE_MINER_MANAGER))
-#define TRACKER_MINER_MANAGER_GET_CLASS(o) (G_TYPE_INSTANCE_GET_CLASS ((o),  TRACKER_TYPE_MINER_MANAGER, TrackerMinerManagerClass))
+G_DECLARE_DERIVABLE_TYPE (TrackerMinerManager, tracker_miner_manager, TRACKER, MINER_MANAGER, GObject)
 
 #define TRACKER_MINER_MANAGER_ERROR tracker_miner_manager_error_quark ()
-
-typedef struct _TrackerMinerManager TrackerMinerManager;
 
 /**
  * TrackerMinerManagerError:
@@ -57,15 +51,6 @@ typedef enum {
 } TrackerMinerManagerError;
 
 /**
- * TrackerMinerManager:
- *
- * Object to query and control miners.
- **/
-struct _TrackerMinerManager {
-	GObject parent_instance;
-};
-
-/**
  * TrackerMinerManagerClass:
  * @miner_progress: The progress signal for all miners including name,
  * status and progress as a percentage between 0 and 1.
@@ -75,8 +60,9 @@ struct _TrackerMinerManager {
  * indicates the miner is available on d-bus.
  * @miner_deactivated: The deactivate for all miners which indicates
  * the miner is no longer available on d-bus.
+ * @miner_file_processed: Status update for a single file or unit.
  **/
-typedef struct {
+struct _TrackerMinerManagerClass {
 	GObjectClass parent_class;
 
 	void (* miner_progress)    (TrackerMinerManager *manager,
@@ -91,7 +77,11 @@ typedef struct {
 	                            const gchar         *miner_name);
 	void (* miner_deactivated) (TrackerMinerManager *manager,
 	                            const gchar         *miner_name);
-} TrackerMinerManagerClass;
+	void (* miner_file_processed) (TrackerMinerManager *manager,
+	                               const gchar         *uri,
+	                               const gboolean      *status,
+	                               const gchar         *message);
+};
 
 GType                tracker_miner_manager_get_type           (void) G_GNUC_CONST;
 GQuark               tracker_miner_manager_error_quark        (void) G_GNUC_CONST;
