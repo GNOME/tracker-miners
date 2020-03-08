@@ -86,6 +86,7 @@ struct TrackerMinerFilesPrivate {
 	GSList *index_single_directories;
 
 	gchar *domain;
+	TrackerDomainOntology *domain_ontology;
 
 	guint disk_space_check_id;
 	gboolean disk_space_pause;
@@ -578,6 +579,12 @@ miner_files_initable_init (GInitable     *initable,
 
 	miner_files_update_filters (mf);
 
+	mf->private->domain_ontology = tracker_domain_ontology_new (mf->private->domain, NULL, &inner_error);
+	if (!mf->private->domain_ontology) {
+		g_propagate_error (error, inner_error);
+		return FALSE;
+	}
+
 	/* Set up extractor and signals */
 	mf->private->connection =  g_bus_get_sync (TRACKER_IPC_BUS, NULL, &inner_error);
 	if (!mf->private->connection) {
@@ -928,6 +935,8 @@ miner_files_finalize (GObject *object)
 		g_object_unref (priv->power);
 	}
 #endif /* defined(HAVE_UPOWER) || defined(HAVE_HAL) */
+
+	tracker_domain_ontology_unref (priv->domain_ontology);
 
 	if (priv->storage) {
 		g_object_unref (priv->storage);
@@ -1647,7 +1656,7 @@ check_battery_status (TrackerMinerFiles *mf)
 			if (!tracker_config_get_index_on_battery_first_time (mf->private->config)) {
 				g_message ("Running on battery, but not enabled, pausing");
 				should_pause = TRUE;
-			} else if (tracker_miner_files_get_first_index_done ()) {
+			} else if (tracker_miner_files_get_first_index_done (mf)) {
 				g_message ("Running on battery and first-time index "
 				           "already done, pausing");
 				should_pause = TRUE;
@@ -1714,8 +1723,8 @@ miner_finished_cb (TrackerMinerFS *fs,
 	TrackerMinerFiles *mf = TRACKER_MINER_FILES (fs);
 
 	/* Create stamp file if not already there */
-	if (!tracker_miner_files_get_first_index_done ()) {
-		tracker_miner_files_set_first_index_done (TRUE);
+	if (!tracker_miner_files_get_first_index_done (mf)) {
+		tracker_miner_files_set_first_index_done (mf, TRUE);
 	}
 
 	/* And remove the signal handler so that it's not
@@ -1750,9 +1759,20 @@ mount_pre_unmount_cb (GVolumeMonitor    *volume_monitor,
 	g_free (uri);
 }
 
+static GFile *
+get_cache_dir (TrackerMinerFiles *mf)
+{
+	GFile *cache;
+
+	cache = tracker_domain_ontology_get_cache (mf->private->domain_ontology);
+	return g_object_ref (cache);
+}
+
+
 static gboolean
 disk_space_check (TrackerMinerFiles *mf)
 {
+	GFile *file;
 	gint limit;
 	gchar *data_dir;
 	gdouble remaining;
@@ -1764,9 +1784,11 @@ disk_space_check (TrackerMinerFiles *mf)
 	}
 
 	/* Get % of remaining space in the partition where the cache is */
-	data_dir = g_build_filename (g_get_user_cache_dir (), "tracker", NULL);
+	file = get_cache_dir (mf);
+	data_dir = g_file_get_path (file);
 	remaining = tracker_file_system_get_remaining_space_percentage (data_dir);
 	g_free (data_dir);
+	g_object_unref (file);
 
 	if (remaining <= limit) {
 		g_message ("WARNING: Available disk space (%lf%%) is below "
@@ -2722,7 +2744,7 @@ miner_files_finished (TrackerMinerFS *fs,
 	if (priv->thumbnailer)
 		tracker_thumbnailer_send (priv->thumbnailer);
 
-	tracker_miner_files_set_last_crawl_done (TRUE);
+	tracker_miner_files_set_last_crawl_done (TRACKER_MINER_FILES (fs), TRUE);
 
 	tracker_miner_files_check_unextracted (TRACKER_MINER_FILES (fs));
 }
@@ -3398,12 +3420,21 @@ tracker_miner_files_is_file_eligible (TrackerMinerFiles *miner,
 }
 
 inline static gchar *
-get_first_index_filename (void)
+get_first_index_filename (TrackerMinerFiles *mf)
 {
-	return g_build_filename (g_get_user_cache_dir (),
-	                         "tracker",
+	GFile *file;
+	gchar *prefix, *path;
+
+	file = get_cache_dir (mf);
+	prefix = g_file_get_path (file);
+
+	path = g_build_filename (prefix,
 	                         FIRST_INDEX_FILENAME,
 	                         NULL);
+	g_free (prefix);
+	g_object_unref (file);
+
+	return path;
 }
 
 /**
@@ -3414,12 +3445,12 @@ get_first_index_filename (void)
  * Returns: %TRUE if a first full index have been done, %FALSE otherwise.
  **/
 gboolean
-tracker_miner_files_get_first_index_done (void)
+tracker_miner_files_get_first_index_done (TrackerMinerFiles *mf)
 {
 	gboolean exists;
 	gchar *filename;
 
-	filename = get_first_index_filename ();
+	filename = get_first_index_filename (mf);
 	exists = g_file_test (filename, G_FILE_TEST_EXISTS);
 	g_free (filename);
 
@@ -3434,12 +3465,13 @@ tracker_miner_files_get_first_index_done (void)
  *  the index is completed, should be set to %TRUE.
  **/
 void
-tracker_miner_files_set_first_index_done (gboolean done)
+tracker_miner_files_set_first_index_done (TrackerMinerFiles *mf,
+					  gboolean           done)
 {
 	gboolean already_exists;
 	gchar *filename;
 
-	filename = get_first_index_filename ();
+	filename = get_first_index_filename (mf);
 	already_exists = g_file_test (filename, G_FILE_TEST_EXISTS);
 
 	if (done && !already_exists) {
@@ -3468,12 +3500,21 @@ tracker_miner_files_set_first_index_done (gboolean done)
 }
 
 static inline gchar *
-get_last_crawl_filename (void)
+get_last_crawl_filename (TrackerMinerFiles *mf)
 {
-	return g_build_filename (g_get_user_cache_dir (),
-	                         "tracker",
+	GFile *file;
+	gchar *prefix, *path;
+
+	file = get_cache_dir (mf);
+	prefix = g_file_get_path (file);
+
+	path = g_build_filename (prefix,
 	                         LAST_CRAWL_FILENAME,
 	                         NULL);
+	g_free (prefix);
+	g_object_unref (file);
+
+	return path;
 }
 
 /**
@@ -3484,13 +3525,13 @@ get_last_crawl_filename (void)
  * Returns: time_t() value when last crawl occurred, otherwise 0.
  **/
 guint64
-tracker_miner_files_get_last_crawl_done (void)
+tracker_miner_files_get_last_crawl_done (TrackerMinerFiles *mf)
 {
 	gchar *filename;
 	gchar *content;
 	guint64 then;
 
-	filename = get_last_crawl_filename ();
+	filename = get_last_crawl_filename (mf);
 
 	if (!g_file_get_contents (filename, &content, NULL, NULL)) {
 		g_info ("  No previous timestamp, crawling forced");
@@ -3509,12 +3550,13 @@ tracker_miner_files_get_last_crawl_done (void)
  * Set the time stamp of the last full index of files.
  **/
 void
-tracker_miner_files_set_last_crawl_done (gboolean done)
+tracker_miner_files_set_last_crawl_done (TrackerMinerFiles *mf,
+					 gboolean           done)
 {
 	gboolean already_exists;
 	gchar *filename;
 
-	filename = get_last_crawl_filename ();
+	filename = get_last_crawl_filename (mf);
 	already_exists = g_file_test (filename, G_FILE_TEST_EXISTS);
 
 	if (done) {
@@ -3544,12 +3586,21 @@ tracker_miner_files_set_last_crawl_done (gboolean done)
 }
 
 inline static gchar *
-get_need_mtime_check_filename (void)
+get_need_mtime_check_filename (TrackerMinerFiles *mf)
 {
-	return g_build_filename (g_get_user_cache_dir (),
-	                         "tracker",
+	GFile *file;
+	gchar *prefix, *path;
+
+	file = get_cache_dir (mf);
+	prefix = g_file_get_path (file);
+
+	path = g_build_filename (prefix,
 	                         NEED_MTIME_CHECK_FILENAME,
 	                         NULL);
+	g_free (prefix);
+	g_object_unref (file);
+
+	return path;
 }
 
 /**
@@ -3561,12 +3612,12 @@ get_need_mtime_check_filename (void)
  * the database on the next start for the miner-fs, %FALSE otherwise.
  **/
 gboolean
-tracker_miner_files_get_need_mtime_check (void)
+tracker_miner_files_get_need_mtime_check (TrackerMinerFiles *mf)
 {
 	gboolean exists;
 	gchar *filename;
 
-	filename = get_need_mtime_check_filename ();
+	filename = get_need_mtime_check_filename (mf);
 	exists = g_file_test (filename, G_FILE_TEST_EXISTS);
 	g_free (filename);
 
@@ -3591,12 +3642,13 @@ tracker_miner_files_get_need_mtime_check (void)
  * other uncontrolled shutdown reason).
  **/
 void
-tracker_miner_files_set_need_mtime_check (gboolean needed)
+tracker_miner_files_set_need_mtime_check (TrackerMinerFiles *mf,
+					  gboolean           needed)
 {
 	gboolean already_exists;
 	gchar *filename;
 
-	filename = get_need_mtime_check_filename ();
+	filename = get_need_mtime_check_filename (mf);
 	already_exists = g_file_test (filename, G_FILE_TEST_EXISTS);
 
 	/* !needed = add file
