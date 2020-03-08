@@ -17,6 +17,8 @@ done
 # Link to commands from tracker.git.
 # FIXME: it would be nice to not hardcode this list.
 ln -s $cli_dir/tracker $subcommands_dir/endpoint
+ln -s $cli_dir/tracker $subcommands_dir/export
+ln -s $cli_dir/tracker $subcommands_dir/import
 ln -s $cli_dir/tracker $subcommands_dir/info
 ln -s $cli_dir/tracker $subcommands_dir/sparql
 ln -s $cli_dir/tracker $subcommands_dir/sql
