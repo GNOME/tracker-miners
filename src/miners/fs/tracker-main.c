@@ -767,6 +767,18 @@ setup_connection_and_endpoint (TrackerDomainOntology    *domain,
 	return TRUE;
 }
 
+static gboolean
+quit_on_miner_finished_cb (gpointer user_data)
+{
+	GMainLoop *loop = user_data;
+
+	g_debug ("miner-fs finished processing removals");
+
+	g_main_loop_quit (loop);
+
+	return G_SOURCE_REMOVE;
+}
+
 int
 main (gint argc, gchar *argv[])
 {
@@ -1000,6 +1012,17 @@ main (gint argc, gchar *argv[])
 	g_main_loop_run (main_loop);
 
 	g_message ("Shutdown started");
+
+	tracker_miner_fs_cancel_all_tasks (TRACKER_MINER_FS (miner_files));
+	tracker_miner_files_index_remove_temporary_data (miner_files_index);
+
+	if (tracker_miner_fs_has_items_to_process (TRACKER_MINER_FS (miner_files))) {
+		g_debug ("Waiting for miner-fs to process removals.");
+		g_signal_connect (miner_files, "finished", G_CALLBACK (quit_on_miner_finished_cb), main_loop);
+		g_main_loop_run (main_loop);
+	} else {
+		g_debug ("No removals to process.");
+	}
 
 	if (miners_timeout_id == 0 && !miner_needs_check (miner_files)) {
 		tracker_miner_files_set_need_mtime_check (FALSE);

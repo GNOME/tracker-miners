@@ -583,3 +583,11 @@ tracker_miner_files_index_new (TrackerMinerFiles *miner_files)
 
 	return (TrackerMinerFilesIndex *) miner;
 }
+
+void
+tracker_miner_files_index_remove_temporary_data (TrackerMinerFilesIndex *miner_files)
+{
+	TrackerMinerFilesIndexPrivate *priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (miner_files);
+
+	tracker_miner_files_peer_listener_remove_all (priv->peer_listener);
+}
