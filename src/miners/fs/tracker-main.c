@@ -813,6 +813,9 @@ main (gint argc, gchar *argv[])
 	/* Set timezone info */
 	tzset ();
 
+	/* This makes sure we don't steal all the system's resources */
+	initialize_priority_and_scheduling ();
+
 	/* Translators: this messagge will apper immediately after the
 	 * usage string - Usage: COMMAND <THIS_MESSAGE>
 	 */
@@ -845,9 +848,6 @@ main (gint argc, gchar *argv[])
 		g_error_free (error);
 		return EXIT_FAILURE;
 	}
-
-	/* This makes sure we don't steal all the system's resources */
-	initialize_priority_and_scheduling ();
 
 	connection = g_bus_get_sync (TRACKER_IPC_BUS, NULL, &error);
 	if (error) {
