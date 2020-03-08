@@ -21,7 +21,7 @@
 #define __LIBTRACKER_COMMON_H__
 
 #if !defined (__LIBTRACKER_COMMON_INSIDE__) && !defined (TRACKER_COMPILATION)
-#error "only <libtracker-miners-common/tracker-miners-common.h> must be included directly."
+#error "only <libtracker-miners-common/tracker-common.h> must be included directly."
 #endif
 
 #include <glib.h>
@@ -34,6 +34,7 @@
 #include "tracker-file-utils.h"
 #include "tracker-fts-config.h"
 #include "tracker-ioprio.h"
+#include "tracker-language.h"
 #include "tracker-log.h"
 #include "tracker-sched.h"
 #include "tracker-seccomp.h"

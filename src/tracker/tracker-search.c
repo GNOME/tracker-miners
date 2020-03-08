@@ -196,7 +196,6 @@ static gchar *
 get_fts_string (GStrv    search_words,
                 gboolean use_or_operator)
 {
-#if HAVE_TRACKER_FTS
 	GString *fts;
 	gint i, len;
 
@@ -232,10 +231,6 @@ get_fts_string (GStrv    search_words,
 	}
 
 	return g_string_free (fts, FALSE);
-#else
-	/* If FTS support not enabled, always do non-fts searches */
-	return NULL;
-#endif
 }
 
 static inline void
@@ -1520,7 +1515,6 @@ search_run (void)
 		disable_snippets = TRUE;
 	}
 
-#if HAVE_TRACKER_FTS
 	/* Only check stopwords if FTS is enabled */
 	if (terms) {
 		TrackerLanguage *language;
@@ -1568,9 +1562,6 @@ search_run (void)
 
 		g_object_unref (language);
 	}
-#else
-	disable_snippets = TRUE;
-#endif
 
 	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.Files",
 							NULL, NULL, &error);
@@ -1770,6 +1761,8 @@ main (int argc, const char **argv)
 	GError *error = NULL;
 
 	setlocale (LC_ALL, "");
+
+	tracker_log_init (3, NULL);
 
 	bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
 	bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
