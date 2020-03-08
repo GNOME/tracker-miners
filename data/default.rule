@@ -14,7 +14,7 @@
 #
 
 # Location for the Tracker database (not optional)
-CacheLocation=$XDG_CACHE_HOME/tracker
+CacheLocation=$XDG_CACHE_HOME/tracker3
 
 # Name of the ontology to use, must be one located in
 # $(sharedir)/tracker/ontologies
