@@ -27,6 +27,7 @@
 #endif
 
 #include <glib.h>
+#include <glib-unix.h>
 #include <glib/gi18n.h>
 #include <gio/gio.h>
 #include <locale.h>
@@ -36,9 +37,13 @@
 #include "tracker-dbus.h"
 #include "tracker-miner-manager.h"
 
+static gboolean monitor_mode;
 static gchar **filenames;
 
 static GOptionEntry entries[] = {
+	{ "monitor", 'm', 0, G_OPTION_ARG_NONE, &monitor_mode,
+	  N_("Trigger indexing and wait for CTRL+C, removing the data again on exit."),
+	  NULL },
 	{ G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &filenames,
 	  N_("FILE"),
 	  N_("FILE") },
@@ -85,10 +90,125 @@ index_or_reindex_file (void)
 	return EXIT_SUCCESS;
 }
 
+static void
+miner_file_processed (TrackerMinerManager *miner_manager,
+                      const gchar         *miner,
+                      const gchar         *uri,
+                      const gboolean       status,
+                      const gchar         *message,
+                      GFile               *root)
+{
+	g_autoptr(GFile) file = NULL;
+	g_autoptr(GError) error = NULL;
+	g_autofree gchar *relative_path = NULL;
+
+	file = g_file_new_for_uri (uri);
+
+	relative_path = g_file_get_relative_path (root, file);
+
+	if (g_file_equal (root, file) || relative_path != NULL) {
+		/* File is a child of the root. */
+		g_debug ("File processed: %s: %s, %i, %s\n", miner, uri, status, message);
+	}
+}
+
+static gboolean
+sigterm_cb (gpointer user_data)
+{
+	g_message ("Received signal");
+
+	g_main_loop_quit (user_data);
+
+	return G_SOURCE_REMOVE;
+}
+
+static gint
+index_or_reindex_file_monitor_mode (void)
+{
+	g_autoptr(TrackerMinerManager) manager = NULL;
+	g_autoptr(GMainLoop) main_loop = NULL;
+	g_autoptr(GError) error = NULL;
+	gchar **p;
+
+	/* Check we were only passed directories. IndexFileForProcess doesn't work
+	 * for files. */
+	for (p = filenames; *p; p++) {
+		g_autoptr(GFile) path = NULL;
+		g_autoptr(GFileInfo) info = NULL;
+
+		path = g_file_new_for_commandline_arg (*p);
+		info = g_file_query_info (path,
+		                          G_FILE_ATTRIBUTE_STANDARD_TYPE,
+		                          G_FILE_QUERY_INFO_NONE,
+		                          NULL,
+		                          &error);
+
+		if (error) {
+			g_printerr ("%s: %s\n",
+			            _("Error determining file type"),
+			            error->message);
+			return EXIT_FAILURE;
+		}
+
+		if (g_file_info_get_file_type (info) != G_FILE_TYPE_DIRECTORY) {
+			g_printerr (_("Could not index file %s: in `--monitor` mode, "
+			              "only directories can be indexed.\n"),
+			            g_file_peek_path (path));
+			return EXIT_FAILURE;
+		}
+	}
+
+	/* Auto-start the miners here if we need to */
+	manager = tracker_miner_manager_new_full (TRUE, &error);
+	if (!manager) {
+		g_printerr (_("Could not (re)index file, manager could not be created, %s"),
+		            error ? error->message : _("No error given"));
+		g_printerr ("\n");
+		return EXIT_FAILURE;
+	}
+
+	for (p = filenames; *p; p++) {
+		g_autoptr(GFile) dir = NULL;
+
+		dir = g_file_new_for_commandline_arg (*p);
+
+		g_signal_connect_data (G_OBJECT (manager),
+		                       "miner-file-processed",
+		                       G_CALLBACK (miner_file_processed),
+		                       g_object_ref (dir),
+		                       (GClosureNotify)g_object_unref,
+		                       0);
+
+		tracker_miner_manager_index_file_for_process (manager, dir, NULL, &error);
+
+		if (error) {
+			g_printerr ("%s: %s\n",
+			            _("Could not (re)index directory"),
+			            error->message);
+			return EXIT_FAILURE;
+		}
+
+		g_print ("%s\n", _("(Re)indexing directory was successful"));
+	}
+
+	main_loop = g_main_loop_new (NULL, 0);
+
+	g_unix_signal_add (SIGINT, sigterm_cb, main_loop);
+	g_unix_signal_add (SIGTERM, sigterm_cb, main_loop);
+
+	g_main_loop_run (main_loop);
+
+	return EXIT_SUCCESS;
+}
+
 static int
 index_run (void)
 {
-	return index_or_reindex_file ();
+	if (monitor_mode) {
+		return index_or_reindex_file_monitor_mode ();
+	} else {
+		return index_or_reindex_file ();
+	}
 }
 
 int
