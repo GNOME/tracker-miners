@@ -303,8 +303,22 @@ handle_method_call_index_file (TrackerMinerFilesIndex *miner,
 			                                             file);
 		}
 	} else {
-		tracker_miner_fs_check_file (TRACKER_MINER_FS (priv->files_miner),
-		                             file, G_PRIORITY_HIGH, do_checks);
+		if (watch_source) {
+			internal_error = g_error_new_literal (TRACKER_MINER_INDEX_ERROR,
+			                                      TRACKER_MINER_INDEX_ERROR_DIRECTORIES_ONLY,
+			                                      "Only directories can be processed using IndexFileForProcess");
+			tracker_dbus_request_end (request, internal_error);
+			g_dbus_method_invocation_return_gerror (invocation, internal_error);
+
+			g_error_free (internal_error);
+
+			g_object_unref (file);
+
+			return;
+		} else {
+			tracker_miner_fs_check_file (TRACKER_MINER_FS (priv->files_miner),
+			                             file, G_PRIORITY_HIGH, do_checks);
+		}
 	}
 
 	tracker_dbus_request_end (request, NULL);
