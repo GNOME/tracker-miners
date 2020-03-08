@@ -333,6 +333,30 @@ tracker_miner_files_peer_listener_add_watch (TrackerMinerFilesPeerListener *list
 }
 
 void
+tracker_miner_files_peer_listener_remove_all (TrackerMinerFilesPeerListener *listener)
+{
+	TrackerMinerFilesPeerListenerPrivate *priv;
+	GHashTableIter iter;
+	GFile *file;
+	FilePeersData *file_data;
+
+	g_return_if_fail (TRACKER_IS_MINER_FILES_PEER_LISTENER (listener));
+
+	priv = tracker_miner_files_peer_listener_get_instance_private (listener);
+
+	g_message ("Removing all data added with IndexFileForProcess");
+
+	g_hash_table_remove_all (priv->peer_files);
+
+	g_hash_table_iter_init (&iter, priv->file_peers);
+	while (g_hash_table_iter_next (&iter, (gpointer *)&file, (gpointer *)&file_data)) {
+		g_hash_table_iter_remove (&iter);
+
+		g_signal_emit (listener, signals[UNWATCH_FILE], 0, file);
+	}
+}
+
+void
 tracker_miner_files_peer_listener_remove_watch (TrackerMinerFilesPeerListener *listener,
                                                 const gchar                   *dbus_name,
                                                 GFile                         *file)

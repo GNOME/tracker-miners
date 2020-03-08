@@ -175,6 +175,8 @@ gchar                *tracker_miner_fs_query_urn             (TrackerMinerFS  *f
 /* Progress */
 gboolean              tracker_miner_fs_has_items_to_process  (TrackerMinerFS  *fs);
 
+void                  tracker_miner_fs_cancel_all_tasks       (TrackerMinerFS  *fs);
+
 G_END_DECLS
 
 #endif /* __LIBTRACKER_MINER_MINER_FS_H__ */
