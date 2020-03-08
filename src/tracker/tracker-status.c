@@ -177,7 +177,7 @@ collect_debug (void)
 	gchar *data_dir;
 	gchar *str;
 
-	data_dir = g_build_filename (g_get_user_cache_dir (), "tracker", NULL);
+	data_dir = g_build_filename (g_get_user_cache_dir (), "tracker3", NULL);
 
 	/* 1. Package details, e.g. version. */
 	g_print ("[Package Details]\n");
@@ -544,7 +544,7 @@ get_no_args (void)
 	g_print ("\n");
 
 	/* How much space is left? */
-	data_dir = g_build_filename (g_get_user_cache_dir (), "tracker", NULL);
+	data_dir = g_build_filename (g_get_user_cache_dir (), "tracker3", NULL);
 
 	remaining_bytes = tracker_file_system_get_remaining_space (data_dir);
 	str = g_format_size (remaining_bytes);
