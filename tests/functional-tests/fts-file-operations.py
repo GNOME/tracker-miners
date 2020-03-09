@@ -41,6 +41,12 @@ class MinerFTSFileOperationsTest(fixtures.TrackerMinerFTSTest):
     Move, update, delete the files and check the text indexes are updated accordingly.
     """
 
+    def setUp(self):
+        fixtures.TrackerMinerFTSTest.setUp(self)
+
+        no_monitored_dir = self.path('test-no-monitored')
+        os.makedirs(no_monitored_dir, exist_ok=True)
+
     def test_01_removal_of_file(self):
         """
         When removing the file, its text contents disappear from the index
