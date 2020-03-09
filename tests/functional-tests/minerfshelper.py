@@ -136,4 +136,9 @@ class MinerFsHelper ():
             GLib.source_remove(timeout_id)
 
     def index_file(self, uri):
+        log.debug("IndexFile(%s)", uri)
         return self.index.IndexFile('(s)', uri)
+
+    @contextlib.contextmanager
+    def await_file_processed(self):
+

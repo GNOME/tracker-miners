@@ -110,6 +110,14 @@ class TrackerMinerTest(ut.TestCase):
         if self.tracker.ask("ASK { <%s> a rdfs:Resource }" % urn) == True:
             self.fail("Resource <%s> should not exist" % urn)
 
+    def assertFileNotIndexed(self, url):
+        if self.tracker.ask("ASK { <?r> a rdfs:Resource ; nie:url <%s> }" % url) == True:
+            self.fail("File <%s> should not be indexed" % url)
+
+    def assertFileIndexed(self, url):
+        if self.tracker.ask("ASK { <?r> a rdfs:Resource ; nie:url <%s> }" % url) == False:
+            self.fail("File <%s> should be indexed, but is not." % url)
+
     def await_document_inserted(self, path, content=None):
         """Wraps await_insert() context manager."""
         url = self.uri(path)
