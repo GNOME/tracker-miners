@@ -103,6 +103,7 @@ endif
 
 functional_tests = [
   'miner-basic',
+  'miner-on-demand',
   'miner-resource-removal',
   'fts-basic',
   'fts-file-operations',
