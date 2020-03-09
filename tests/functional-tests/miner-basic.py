@@ -27,6 +27,7 @@ Check the basic data of the files is updated accordingly in tracker.
 """
 
 
+import itertools
 import logging
 import os
 import shutil
@@ -38,13 +39,55 @@ import fixtures
 
 log = logging.getLogger(__name__)
 
-NFO_DOCUMENT = 'http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#Document'
+DEFAULT_TEXT = "Some stupid content, to have a test file"
 
 
 class MinerCrawlTest(fixtures.TrackerMinerTest):
     """
-    Test cases to check if miner is able to monitor files that are created, deleted or moved
+    Tests crawling and monitoring of configured content locations.
     """
+
+    def setUp(self):
+        # We must create the test data before the miner does its
+        # initial crawl, or it may miss some files due
+        # https://gitlab.gnome.org/GNOME/tracker-miners/issues/79.
+        monitored_files = self.create_test_data()
+
+        try:
+            # Start the miner.
+            fixtures.TrackerMinerTest.setUp(self)
+
+            for tf in monitored_files:
+                url = self.uri(tf)
+                self.tracker.ensure_resource(f"a nfo:Document ; nie:url <{url}>")
+        except Exception:
+            cfg.remove_monitored_test_dir(self.workdir)
+            raise
+
+    def create_test_data(self):
+        # It's important that this directory exists BEFORE we start Tracker:
+        # it won't monitor an indexing root for changes if it doesn't exist,
+        # it'll silently ignore it instead. See the tracker_crawler_start()
+        # function.
+        os.makedirs(self.indexed_dir, exist_ok=True)
+
+        monitored_files = [
+            'test-monitored/file1.txt',
+            'test-monitored/dir1/file2.txt',
+            'test-monitored/dir1/dir2/file3.txt'
+        ]
+
+        unmonitored_files = [
+            'test-no-monitored/file0.txt'
+        ]
+
+        for tf in itertools.chain(monitored_files, unmonitored_files):
+            testfile = self.path(tf)
+            os.makedirs(os.path.dirname(testfile), exist_ok=True)
+            with open(testfile, 'w') as f:
+                f.write(DEFAULT_TEXT)
+
+        return monitored_files
 
     def __get_text_documents(self):
         return self.tracker.query("""
