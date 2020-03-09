@@ -13,6 +13,7 @@ variables:
 stages:
   - test
   - analysis
+  - website
 
 .test_template: &test
   stage: test
@@ -82,3 +83,16 @@ coverity:
       --form description="gitlab CI build"'
   only:
     - master
+
+pages:
+  stage: website
+  before_script:
+    - pip3 install mkdocs mkdocs-cinder
+  script:
+    - ./docs/website/build.py
+  artifacts:
+    paths:
+      - public
+  only:
+    - master
+    - sam/website
