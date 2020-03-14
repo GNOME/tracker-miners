@@ -33,7 +33,6 @@ if get_option('tracker_core') == 'system'
   tracker_uninstalled_nepomuk_ontologies_dir = join_paths(tracker_sparql.get_pkgconfig_variable('ontologies_dir'), 'nepomuk')
   tracker_uninstalled_stop_words_dir = join_paths(tracker_sparql.get_pkgconfig_variable('datadir'), 'tracker', 'stop-words')
   tracker_uninstalled_testutils_dir = tracker_testutils.get_pkgconfig_variable('python_path')
-  tracker_uninstalled_nepomuk_ontologies_dir = join_paths(tracker_sparql.get_pkgconfig_variable('ontologies_dir'), 'nepomuk')
   tracker_ontologies_dir = tracker_sparql.get_pkgconfig_variable('ontologies_dir')
 
   tracker_sparql_uninstalled_dir = tracker_sparql.get_pkgconfig_variable('libdir')
@@ -46,7 +45,6 @@ else
   tracker_uninstalled_nepomuk_ontologies_dir = tracker_subproject.get_variable('tracker_uninstalled_nepomuk_ontologies_dir')
   tracker_uninstalled_stop_words_dir = tracker_subproject.get_variable('tracker_uninstalled_stop_words_dir')
   tracker_uninstalled_testutils_dir = tracker_subproject.get_variable('tracker_uninstalled_testutils_dir')
-  tracker_uninstalled_nepomuk_ontologies_dir = tracker_subproject.get_variable('tracker_uninstalled_nepomuk_ontologies_dir')
   tracker_ontologies_dir = tracker_subproject.get_variable('tracker_ontologies_dir')
 
   tracker_common_enums_header = tracker_subproject.get_variable('tracker_common_enums_header')
