@@ -124,7 +124,7 @@ foreach module : modules
 
   shared_module(name, sources,
     c_args: tracker_c_args,
-    dependencies: [tracker_extract_dep] + dependencies,
+    dependencies: [tracker_extract_dep, tracker_miners_common_dep] + dependencies,
     include_directories: [configinc, commoninc],
     install: true,
     install_dir: tracker_extract_modules_dir)
