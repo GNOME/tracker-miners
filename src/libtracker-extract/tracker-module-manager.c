@@ -239,7 +239,7 @@ lookup_rules (const gchar *mimetype)
 	len = strlen (mimetype);
 
 	/* Apply the rules! */
-	for (i = 0; i < rules->len; i++) {
+	for (i = 0; i < g_array_get_element_size(rules); i++) {
 		GList *l;
 
 		info = &g_array_index (rules, RuleInfo, i);
@@ -328,7 +328,7 @@ tracker_extract_module_manager_get_rdf_types (void)
 
 	rdf_types = g_hash_table_new (g_str_hash, g_str_equal);
 
-	for (i = 0; i < rules->len; i++) {
+	for (i = 0; i < g_array_get_element_size(rules); i++) {
 		info = &g_array_index (rules, RuleInfo, i);
 
 		if (!info->fallback_rdf_types)
@@ -552,7 +552,7 @@ tracker_module_manager_load_modules (void)
 
 	g_return_if_fail (initialized == TRUE);
 
-	for (i = 0; i < rules->len; i++) {
+	for (i = 0; i < g_array_get_element_size(rules); i++) {
 		rule_info = &g_array_index (rules, RuleInfo, i);
 		load_module (rule_info);
 	}
