@@ -391,7 +391,7 @@ handle_deletes (TrackerMinerRSS *miner,
 		}
 	}
 
-	if (deleted->len > 0)
+	if (g_array_get_element_size(deleted) > 0)
 		delete_message_channels (miner, deleted);
 
 	g_array_free (deleted, TRUE);
@@ -415,7 +415,7 @@ handle_updates (TrackerMinerRSS *miner,
 		}
 	}
 
-	if (updated->len > 0)
+	if (g_array_get_element_size(updated) > 0)
 		retrieve_and_schedule_feeds (miner, updated);
 
 	g_array_free (updated, TRUE);
