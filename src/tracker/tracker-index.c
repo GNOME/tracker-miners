@@ -37,10 +37,14 @@
 #include "tracker-dbus.h"
 #include "tracker-miner-manager.h"
 
+static gboolean file_arg;
 static gboolean monitor_mode;
 static gchar **filenames;
 
 static GOptionEntry entries[] = {
+	{ "file", 'f', 0, G_OPTION_ARG_NONE, &file_arg,
+	 N_("Does nothing, provided for compatibility with Tracker 2.0"),
+	 NULL },
 	{ "monitor", 'm', 0, G_OPTION_ARG_NONE, &monitor_mode,
 	  N_("Trigger indexing and wait for CTRL+C, removing the data again on exit."),
 	  NULL },
@@ -247,6 +251,10 @@ main (int argc, const char **argv)
 	if (failed) {
 		g_printerr ("%s\n", failed);
 		return EXIT_FAILURE;
+	}
+
+	if (file_arg) {
+		g_message ("The --file arg is no longer needed.");
 	}
 
 	return index_run ();
