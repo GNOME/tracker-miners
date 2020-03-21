@@ -25,13 +25,11 @@ import os
 import pathlib
 import unittest as ut
 
-# We must import this to set up logging.
-import configuration
-from fixtures import TrackerMinerTest
+import fixtures
 
 TRACKER_TEST_GRAPH = "tracker:Documents"
 
-class MinerResourceRemovalTest(TrackerMinerTest):
+class MinerResourceRemovalTest(fixtures.TrackerMinerTest):
 
     def prepare_directories(self):
         # Override content from the base class
@@ -103,4 +101,4 @@ class MinerResourceRemovalTest(TrackerMinerTest):
 
 
 if __name__ == "__main__":
-    ut.main(failfast=True, verbosity=2)
+    fixtures.tracker_test_main()
