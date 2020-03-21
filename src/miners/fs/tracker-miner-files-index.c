@@ -85,6 +85,37 @@ static void     index_finalize            (GObject              *object);
 
 G_DEFINE_TYPE_WITH_PRIVATE(TrackerMinerFilesIndex, tracker_miner_files_index, G_TYPE_OBJECT)
 
+#define TRACKER_MINER_INDEX_ERROR tracker_miner_index_error_quark ()
+
+GQuark tracker_miner_index_error_quark (void);
+
+typedef enum {
+	TRACKER_MINER_INDEX_ERROR_FILE_NOT_FOUND,
+	TRACKER_MINER_INDEX_ERROR_DIRECTORIES_ONLY,
+	TRACKER_MINER_INDEX_ERROR_NOT_ELIGIBLE,
+	TRACKER_MINER_INDEX_N_ERRORS
+} TrackerMinerIndexError;
+
+static const GDBusErrorEntry tracker_miner_index_error_entries[] =
+{
+	{TRACKER_MINER_INDEX_ERROR_FILE_NOT_FOUND, "org.freedesktop.Tracker.Miner.Files.Index.Error.FileNotFound"},
+	{TRACKER_MINER_INDEX_ERROR_DIRECTORIES_ONLY, "org.freedesktop.Tracker.Miner.Files.Index.Error.DirectoriesOnly"},
+	{TRACKER_MINER_INDEX_ERROR_NOT_ELIGIBLE, "org.freedesktop.Tracker.Miner.Files.Index.Error.NotEligible"},
+};
+
+G_STATIC_ASSERT (G_N_ELEMENTS (tracker_miner_index_error_entries) == TRACKER_MINER_INDEX_N_ERRORS);
+
+GQuark
+tracker_miner_index_error_quark (void)
+{
+	static volatile gsize quark_volatile = 0;
+	g_dbus_error_register_error_domain ("tracker-miner-index-error-quark",
+	                                    &quark_volatile,
+	                                    tracker_miner_index_error_entries,
+	                                    G_N_ELEMENTS (tracker_miner_index_error_entries));
+	return (GQuark) quark_volatile;
+}
+
 static void
 tracker_miner_files_index_class_init (TrackerMinerFilesIndexClass *klass)
 {
@@ -332,7 +363,9 @@ handle_method_call_index_file (TrackerMinerFilesIndex *miner,
 	                               NULL, NULL);
 
 	if (!file_info) {
-		internal_error = g_error_new_literal (1, 0, "File does not exist");
+		internal_error = g_error_new_literal (TRACKER_MINER_INDEX_ERROR,
+		                                      TRACKER_MINER_INDEX_ERROR_FILE_NOT_FOUND,
+		                                      "File does not exist");
 		tracker_dbus_request_end (request, internal_error);
 		g_dbus_method_invocation_return_gerror (invocation, internal_error);
 
@@ -349,7 +382,9 @@ handle_method_call_index_file (TrackerMinerFilesIndex *miner,
 #ifdef REQUIRE_LOCATION_IN_CONFIG
 	do_checks = TRUE;
 	if (!tracker_miner_files_is_file_eligible (priv->files_miner, file)) {
-		internal_error = g_error_new_literal (1, 0, "File is not eligible to be indexed");
+		internal_error = g_error_new_literal (TRACKER_MINER_INDEX_ERROR,
+		                                      TRACKER_MINER_INDEX_ERROR_NOT_ELIGIBLE,
+		                                      "File is not eligible to be indexed");
 		tracker_dbus_request_end (request, internal_error);
 		g_dbus_method_invocation_return_gerror (invocation, internal_error);
 
