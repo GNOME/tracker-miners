@@ -61,6 +61,9 @@ struct _TrackerFileNotifierClass {
 	                       GFile               *from,
 	                       GFile               *to);
 
+	void (* file_ignored_during_crawl)   (TrackerFileNotifier *notifier,
+	                                      GFile               *file);
+
 	/* Directory notifications */
 	void (* directory_started)  (TrackerFileNotifier *notifier,
 	                             GFile               *directory);
