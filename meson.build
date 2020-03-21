@@ -290,11 +290,10 @@ if get_option('systemd_user_services')
   systemd_user_services_dir = get_option('systemd_user_services_dir')
 
   if systemd_user_services_dir == ''
-    systemd = dependency('systemd', required: false)
+    systemd = dependency('systemd', version: '>= 242', required: false)
     if systemd.found()
-      # FIXME: this would ideally use the systemduserunitdir pkgconfig variable, but
-      # it does not depend on variables we can override to install within prefix.
-      systemd_user_services_dir = join_paths(libdir, 'systemd', 'user')
+      systemd_user_services_dir = systemd.get_pkgconfig_variable('systemduserunitdir',
+                                                                 define_variable: ['prefix', get_option('prefix')])
     else
       error('systemd user services were enabled, but systemd was not found. ' +
             'Please set the systemd_user_services_dir option if you want to ' +
