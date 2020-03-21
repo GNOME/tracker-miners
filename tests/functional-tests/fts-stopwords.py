@@ -83,4 +83,4 @@ class MinerFTSStopwordsTest(fixtures.TrackerMinerFTSTest):
 
 
 if __name__ == "__main__":
-    ut.main(failfast=True, verbosity=2)
+    fixtures.tracker_test_main()
