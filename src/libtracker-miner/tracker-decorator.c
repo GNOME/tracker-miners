@@ -554,8 +554,8 @@ decorator_task_done (GObject      *object,
 		if (error) {
 			tracker_miner_file_processed (TRACKER_MINER (object), file, FALSE, error->message);
 
-			g_warning ("Task for '%s' finished with error: %s\n",
-			           info->url, error->message);
+			g_debug ("Task for '%s' finished with error: %s\n",
+			         info->url, error->message);
 			g_error_free (error);
 		} else {
 			tracker_miner_file_processed (TRACKER_MINER (object), file, FALSE, "no SPARQL was generated for this item");
