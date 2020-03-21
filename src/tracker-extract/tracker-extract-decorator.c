@@ -194,7 +194,6 @@ get_metadata_cb (TrackerExtract *extract,
 
 	if (error) {
 		g_message ("Extraction failed: %s\n", error ? error->message : "no error given");
-		g_clear_error (&error);
 
 		mime_type = tracker_decorator_info_get_mimetype (data->decorator_info);
 		graph = tracker_extract_module_manager_get_graph (mime_type);
@@ -206,7 +205,7 @@ get_metadata_cb (TrackerExtract *extract,
 		                          graph,
 		                          tracker_decorator_info_get_url (data->decorator_info));
 
-		tracker_decorator_info_complete (data->decorator_info, sparql);
+		tracker_decorator_info_complete_error (data->decorator_info, error, sparql);
 	} else {
 		resource = decorator_save_info (TRACKER_EXTRACT_DECORATOR (data->decorator),
 		                                data->decorator_info, info);

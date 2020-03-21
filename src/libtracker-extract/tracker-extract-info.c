@@ -40,6 +40,7 @@
 struct _TrackerExtractInfo
 {
 	TrackerResource *resource;
+	GError *error;
 
 	GFile *file;
 	gchar *mimetype;
@@ -78,6 +79,7 @@ tracker_extract_info_new (GFile       *file,
 	info->graph = g_strdup (graph);
 
 	info->resource = NULL;
+	info->error = NULL;
 
 	info->ref_count = 1;
 
@@ -123,8 +125,8 @@ tracker_extract_info_unref (TrackerExtractInfo *info)
 		g_free (info->mimetype);
 		g_free (info->graph);
 
-		if (info->resource)
-			g_object_unref (info->resource);
+		g_clear_object (&info->resource);
+		g_clear_error (&info->error);
 
 		g_slice_free (TrackerExtractInfo, info);
 	}
@@ -196,6 +198,24 @@ tracker_extract_info_get_resource (TrackerExtractInfo *info)
 }
 
 /**
+ * tracker_extract_info_get_error:
+ * @info: a #TrackerExtractInfo
+ *
+ * If extraction was not possible, extract modules can report
+ * the problem as a GError. This returns the error if set,
+ * or %NULL.
+ *
+ * Returns: (transfer none): a #GError instance, or %NULL
+ *
+ * Since: 3.0
+ */
+GError *
+tracker_extract_info_get_error (TrackerExtractInfo *info)
+{
+	return info->error;
+}
+
+/**
  * tracker_extract_info_set_resource:
  * @info: a #TrackerExtractInfo
  * @resource: a #TrackerResource
@@ -230,4 +250,23 @@ tracker_extract_info_set_resource (TrackerExtractInfo *info,
 {
 	g_object_ref (resource);
 	info->resource = resource;
+}
+
+/**
+ * tracker_extract_info_set_error:
+ * @info: a #TrackerExtractInfo
+ * @error: a #GError
+ *
+ * Sets the #GError to this #TrackerExtractInfo. Use this if the extract
+ * module was unable to process the file.
+ *
+ * The error message will be published over D-Bus via the FileProcessed signal.
+ *
+ * Since: 3.0
+ **/
+void
+tracker_extract_info_set_error (TrackerExtractInfo *info,
+                                GError             *error)
+{
+	info->error = g_error_copy (error);
 }
