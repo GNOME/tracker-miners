@@ -252,6 +252,9 @@ static void           file_notifier_file_moved            (TrackerFileNotifier  
                                                            GFile                *source,
                                                            GFile                *dest,
                                                            gpointer              user_data);
+static void           file_notifier_file_ignored_during_crawl (TrackerFileNotifier  *notifier,
+                                                               GFile                *file,
+                                                               gpointer              user_data);
 static void           file_notifier_directory_started     (TrackerFileNotifier *notifier,
                                                            GFile               *directory,
                                                            gpointer             user_data);
@@ -613,6 +616,9 @@ miner_fs_initable_init (GInitable     *initable,
 	                  initable);
 	g_signal_connect (priv->file_notifier, "file-moved",
 	                  G_CALLBACK (file_notifier_file_moved),
+	                  initable);
+	g_signal_connect (priv->file_notifier, "file-ignored-during-crawl",
+	                  G_CALLBACK (file_notifier_file_ignored_during_crawl),
 	                  initable);
 	g_signal_connect (priv->file_notifier, "directory-started",
 	                  G_CALLBACK (file_notifier_directory_started),
@@ -2149,6 +2155,16 @@ file_notifier_file_moved (TrackerFileNotifier *notifier,
 
 	event = queue_event_moved_new (source, dest);
 	miner_fs_queue_event (fs, event, miner_fs_get_queue_priority (fs, source));
+}
+
+static void
+file_notifier_file_ignored_during_crawl (TrackerFileNotifier *notifier,
+                                         GFile               *file,
+                                         gpointer             user_data)
+{
+	TrackerMinerFS *fs = user_data;
+
+	tracker_miner_file_processed (TRACKER_MINER (fs), file, FALSE, "ignored by configuration");
 }
 
 static void
