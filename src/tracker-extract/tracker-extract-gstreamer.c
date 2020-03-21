@@ -1268,7 +1268,7 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 	}
 
 	g_free (uri);
-	return TRUE;
+	return (main_resource != NULL);
 }
 
 G_MODULE_EXPORT gboolean
