@@ -33,3 +33,5 @@ endforeach
 
 run_command('./make-uninstalled-command-links.sh', tracker_uninstalled_cli_dir, modules,
             check: true)
+
+tracker_miners_uninstalled_cli_dir = meson.current_build_dir()

@@ -37,6 +37,7 @@ import pathlib
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import unittest as ut
 
@@ -494,3 +495,45 @@ class TrackerWritebackTest (TrackerMinerTest):
         raise Exception(
             "Timeout waiting for %s to be updated (mtime has not changed)" %
             filename)
+
+
+class CliError(Exception):
+    pass
+
+
+class TrackerCommandLineTestCase(TrackerMinerTest):
+    def setUp(self):
+        super(TrackerCommandLineTestCase, self).setUp()
+
+        self.env = os.environ.copy()
+        self.env.update(cfg.test_environment(self.workdir))
+
+        path = self.env.get('PATH', []).split(':')
+        self.env['PATH'] = ':'.join([cfg.cli_dir()] + path)
+
+        self.env['DBUS_SESSION_BUS_ADDRESS'] = self.sandbox.daemon.address
+
+        self.tracker_cli = shutil.which('tracker3', path=self.env['PATH'])
+
+    def run_cli(self, command):
+        command = [self.tracker_cli] + [str(c) for c in command]
+
+        log.info("Running: %s", ' '.join(command))
+        result = subprocess.run(command, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, env=self.env)
+
+        if len(result.stdout) > 0:
+            log.debug("stdout: %s", result.stdout.decode('utf-8'))
+        if len(result.stderr) > 0:
+            log.debug("stderr: %s", result.stderr.decode('utf-8'))
+
+        if result.returncode != 0:
+            error = result.stderr.decode('utf-8')
+            if len(error) == 0:
+                error = result.stdout.decode('utf-8')
+            raise CliError('\n'.join([
+                "CLI command failed.",
+                "Command: %s" % ' '.join(command),
+                "Error: %s" % error]))
+
+        return result.stdout.decode('utf-8')
