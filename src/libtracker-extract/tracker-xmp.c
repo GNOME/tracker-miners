@@ -135,8 +135,9 @@ gps_coordinate_dup (const gchar *coordinates)
 	}
 
 	if (g_regex_match (reg, coordinates, 0, &info)) {
-		gchar *deg,*min,*ref;
-		gdouble r,d,m;
+		gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
+		gchar *deg, *min, *ref;
+		gdouble r, d, m;
 
 		deg = g_match_info_fetch (info, 1);
 		min = g_match_info_fetch (info, 2);
@@ -156,7 +157,7 @@ gps_coordinate_dup (const gchar *coordinates)
 		g_free (ref);
                 g_match_info_free (info);
 
-		return g_strdup_printf ("%f", r);
+                return g_strdup (g_ascii_dtostr (buf, sizeof (buf), r));
 	} else {
                 g_match_info_free (info);
 		return NULL;
@@ -213,7 +214,10 @@ div_str_dup (const gchar *value)
 		b = atoi (cpy + (ptr - value) + 1);
 
 		if (b != 0) {
-			ret = g_strdup_printf ("%G", ((gdouble)((gdouble) a / (gdouble) b)));
+			gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
+
+			ret = g_strdup (g_ascii_dtostr (buf, sizeof (buf),
+			                                ((gdouble) a / b)));
 		} else {
 			ret = NULL;
 		}
