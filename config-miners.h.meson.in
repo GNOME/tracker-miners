@@ -33,9 +33,6 @@
 /* Guarantee existence of some metadata */
 #mesondefine GUARANTEE_METADATA
 
-/* Defined if Sqlite has FTS5 compiled in */
-#mesondefine HAVE_BUILTIN_FTS
-
 /* Enca language detection aid */
 #mesondefine HAVE_ENCA
 
@@ -83,9 +80,6 @@
 
 /* Define to 1 if you have the `strnlen' function. */
 #mesondefine HAVE_STRNLEN
-
-/* Define to 0 if tracker FTS is not compiled */
-#mesondefine HAVE_TRACKER_FTS
 
 /* Define if we have UPOWER */
 #mesondefine HAVE_UPOWER

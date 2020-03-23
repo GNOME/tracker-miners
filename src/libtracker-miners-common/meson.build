@@ -13,6 +13,7 @@ tracker_miners_common_sources = [
   'tracker-file-utils.c',
   'tracker-fts-config.c',
   'tracker-ioprio.c',
+  'tracker-language.c',
   'tracker-log.c',
   'tracker-sched.c',
   'tracker-type-utils.c',
