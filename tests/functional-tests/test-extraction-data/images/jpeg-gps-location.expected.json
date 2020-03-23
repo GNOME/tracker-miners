@@ -12,8 +12,8 @@
         "nmm:focalLength": "5.0",
         "nie:comment": "This is a for tracker test",
         "slo:location": {
-            "slo:latitude": "-35.253368",
-            "slo:longitude": "149.112579",
+            "slo:latitude": "-35.253368377685547",
+            "slo:longitude": "149.11257934570312",
             "slo:postalAddress": {
                 "nco:locality": "Tig",
                 "nco:country": "Banglore"

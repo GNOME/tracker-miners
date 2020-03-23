@@ -311,6 +311,7 @@ get_gps_coordinate (ExifData *exif,
 	if (entry && refentry) {
 		ExifByteOrder order;
 		ExifRational degrees, minutes, seconds;
+		gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
 		gfloat f;
 
 		if (entry->size == 24) {
@@ -340,7 +341,7 @@ get_gps_coordinate (ExifData *exif,
 				return NULL;
 			}
 
-			return g_strdup_printf ("%f", f);
+			return g_strdup (g_ascii_dtostr (buf, sizeof (buf), (gdouble) f));
 		} else {
 			gchar buf[25] = { 0 };
 
@@ -380,6 +381,7 @@ get_gps_altitude (ExifData *exif,
 	if (entry) {
 		ExifByteOrder order;
 		ExifRational c;
+		gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
 		gfloat f;
 
 		order = exif_data_get_byte_order (exif);
@@ -401,7 +403,7 @@ get_gps_altitude (ExifData *exif,
 				f = -1 * f;
 			}
 		}
-		return g_strdup_printf ("%f", f);
+		return g_strdup (g_ascii_dtostr (buf, sizeof (buf), (gdouble) f));
 	}
 
 	return NULL;
@@ -423,6 +425,39 @@ get_int (ExifData *exif,
 	return -1;
 }
 
+static gboolean
+get_double (ExifData *exif,
+            ExifTag   tag,
+            gdouble  *val)
+{
+	ExifEntry *entry = exif_data_get_entry (exif, tag);
+
+	if (entry) {
+		ExifByteOrder order;
+		ExifRational value;
+
+		order = exif_data_get_byte_order (exif);
+		value = exif_get_rational (entry->data, order);
+
+		*val = (gdouble) value.numerator / (gdouble) value.denominator;
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+static gchar *
+get_double_str (ExifData *exif,
+                ExifTag   tag)
+{
+	gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
+	gdouble value;
+
+	if (!get_double (exif, tag, &value))
+		return NULL;
+
+	return g_strdup (g_ascii_dtostr (buf, sizeof(buf), value));
+}
 
 static gchar *
 get_value (ExifData *exif,
@@ -544,7 +579,7 @@ parse_exif (const unsigned char *buffer,
 	if(!data->gps_longitude)
 		data->gps_longitude = get_gps_coordinate (exif, EXIF_TAG_GPS_LONGITUDE, EXIF_TAG_GPS_LONGITUDE_REF);
 	if(!data->gps_direction)
-		data->gps_direction = get_value (exif, EXIF_TAG_GPS_IMG_DIRECTION);
+		data->gps_direction = get_double_str (exif, EXIF_TAG_GPS_IMG_DIRECTION);
 
 	exif_data_free (exif);
 #endif /* HAVE_LIBEXIF */
