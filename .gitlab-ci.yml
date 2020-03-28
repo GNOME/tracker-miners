@@ -86,10 +86,18 @@ coverity:
 
 pages:
   stage: website
+  image: registry.gitlab.gnome.org/gnome/tracker-oci-images/amd64/fedora:latest
+  dependencies: []
   before_script:
     - pip3 install mkdocs mkdocs-cinder
   script:
-    - ./docs/website/build.py
+    # Build tracker and tracker-miners to generate the API documentation.
+    - su tracker -c '.gitlab-ci/checkout-tracker.sh'
+    - su tracker -c 'mkdir build; cd build; meson .. --prefix=/tmp/tracker -Dtracker_core=subproject; ninja install'
+    # Generate the website using mkdocs.
+    - |
+      tracker_commit=$(git -C ./subprojects/tracker rev-parse HEAD)
+      ./docs/website/build.py --api-docs=/tmp/tracker/share/gtk-doc/html --tracker-commit=${tracker_commit}
   artifacts:
     paths:
       - public
