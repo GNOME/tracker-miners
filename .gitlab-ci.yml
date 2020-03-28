@@ -86,6 +86,7 @@ coverity:
 
 pages:
   stage: website
+  image: registry.gitlab.gnome.org/gnome/tracker-oci-images/amd64/fedora:latest
   before_script:
     - pip3 install mkdocs mkdocs-cinder
   script:
