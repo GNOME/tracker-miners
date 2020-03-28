@@ -89,6 +89,7 @@ pages:
     - pip3 install mkdocs mkdocs-cinder
   script:
     # Build tracker and tracker-miners to generate the API documentation.
+    - ls
     - su tracker -c '.gitlab-ci/checkout-tracker.sh'
     - su tracker -c 'mkdir build; cd build; meson .. --prefix=/tmp/tracker -Dtracker_core=subproject; ninja install'
     # Generate the website using mkdocs.
