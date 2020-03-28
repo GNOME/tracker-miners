@@ -11,8 +11,6 @@ variables:
   MESON_TEST_EXTRA_ARGS: ""
 
 stages:
-  - test
-  - analysis
   - website
 
 .test_template: &test
