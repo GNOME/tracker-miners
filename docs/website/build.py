@@ -20,6 +20,7 @@
 
 
 import argparse
+import itertools
 import logging
 import pathlib
 import shutil
@@ -31,6 +32,10 @@ log = logging.getLogger('build.py')
 
 output_path = pathlib.Path('public')
 mkdocs_root = pathlib.Path(__file__).parent.parent
+source_root = pathlib.Path(__file__).parent.parent.parent
+
+asciidoc = shutil.which('asciidoc')
+xsltproc = shutil.which('xsltproc')
 
 
 def argument_parser():
@@ -79,6 +84,17 @@ def add_apidocs_header(text, filename):
     shutil.move(f_out.name, filename)
 
 
+def generate_manpage_html(src_path, output_path):
+    with tempfile.NamedTemporaryFile() as xml:
+        outfile_path = output_path.joinpath(src_path.stem + '.html')
+        subprocess.run([asciidoc, '--backend', 'docbook', '--doctype', 'manpage',
+                        '--out-file', xml.name, str(src_path)],
+                       check=True)
+        subprocess.run([xsltproc, '--output', str(outfile_path),
+                        '/etc/asciidoc/docbook-xsl/xhtml.xsl', xml.name],
+                       check=True)
+
+
 def main():
     args = argument_parser().parse_args()
 
@@ -107,6 +123,14 @@ def main():
     text = apidocs_header(args.tracker_commit)
     for filename in apidocs_dest.rglob('*.html'):
         add_apidocs_header(text, filename)
+
+    log.info("Generating HTML version of man pages")
+    tracker_manpages = source_root.joinpath('subprojects/tracker/docs/manpages').glob('*.txt')
+    tracker_miners_manpages = source_root.joinpath('docs/manpages').glob('*.txt')
+    manpage_output_path = output_path.joinpath('docs/man-preview')
+    for filename in itertools.chain(tracker_manpages, tracker_miners_manpages):
+        generate_manpage_html(filename, manpage_output_path)
+    shutil.copy('/usr/share/asciidoc/stylesheets/docbook-xsl.css', manpage_output_path)
 
     log.info("Documentation available in public/ directory.")
 
