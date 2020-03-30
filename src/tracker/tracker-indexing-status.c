@@ -553,17 +553,22 @@ tracker_indexing_status_get_errors (TrackerIndexingStatus *status)
 
 	g_rw_lock_reader_lock (&priv->lock);
 
-	g_hash_table_iter_init (&iter, priv->failed);
-	while (g_hash_table_iter_next (&iter, (gpointer *)&key, (gpointer *)&value)) {
-		gchar *message;
-		gchar *uri;
+	if (g_task_had_error (priv->task)) {
+		/* The caller should have collected this error from the GAsyncResult. */
+		result = g_list_prepend (result, g_strdup ("Failure calling the index method."));
+	} else {
+		g_hash_table_iter_init (&iter, priv->failed);
+		while (g_hash_table_iter_next (&iter, (gpointer *)&key, (gpointer *)&value)) {
+			gchar *message;
+			gchar *uri;
 
-		uri = g_file_get_uri (key);
-		message = g_strdup_printf ("%s: %s", uri, value);
+			uri = g_file_get_uri (key);
+			message = g_strdup_printf ("%s: %s", uri, value);
 
-		result = g_list_prepend (result, message);
+			result = g_list_prepend (result, message);
 
-		g_free (uri);
+			g_free (uri);
+		}
 	}
 
 	g_rw_lock_reader_unlock (&priv->lock);
@@ -587,7 +592,11 @@ tracker_indexing_status_had_error (TrackerIndexingStatus *status)
 
 	g_rw_lock_reader_lock (&priv->lock);
 
-	result = g_hash_table_size (priv->failed) == 0;
+	result = g_task_had_error (priv->task);
+
+	if (result == FALSE) {
+		result = g_hash_table_size (priv->failed) == 0;
+	}
 
 	g_rw_lock_reader_unlock (&priv->lock);
 

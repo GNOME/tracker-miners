@@ -110,8 +110,30 @@ index_file_cb (GObject      *source_object,
                gpointer      user_data)
 {
 	GMainLoop *loop = user_data;
+	GError *error = NULL;
 
-	tracker_miner_manager_index_file_finish (TRACKER_MINER_MANAGER (source_object), res, NULL);
+	tracker_miner_manager_index_file_finish (TRACKER_MINER_MANAGER (source_object), res, &error);
+
+	if (error) {
+		g_error (error->message);
+	}
+
+	g_main_loop_quit (loop);
+}
+
+static void
+index_file_for_process_cb (GObject      *source_object,
+               GAsyncResult *res,
+               gpointer      user_data)
+{
+	GMainLoop *loop = user_data;
+	GError *error = NULL;
+
+	tracker_miner_manager_index_file_for_process_finish (TRACKER_MINER_MANAGER (source_object), res, NULL);
+
+	if (error) {
+		g_error (error->message);
+	}
 
 	g_main_loop_quit (loop);
 }
@@ -191,7 +213,7 @@ index_run (void)
 		file = g_file_new_for_commandline_arg (*p);
 
 		if (monitor_mode) {
-			status = tracker_miner_manager_index_file_for_process_async (manager, file, NULL, index_file_cb, main_loop);
+			status = tracker_miner_manager_index_file_for_process_async (manager, file, NULL, index_file_for_process_cb, main_loop);
 		} else {
 			status = tracker_miner_manager_index_file_async (manager, file, NULL, index_file_cb, main_loop);
 		}
