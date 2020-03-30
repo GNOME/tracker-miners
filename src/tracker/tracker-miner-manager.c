@@ -1541,26 +1541,11 @@ tracker_indexing_task_run (GTask        *task,
 
 	priv = tracker_miner_manager_get_instance_private (manager);
 
-	method_name = data->for_process ? METHOD_INDEX_FILE_FOR_PROCESS : METHOD_INDEX_FILE;
-
-	if (!tracker_miner_manager_is_active (manager,
-	                                      "org.freedesktop.Tracker1.Miner.Files")) {
-		error = g_error_new (TRACKER_MINER_MANAGER_ERROR,
-		                     TRACKER_MINER_MANAGER_ERROR_NOT_AVAILABLE,
-		                     "Filesystem miner is not active");
-		g_task_return_error (task, error);
-		return;
-	}
-
 	g_signal_connect (data->status, "complete", G_CALLBACK (tracker_indexing_task_complete_cb), data);
 
 	tracker_indexing_status_start_watching (data->status, manager, 0, &error);
 
-	if (error) {
-		g_task_return_error (task, error);
-		return;
-	}
-
+	method_name = data->for_process ? METHOD_INDEX_FILE_FOR_PROCESS : METHOD_INDEX_FILE;
 	uri = g_file_get_uri (data->root);
 
 	v = g_dbus_connection_call_sync (priv->connection,
@@ -1578,6 +1563,8 @@ tracker_indexing_task_run (GTask        *task,
 	g_free (uri);
 
 	if (error) {
+		g_prefix_error (&error, "Unable to activate tracker-miner-fs: ");
+		g_critical ("ERROR: %s", error->message);
 		g_task_return_error (task, error);
 		return;
 	}
