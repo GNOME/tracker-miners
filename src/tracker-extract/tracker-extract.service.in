@@ -8,3 +8,6 @@ ExecStart=@libexecdir@/tracker-extract
 Restart=on-abnormal
 # Don't restart after tracker daemon -k (aka tracker-control -k)
 RestartPreventExitStatus=SIGKILL
+
+[Install]
+WantedBy=default.target
