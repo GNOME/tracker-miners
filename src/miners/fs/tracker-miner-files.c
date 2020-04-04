@@ -2443,6 +2443,7 @@ process_file_cb (GObject      *object,
 	gchar *uri, *sparql_str, *sparql_update_str, *time_str;
 	GError *error = NULL;
 	gboolean is_iri;
+	gboolean is_special;
 	gboolean is_directory;
 
 	data = user_data;
@@ -2452,6 +2453,18 @@ process_file_cb (GObject      *object,
 
 	if (error) {
 		/* Something bad happened, notify about the error */
+		tracker_miner_fs_notify_finish (TRACKER_MINER_FS (data->miner), data->task, NULL, error);
+		priv->extraction_queue = g_list_remove (priv->extraction_queue, data);
+		process_file_data_free (data);
+		return;
+	}
+
+	is_special = (g_file_info_get_file_type (file_info) == G_FILE_TYPE_SPECIAL ?
+	                TRUE : FALSE);
+	if (is_special) {
+		error = g_error_new (TRACKER_MINER_ERROR,
+		                     0,
+		                     "File is a device, socket or pipe. Refusing to index it.");
 		tracker_miner_fs_notify_finish (TRACKER_MINER_FS (data->miner), data->task, NULL, error);
 		priv->extraction_queue = g_list_remove (priv->extraction_queue, data);
 		process_file_data_free (data);
