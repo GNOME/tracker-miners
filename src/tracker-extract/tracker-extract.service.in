@@ -1,5 +1,6 @@
 [Unit]
 Description=Tracker metadata extractor
+ConditionUser=!root
 
 [Service]
 Type=dbus

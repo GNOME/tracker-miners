@@ -1,5 +1,6 @@
 [Unit]
 Description=Tracker file system data miner
+ConditionUser=!root
 
 [Service]
 Type=dbus

@@ -1,5 +1,6 @@
 [Unit]
 Description=Tracker RSS/ATOM feed data miner
+ConditionUser=!root
 
 [Service]
 Type=dbus
