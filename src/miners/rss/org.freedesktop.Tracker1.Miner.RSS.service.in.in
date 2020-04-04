@@ -8,6 +8,3 @@ Path=/org/freedesktop/Tracker1/Miner/RSS
 NameSuffix=Miner.RSS
 _DisplayName=RSS/ATOM Feeds
 _Comment=Fetch RSS/ATOM Feeds
-
-[Install]
-WantedBy=default.target

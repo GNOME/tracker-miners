@@ -9,3 +9,6 @@ ExecStart=@libexecdir@/tracker-miner-rss
 Restart=on-failure
 # Don't restart after tracker daemon -k (aka tracker-control -k)
 RestartPreventExitStatus=SIGKILL
+
+[Install]
+WantedBy=default.target
