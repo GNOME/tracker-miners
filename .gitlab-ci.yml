@@ -13,6 +13,7 @@ variables:
 stages:
   - test
   - analysis
+  - website
 
 .test_template: &test
   stage: test
@@ -82,3 +83,16 @@ coverity:
       --form description="gitlab CI build"'
   only:
     - master
+
+pages:
+  stage: website
+  image: registry.gitlab.gnome.org/gnome/tracker-oci-images/amd64/fedora:latest
+  dependencies: []
+  script:
+    - cp -a docs/website ./public
+  artifacts:
+    paths:
+      - public
+  only:
+    - master
+    - sam/website
