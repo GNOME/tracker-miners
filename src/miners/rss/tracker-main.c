@@ -103,7 +103,6 @@ setup_connection_and_endpoint (TrackerDomainOntology    *domain,
 	*sparql_conn = tracker_sparql_connection_new (get_fts_connection_flags (),
 	                                              store,
 	                                              NULL,
-	                                              NULL,
 	                                              error);
 	if (!*sparql_conn)
 		return FALSE;

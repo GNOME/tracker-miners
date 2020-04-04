@@ -273,7 +273,7 @@ test_common_context_setup (TestCommonContext *fixture,
 
 	data_loc = g_file_get_child (fixture->test_file, ".data");
 	ontology = g_file_new_for_path (TEST_ONTOLOGIES_DIR);
-	fixture->connection = tracker_sparql_connection_new (0, data_loc, ontology, NULL, &error);
+	fixture->connection = tracker_sparql_connection_new_with_ontology (0, data_loc, ontology, NULL, &error);
 	g_assert_no_error (error);
 
 	fixture->ops = NULL;
