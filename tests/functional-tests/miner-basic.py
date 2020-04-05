@@ -65,12 +65,6 @@ class MinerCrawlTest(fixtures.TrackerMinerTest):
             raise
 
     def create_test_data(self):
-        # It's important that this directory exists BEFORE we start Tracker:
-        # it won't monitor an indexing root for changes if it doesn't exist,
-        # it'll silently ignore it instead. See the tracker_crawler_start()
-        # function.
-        os.makedirs(self.indexed_dir, exist_ok=True)
-
         monitored_files = [
             'test-monitored/file1.txt',
             'test-monitored/dir1/file2.txt',

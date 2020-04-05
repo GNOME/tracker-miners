@@ -110,6 +110,12 @@ class TrackerMinerTest(ut.TestCase):
         self.sandbox.start()
 
         try:
+            # It's important that this directory exists BEFORE we start Tracker:
+            # it won't monitor an indexing root for changes if it doesn't exist,
+            # it'll silently ignore it instead. See the tracker_crawler_start()
+            # function.
+            os.makedirs(self.indexed_dir, exist_ok=True)
+
             for schema_name, contents in self.config().items():
                 dconf = trackertestutils.dconf.DConfClient(self.sandbox)
                 for key, value in contents.items():

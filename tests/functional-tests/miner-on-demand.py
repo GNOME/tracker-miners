@@ -78,6 +78,15 @@ class MinerOnDemandTest(fixtures.TrackerMinerTest):
             self.miner_fs.index_file('file:///test-missing')
         assert e.exception.message.startswith('GDBus.Error:org.freedesktop.Tracker.Miner.Files.Index.Error.FileNotFound:')
 
+    def await_failsafe_marker_inserted(self, path, timeout=configuration.DEFAULT_TIMEOUT):
+        url = path.as_uri()
+        expected = [
+            f'nie:url <{url}>',
+            'nie:dataSource tracker:extractor-failure-data-source'
+        ]
+
+        return self.tracker.await_insert('; '.join(expected), timeout=timeout)
+
     def test_index_extractor_error(self):
         """
         On-demand indexing of a file, but the extractor can't extract it.
@@ -86,12 +95,11 @@ class MinerOnDemandTest(fixtures.TrackerMinerTest):
         # This file will be processed by the mp3 or gstreamer extractor due to
         # its extension, but it's not a valid MP3.
         testfile = self.create_test_file('test-not-monitored/invalid.mp3')
-        with self.extractor.await_file_processed(testfile, False, timeout=5000):
-            self.miner_fs.index_file(testfile.as_uri())
 
         # The extractor should record the file in the store as a failure.
-        sparql = 'ASK { ?r nie:url <%s> ; nie:dataSource tracker:extractor-failure-data-source }' % testfile.as_uri()
-        self.assertTrue(self.tracker.ask(sparql))
+        with self.await_failsafe_marker_inserted(testfile):
+            with self.extractor.await_file_processed(testfile, False, timeout=5000):
+                self.miner_fs.index_file(testfile.as_uri())
 
     def test_index_directory_basic(self):
         """
