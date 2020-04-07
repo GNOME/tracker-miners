@@ -1,0 +1,10 @@
+[D-BUS Service]
+Name=org.freedesktop.Tracker3.Miner.RSS
+Exec=@libexecdir@/tracker-miner-rss-3
+SystemdService=tracker-miner-rss-3.service
+
+# Miner details needed for tracker-control
+Path=/org/freedesktop/Tracker3/Miner/RSS
+NameSuffix=Miner.RSS
+_DisplayName=RSS/ATOM Feeds
+_Comment=Fetch RSS/ATOM Feeds

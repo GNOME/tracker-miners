@@ -79,7 +79,7 @@ status_stat (void)
 	TrackerSparqlCursor *cursor;
 	GError *error = NULL;
 
-	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.Files",
+	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker3.Miner.Files",
 	                                                NULL, NULL, &error);
 
 	if (!connection) {
@@ -177,7 +177,7 @@ collect_debug (void)
 	gchar *data_dir;
 	gchar *str;
 
-	data_dir = g_build_filename (g_get_user_cache_dir (), "tracker", NULL);
+	data_dir = g_build_filename (g_get_user_cache_dir (), "tracker3", NULL);
 
 	/* 1. Package details, e.g. version. */
 	g_print ("[Package Details]\n");
@@ -309,7 +309,7 @@ collect_debug (void)
 
 	g_print ("[%s]\n", _("Data Statistics"));
 
-	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.Files",
+	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker3.Miner.Files",
 	                                                NULL, NULL, &error);
 
 	if (!connection) {
@@ -386,7 +386,7 @@ get_file_and_folder_count (int *files,
 	TrackerSparqlCursor *cursor;
 	GError *error = NULL;
 
-	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.Files",
+	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker3.Miner.Files",
 	                                                NULL, NULL, &error);
 
 	if (files) {
@@ -544,7 +544,7 @@ get_no_args (void)
 	g_print ("\n");
 
 	/* How much space is left? */
-	data_dir = g_build_filename (g_get_user_cache_dir (), "tracker", NULL);
+	data_dir = g_build_filename (g_get_user_cache_dir (), "tracker3", NULL);
 
 	remaining_bytes = tracker_file_system_get_remaining_space (data_dir);
 	str = g_format_size (remaining_bytes);

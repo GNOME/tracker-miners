@@ -3,7 +3,8 @@ sources = [
     'tracker-miner-rss.c',
 ]
 
-executable('tracker-miner-rss', sources,
+executable('tracker-miner-rss-@0@'.format(tracker_api_major),
+    sources,
     dependencies: [libgrss, tracker_miner, tracker_miners_common_dep, tracker_extract_dep],
     c_args: tracker_c_args,
     install: true,
@@ -12,13 +13,13 @@ executable('tracker-miner-rss', sources,
 )
 
 dbus_service_file_untranslated = configure_file(
-    input: 'org.freedesktop.Tracker1.Miner.RSS.service.in.in',
-    output: 'org.freedesktop.Tracker1.Miner.RSS.service.in',
+    input: 'org.freedesktop.Tracker3.Miner.RSS.service.in.in',
+    output: 'org.freedesktop.Tracker3.Miner.RSS.service.in',
     configuration: conf)
 
 dbus_service_file = custom_target('tracker-miner-rss-dbus-service-file',
     input: dbus_service_file_untranslated,
-    output: 'org.freedesktop.Tracker1.Miner.RSS.service',
+    output: 'org.freedesktop.Tracker3.Miner.RSS.service',
     command: ['intltool-merge', '--quiet', '--desktop-style', '--utf8', join_paths(meson.source_root(), 'po'), '@INPUT@', '@OUTPUT@'],
     install: true,
     install_dir: dbus_services_dir)
@@ -30,7 +31,7 @@ desktop_file_untranslated = configure_file(
 
 desktop_file = custom_target('tracker-miner-rss-desktop-file',
     input: desktop_file_untranslated,
-    output: 'tracker-miner-rss.desktop',
+    output: 'tracker-miner-rss-@0@.desktop'.format(tracker_api_major),
     command: ['intltool-merge', '--quiet', '--desktop-style', '--utf8', join_paths(meson.source_root(), 'po'), '@INPUT@', '@OUTPUT@'],
     install: true,
     install_dir: join_paths(get_option('sysconfdir'), 'xdg/autostart'))
@@ -38,7 +39,7 @@ desktop_file = custom_target('tracker-miner-rss-desktop-file',
 if get_option('systemd_user_services')
   configure_file(
       input: 'tracker-miner-rss.service.in',
-      output: 'tracker-miner-rss.service',
+      output: 'tracker-miner-rss-@0@.service'.format(tracker_api_major),
       configuration: conf,
       install: true,
       install_dir: systemd_user_services_dir)

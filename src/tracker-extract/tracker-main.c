@@ -60,8 +60,8 @@
 	"\n" \
 	"  http://www.gnu.org/licenses/gpl.txt\n"
 
-#define DBUS_NAME_SUFFIX "Tracker1.Miner.Extract"
-#define DBUS_PATH "/org/freedesktop/Tracker1/Miner/Extract"
+#define DBUS_NAME_SUFFIX "Tracker3.Miner.Extract"
+#define DBUS_PATH "/org/freedesktop/Tracker3/Miner/Extract"
 
 static GMainLoop *main_loop;
 
@@ -132,25 +132,6 @@ initialize_priority_and_scheduling (void)
 		g_message ("Couldn't set nice value to 19, %s",
 		           str ? str : "no error given");
 	}
-}
-
-static void
-initialize_directories (void)
-{
-	gchar *user_data_dir;
-
-	/* NOTE: We don't create the database directories here, the
-	 * tracker-db-manager does that for us.
-	 */
-
-	user_data_dir = g_build_filename (g_get_user_data_dir (),
-	                                  "tracker",
-	                                  NULL);
-
-	/* g_message ("Checking directory exists:'%s'", user_data_dir); */
-	g_mkdir_with_parents (user_data_dir, 00755);
-
-	g_free (user_data_dir);
 }
 
 static gboolean
@@ -396,9 +377,6 @@ main (int argc, char *argv[])
 		return run_standalone (config);
 	}
 
-	/* Initialize subsystems */
-	initialize_directories ();
-
 	extract = tracker_extract_new (TRUE, force_module);
 
 	if (!extract) {
@@ -409,7 +387,7 @@ main (int argc, char *argv[])
 
 	tracker_module_manager_load_modules ();
 
-	dbus_name = tracker_domain_ontology_get_domain (domain_ontology, "Tracker1.Miner.Files");
+	dbus_name = tracker_domain_ontology_get_domain (domain_ontology, "Tracker3.Miner.Files");
 	sparql_connection = tracker_sparql_connection_bus_new (dbus_name,
 	                                                       NULL, NULL, &error);
 

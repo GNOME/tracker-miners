@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <node name="/">
-  <interface name="org.freedesktop.Tracker1.Miner.Files.Index">
+  <interface name="org.freedesktop.Tracker3.Miner.Files.Index">
     <method name="ReindexMimeTypes">
       <annotation name="org.freedesktop.DBus.GLib.Async" value="true"/>
       <arg type="as" name="mime_types" direction="in" />

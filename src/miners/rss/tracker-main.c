@@ -29,8 +29,8 @@
 
 #include "tracker-miner-rss.h"
 
-#define DBUS_NAME_SUFFIX "Tracker1.Miner.RSS"
-#define DBUS_PATH "/org/freedesktop/Tracker1/Miner/RSS"
+#define DBUS_NAME_SUFFIX "Tracker3.Miner.RSS"
+#define DBUS_PATH "/org/freedesktop/Tracker3/Miner/RSS"
 
 static gint verbosity = -1;
 static gchar *add_feed;
@@ -97,14 +97,17 @@ setup_connection_and_endpoint (TrackerDomainOntology    *domain,
                                TrackerEndpointDBus     **endpoint,
                                GError                  **error)
 {
-	GFile *store;
+	GFile *cache, *store;
 
-	store = tracker_domain_ontology_get_cache (domain);
+	cache = tracker_domain_ontology_get_cache (domain);
+	store = g_file_get_child (cache, "rss");
 	*sparql_conn = tracker_sparql_connection_new (get_fts_connection_flags (),
 	                                              store,
 	                                              NULL,
 	                                              NULL,
 	                                              error);
+	g_object_unref (store);
+
 	if (!*sparql_conn)
 		return FALSE;
 
@@ -172,7 +175,7 @@ main (int argc, char **argv)
 		         title,
 		         add_feed);
 
-		connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.RSS",
+		connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker3.Miner.RSS",
 		                                                NULL, NULL, &error);
 
 		if (!connection) {

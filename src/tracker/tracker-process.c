@@ -224,8 +224,7 @@ tracker_process_find_all (void)
 
 			basename = g_path_get_basename (strv[0]);
 
-			if ((g_str_has_prefix (basename, "tracker") ||
-			     g_str_has_prefix (basename, "lt-tracker"))) {
+			if (g_str_has_prefix (basename, "tracker")) {
 				found_pids = g_slist_prepend (found_pids, process_data_new (basename, pid));
 			} else {
 				g_free (basename);
@@ -275,8 +274,7 @@ tracker_process_find_all (void)
 
 		basename = g_path_get_basename (strv[0]);
 
-		if ((g_str_has_prefix (basename, "tracker") ||
-		     g_str_has_prefix (basename, "lt-tracker"))) {
+		if (g_str_has_prefix (basename, "tracker")) {
 			found_pids = g_slist_prepend (found_pids, process_data_new (basename, pid));
 		} else {
 			g_free (basename);
@@ -318,13 +316,9 @@ tracker_process_stop (TrackerProcessTypes daemons_to_term,
 		basename = pd->cmd;
 		pid = pd->pid;
 		
-		if (daemons_to_term != TRACKER_PROCESS_TYPE_NONE) {
-			if ((daemons_to_term == TRACKER_PROCESS_TYPE_STORE &&
-			     !g_str_has_suffix (basename, "tracker-store")) ||
-			    (daemons_to_term == TRACKER_PROCESS_TYPE_MINERS &&
-			     !strstr (basename, "tracker-miner"))) {
+		if (daemons_to_term == TRACKER_PROCESS_TYPE_MINERS) {
+			if (!strstr (basename, "tracker-miner"))
 				continue;
-			}
 
 			if (kill (pid, SIGTERM) == -1) {
 				const gchar *errstr = g_strerror (errno);
@@ -339,13 +333,9 @@ tracker_process_stop (TrackerProcessTypes daemons_to_term,
 				g_print ("  %s\n", str);
 				g_free (str);
 			}
-		} else if (daemons_to_kill != TRACKER_PROCESS_TYPE_NONE) {
-			if ((daemons_to_kill == TRACKER_PROCESS_TYPE_STORE &&
-			     !g_str_has_suffix (basename, "tracker-store")) ||
-			    (daemons_to_kill == TRACKER_PROCESS_TYPE_MINERS &&
-			     !strstr (basename, "tracker-miner"))) {
+		} else if (daemons_to_kill == TRACKER_PROCESS_TYPE_MINERS) {
+			if (!strstr (basename, "tracker-miner"))
 				continue;
-			}
 
 			if (kill (pid, SIGKILL) == -1) {
 				const gchar *errstr = g_strerror (errno);

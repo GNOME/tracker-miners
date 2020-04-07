@@ -31,7 +31,7 @@
 
 #include "tracker-fts-config.h"
 
-#define CONFIG_SCHEMA "org.freedesktop.Tracker.FTS"
+#define CONFIG_SCHEMA "org.freedesktop.Tracker3.FTS"
 #define CONFIG_PATH   "/org/freedesktop/tracker/fts/"
 
 /* Default values */

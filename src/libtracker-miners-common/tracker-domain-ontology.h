@@ -39,7 +39,6 @@ TrackerDomainOntology * tracker_domain_ontology_ref      (TrackerDomainOntology 
 void    tracker_domain_ontology_unref        (TrackerDomainOntology *domain_ontology);
 
 GFile * tracker_domain_ontology_get_cache    (TrackerDomainOntology *domain_ontology);
-GFile * tracker_domain_ontology_get_journal  (TrackerDomainOntology *domain_ontology);
 GFile * tracker_domain_ontology_get_ontology (TrackerDomainOntology *domain_ontology);
 
 gchar * tracker_domain_ontology_get_domain   (TrackerDomainOntology *domain_ontology,

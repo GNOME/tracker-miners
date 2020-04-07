@@ -58,7 +58,7 @@ def ensure_dir_exists(dirname):
 class TrackerMinerTest(ut.TestCase):
     def config(self):
         settings = {
-            'org.freedesktop.Tracker.Miner.Files': {
+            'org.freedesktop.Tracker3.Miner.Files': {
                 'enable-writeback': GLib.Variant.new_boolean(False),
                 'index-recursive-directories': GLib.Variant.new_strv([self.indexed_dir]),
                 'index-single-directories': GLib.Variant.new_strv([]),
@@ -424,7 +424,7 @@ class TrackerWritebackTest (TrackerMinerTest):
 
     def config(self):
         values = super(TrackerWritebackTest, self).config()
-        values['org.freedesktop.Tracker.Miner.Files']['enable-writeback'] = GLib.Variant.new_boolean(True)
+        values['org.freedesktop.Tracker3.Miner.Files']['enable-writeback'] = GLib.Variant.new_boolean(True)
         return values
 
     def create_test_data(self):

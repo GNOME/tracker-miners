@@ -105,7 +105,7 @@ extract_watchdog_start (TrackerExtractWatchdog *watchdog,
 	if (domain_name == NULL) {
 		tracker_extract_dbus_name = g_strdup (TRACKER_MINER_DBUS_NAME_PREFIX "Extract");
 	} else {
-		tracker_extract_dbus_name = g_strconcat (domain_name, ".Tracker1.Miner.Extract", NULL);
+		tracker_extract_dbus_name = g_strconcat (domain_name, ".Tracker3.Miner.Extract", NULL);
 	}
 
 	watchdog->extractor_watchdog_id =

@@ -1515,55 +1515,7 @@ search_run (void)
 		disable_snippets = TRUE;
 	}
 
-	/* Only check stopwords if FTS is enabled */
-	if (terms) {
-		TrackerLanguage *language;
-		gboolean stop_words_found;
-		gchar **p;
-
-		/* Check terms don't have additional quotes */
-		for (p = terms; *p; p++) {
-			gchar *term = *p;
-			gint end = strlen (term) - 1;
-
-			if ((term[0] == '"' && term[end] == '"') ||
-			    (term[0] == '\'' && term[end] == '\'')) {
-				/* We never have a quote JUST at the end */
-				term[0] = term[end] = ' ';
-				g_strstrip (term);
-			}
-		}
-
-		/* Check if terms are stopwords, and warn if so */
-		language = tracker_language_new (NULL);
-		stop_words_found = FALSE;
-		for (p = terms; *p; p++) {
-			gchar *down;
-
-			down = g_utf8_strdown (*p, -1);
-
-			if (tracker_language_is_stop_word (language, down)) {
-				g_printerr (_("Search term “%s” is a stop word."),
-				            down);
-				g_printerr ("\n");
-
-				stop_words_found = TRUE;
-			}
-
-			g_free (down);
-		}
-
-		if (stop_words_found) {
-			g_printerr (_("Stop words are common words which "
-			              "may be ignored during the indexing "
-			              "process."));
-			g_printerr ("\n\n");
-		}
-
-		g_object_unref (language);
-	}
-
-	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.Files",
+	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker3.Miner.Files",
 							NULL, NULL, &error);
 
 	if (!connection) {

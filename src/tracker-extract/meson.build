@@ -137,7 +137,7 @@ endforeach
 tracker_extract_priority_dbus = gnome.gdbus_codegen(
   'tracker-extract-priority-dbus',
   'tracker-extract-priority.xml',
-  interface_prefix: 'org.freedesktop.Tracker1.Extract.',
+  interface_prefix: 'org.freedesktop.Tracker3.Extract.',
   namespace: 'TrackerExtractDBus')
 
 tracker_extract_sources = [
@@ -160,7 +160,7 @@ if libgsf.found()
   tracker_extract_dependencies += libgsf
 endif
 
-executable('tracker-extract',
+executable('tracker-extract-@0@'.format(tracker_api_major),
   tracker_extract_sources,
   # Manually add the root dir to work around https://github.com/mesonbuild/meson/issues/1387
   c_args: tracker_c_args + ['-I' + meson.build_root()],
@@ -170,13 +170,13 @@ executable('tracker-extract',
   install_rpath: tracker_install_rpath)
 
 dbus_service_file_untranslated = configure_file(
-  input: 'org.freedesktop.Tracker1.Miner.Extract.service.in.in',
-  output: 'org.freedesktop.Tracker1.Miner.Extract.service.in',
+  input: 'org.freedesktop.Tracker3.Miner.Extract.service.in.in',
+  output: 'org.freedesktop.Tracker3.Miner.Extract.service.in',
   configuration: conf)
 
 dbus_service_file = custom_target('tracker-extract-dbus-service-file',
   input: dbus_service_file_untranslated,
-  output: 'org.freedesktop.Tracker1.Miner.Extract.service',
+  output: 'org.freedesktop.Tracker3.Miner.Extract.service',
   command: ['intltool-merge', '--quiet', '--desktop-style', '--utf8', join_paths(meson.source_root(), 'po'), '@INPUT@', '@OUTPUT@'],
   install: true,
   install_dir: dbus_services_dir)
@@ -188,7 +188,7 @@ desktop_file_untranslated = configure_file(
 
 desktop_file = custom_target('tracker-extract-desktop-file',
   input: desktop_file_untranslated,
-  output: 'tracker-extract.desktop',
+  output: 'tracker-extract-@0@.desktop'.format(tracker_api_major),
   command: ['intltool-merge', '--quiet', '--desktop-style', '--utf8', join_paths(meson.source_root(), 'po'), '@INPUT@', '@OUTPUT@'],
   install: true,
   install_dir: join_paths(get_option('sysconfdir'), 'xdg/autostart'))
@@ -196,7 +196,7 @@ desktop_file = custom_target('tracker-extract-desktop-file',
 if get_option('systemd_user_services')
   configure_file(
     input: 'tracker-extract.service.in',
-    output: 'tracker-extract.service',
+    output: 'tracker-extract-@0@.service'.format(tracker_api_major),
     configuration: conf,
     install: true,
     install_dir: systemd_user_services_dir)

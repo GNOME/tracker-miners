@@ -8,6 +8,8 @@ cc = meson.get_compiler('c')
 
 # This is the X.Y used in -llibtracker-FOO-X.Y
 tracker_api_version = '3.0'
+tracker_api_major = tracker_api_version.split('.')[0]
+tracker_versioned_name = 'tracker-miners-@0@'.format(tracker_api_major)
 
 libdir = join_paths(get_option('prefix'), get_option('libdir'))
 datadir = join_paths(get_option('prefix'), get_option('datadir'))
@@ -31,7 +33,7 @@ if get_option('tracker_core') == 'system'
   tracker_uninstalled_nepomuk_ontologies_dir = join_paths(tracker_sparql.get_pkgconfig_variable('ontologies_dir'), 'nepomuk')
   tracker_uninstalled_stop_words_dir = join_paths(tracker_sparql.get_pkgconfig_variable('datadir'), 'tracker', 'stop-words')
   tracker_uninstalled_testutils_dir = tracker_testutils.get_pkgconfig_variable('python_path')
-  tracker_uninstalled_nepomuk_ontologies_dir = join_paths(tracker_sparql.get_pkgconfig_variable('ontologies_dir'), 'nepomuk')
+  tracker_ontologies_dir = tracker_sparql.get_pkgconfig_variable('ontologies_dir')
 
   tracker_sparql_uninstalled_dir = tracker_sparql.get_pkgconfig_variable('libdir')
 else
@@ -43,7 +45,7 @@ else
   tracker_uninstalled_nepomuk_ontologies_dir = tracker_subproject.get_variable('tracker_uninstalled_nepomuk_ontologies_dir')
   tracker_uninstalled_stop_words_dir = tracker_subproject.get_variable('tracker_uninstalled_stop_words_dir')
   tracker_uninstalled_testutils_dir = tracker_subproject.get_variable('tracker_uninstalled_testutils_dir')
-  tracker_uninstalled_nepomuk_ontologies_dir = tracker_subproject.get_variable('tracker_uninstalled_nepomuk_ontologies_dir')
+  tracker_ontologies_dir = tracker_subproject.get_variable('tracker_ontologies_dir')
 
   tracker_common_enums_header = tracker_subproject.get_variable('tracker_common_enums_header')
 endif
@@ -308,7 +310,6 @@ endif
 conf = configuration_data()
 
 # Config that goes in config.h
-conf.set('DISABLE_JOURNAL', get_option('journal') == false)
 conf.set('GUARANTEE_METADATA', get_option('guarantee_metadata') == true)
 conf.set('USING_UNZIPPSFILES', get_option('unzip_ps_gz_files') == true)
 
@@ -334,10 +335,9 @@ conf.set('HAVE_STRNLEN', cc.has_function('strnlen', prefix : '#include <string.h
 
 conf.set('LOCALEDIR', '"@0@/@1@"'.format(get_option('prefix'), get_option('localedir')))
 conf.set('SHAREDIR', '"@0@/@1@"'.format(get_option('prefix'), get_option('datadir')))
-conf.set('TRACKER_MINERS_DIR', '"@0@/@1@/tracker/miners"'.format(get_option('prefix'), get_option('datadir')))
-conf.set('TRACKER_UI_DIR', '"@0@/@1@/tracker/"'.format(get_option('prefix'), get_option('datadir')))
+conf.set('TRACKER_MINERS_DIR', '"@0@"'.format(join_paths(get_option('prefix'), get_option('datadir'), tracker_versioned_name, 'miners')))
 
-conf.set('GETTEXT_PACKAGE', '"tracker-miners"')
+conf.set('GETTEXT_PACKAGE', '"@0@"'.format(tracker_versioned_name))
 conf.set('PACKAGE_VERSION', '"@0@"'.format(meson.project_version()))
 conf.set('TRACKER_VERSION', '"@0@"'.format(meson.project_version()))
 
@@ -373,19 +373,17 @@ srcinc = include_directories('src/')
 
 build_root = meson.current_build_dir()
 
-tracker_internal_libs_dir = join_paths(get_option('prefix'), get_option('libdir'), 'tracker-miners-' + tracker_api_version)
+tracker_internal_libs_dir = join_paths(get_option('prefix'), get_option('libdir'), tracker_versioned_name)
 tracker_install_rpath = ':'.join([tracker_internal_libs_dir, libdir])
 
-tracker_extract_modules_dir = join_paths(get_option('prefix'), get_option('libdir'), 'tracker-miners-@0@/extract-modules'.format(tracker_api_version))
-# NOTE: We don't use ${TRACKER_API_VERSION} because other content like
-# the ontology is installed to the same location.
-tracker_extract_rules_dir = join_paths(get_option('prefix'), get_option('datadir'), 'tracker-miners/extract-rules')
-tracker_miner_services_dir = join_paths(get_option('prefix'), get_option('datadir'), 'tracker/miners')
-tracker_writeback_modules_dir = join_paths(get_option('prefix'), get_option('libdir'), 'tracker-miners-@0@/writeback-modules'.format(tracker_api_version))
+tracker_extract_modules_dir = join_paths(get_option('prefix'), get_option('libdir'), tracker_versioned_name, 'extract-modules')
+tracker_extract_rules_dir = join_paths(get_option('prefix'), get_option('datadir'), tracker_versioned_name, 'extract-rules')
+tracker_miner_services_dir = join_paths(get_option('prefix'), get_option('datadir'), tracker_versioned_name, 'miners')
+tracker_writeback_modules_dir = join_paths(get_option('prefix'), get_option('libdir'), tracker_versioned_name, 'writeback-modules')
 
 tracker_uninstalled_extract_rules_dir = join_paths(meson.current_build_dir(), 'src', 'tracker-extract', 'uninstalled-rules')
 tracker_uninstalled_writeback_modules_dir = join_paths(meson.current_build_dir(), 'src', 'tracker-writeback')
-uninstalled_tracker_extract_path = join_paths(meson.current_build_dir(), 'src', 'tracker-extract', 'tracker-extract')
+uninstalled_tracker_extract_path = join_paths(meson.current_build_dir(), 'src', 'tracker-extract', 'tracker-extract-3')
 
 gsettings_schema_dir = join_paths(get_option('prefix'), get_option('datadir'), 'glib-2.0', 'schemas')
 
@@ -434,7 +432,6 @@ summary = [
   '    Compiler:                               ' + cc.get_id(),
   '\nFeature Support:',
   '    Battery/mains power detection:          ' + battery_detection_library_name,
-  '    Build with Journal support:             ' + get_option('journal').to_string(),
   '    Support for network status detection:   ' + have_network_manager.to_string(),
   '\nData Miners / Writebacks:',
   '    FS (File System):                       ' + have_tracker_miner_fs.to_string(),

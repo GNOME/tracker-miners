@@ -26,7 +26,8 @@ elif battery_detection_library_name == 'hal'
   tracker_miner_fs_deps += hal
 endif
 
-executable('tracker-miner-fs', sources,
+executable('tracker-miner-fs-@0@'.format(tracker_api_major),
+    sources,
     dependencies: tracker_miner_fs_deps,
     c_args: tracker_c_args,
     install: true,
@@ -35,13 +36,13 @@ executable('tracker-miner-fs', sources,
 )
 
 dbus_service_file_untranslated = configure_file(
-    input: 'org.freedesktop.Tracker1.Miner.Files.service.in.in',
-    output: 'org.freedesktop.Tracker1.Miner.Files.service.in',
+    input: 'org.freedesktop.Tracker3.Miner.Files.service.in.in',
+    output: 'org.freedesktop.Tracker3.Miner.Files.service.in',
     configuration: conf)
 
 dbus_service_file = custom_target('tracker-miner-files-dbus-service-file',
     input: dbus_service_file_untranslated,
-    output: 'org.freedesktop.Tracker1.Miner.Files.service',
+    output: 'org.freedesktop.Tracker3.Miner.Files.service',
     command: ['intltool-merge', '--quiet', '--desktop-style', '--utf8', join_paths(meson.source_root(), 'po'), '@INPUT@', '@OUTPUT@'],
     install: true,
     install_dir: dbus_services_dir)
@@ -53,7 +54,7 @@ desktop_file_untranslated = configure_file(
 
 desktop_file = custom_target('tracker-miner-fs-desktop-file',
     input: desktop_file_untranslated,
-    output: 'tracker-miner-fs.desktop',
+    output: 'tracker-miner-fs-@0@.desktop'.format(tracker_api_major),
     command: ['intltool-merge', '--quiet', '--desktop-style', '--utf8', join_paths(meson.source_root(), 'po'), '@INPUT@', '@OUTPUT@'],
     install: true,
     install_dir: join_paths(get_option('sysconfdir'), 'xdg/autostart'))
@@ -61,7 +62,7 @@ desktop_file = custom_target('tracker-miner-fs-desktop-file',
 if get_option('systemd_user_services')
   configure_file(
       input: 'tracker-miner-fs.service.in',
-      output: 'tracker-miner-fs.service',
+      output: 'tracker-miner-fs-@0@.service'.format(tracker_api_major),
       configuration: conf,
       install: true,
       install_dir: systemd_user_services_dir)

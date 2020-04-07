@@ -36,23 +36,23 @@
 #include "tracker-color.h"
 #include "tracker-miner-manager.h"
 
-static gboolean hard_reset;
-static gboolean soft_reset;
+static gboolean files = FALSE;
+static gboolean rss = FALSE;
 static gboolean remove_config;
 static gchar *filename = NULL;
 
 #define RESET_OPTIONS_ENABLED() \
-	(hard_reset || \
-	 soft_reset || \
+	(files || \
+	 rss || \
 	 remove_config || \
 	 filename)
 
 static GOptionEntry entries[] = {
-	{ "hard", 'r', 0, G_OPTION_ARG_NONE, &hard_reset,
-	  N_("Kill all Tracker processes and remove all databases"),
+	{ "filesystem", 's', 0, G_OPTION_ARG_NONE, &files,
+	  N_("Remove filesystem indexer database"),
 	  NULL },
-	{ "soft", 'e', 0, G_OPTION_ARG_NONE, &soft_reset,
-	  N_("Same as --hard but the backup & journal are restored after restart"),
+	{ "rss", 'r', 0, G_OPTION_ARG_NONE, &rss,
+	  N_("Remove RSS indexer database"),
 	  NULL },
 	{ "config", 'c', 0, G_OPTION_ARG_NONE, &remove_config,
 	  N_("Remove all configuration files so they are re-generated on next start"),
@@ -72,7 +72,7 @@ delete_info_recursively (GFile *file)
 	gchar *query, *uri;
 	GError *error = NULL;
 
-	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker1.Miner.Files",
+	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker3.Miner.Files",
 	                                                NULL, NULL, &error);
 
 	if (error)
@@ -185,39 +185,6 @@ delete_databases (GFile *dir)
 static gint
 reset_run (void)
 {
-	if (hard_reset && soft_reset) {
-		g_printerr ("%s\n",
-		            /* TRANSLATORS: --hard and --soft are commandline arguments */
-		            _("You can not use the --hard and --soft arguments together"));
-		return EXIT_FAILURE;
-	}
-
-	if (hard_reset || soft_reset) {
-		gchar response[100] = { 0 };
-
-		g_print (CRIT_BEGIN "%s" CRIT_END "\n%s\n\n%s %s: ",
-		         _("CAUTION: This process may irreversibly delete data."),
-		         _("Although most content indexed by Tracker can "
-		           "be safely reindexed, it can’t be assured that "
-		           "this is the case for all data. Be aware that "
-		           "you may be incurring in a data loss situation, "
-		           "proceed at your own risk."),
-		         _("Are you sure you want to proceed?"),
-		         /* TRANSLATORS: This is to be displayed on command line output */
-		         _("[y|N]"));
-
-		fgets (response, 100, stdin);
-		response[strlen (response) - 1] = '\0';
-
-		/* TRANSLATORS: this is our test for a [y|N] question in the command line.
-		 * A partial or full match will be considered an affirmative answer,
-		 * it is intentionally lowercase, so please keep it like this.
-		 */
-		if (!response[0] || !g_str_has_prefix (_("yes"), response)) {
-			return EXIT_FAILURE;
-		}
-	}
-
 	if (filename) {
 		GFile *file;
 		gint retval;
@@ -229,20 +196,31 @@ reset_run (void)
 	}
 
 	/* KILL processes first... */
-	if (hard_reset || soft_reset) {
-		tracker_process_stop (TRACKER_PROCESS_TYPE_NONE, TRACKER_PROCESS_TYPE_ALL);
+	if (files || rss) {
+		/* FIXME: we might selectively kill affected miners */
+		tracker_process_stop (TRACKER_PROCESS_TYPE_NONE, TRACKER_PROCESS_TYPE_MINERS);
 	}
 
-	if (hard_reset || soft_reset) {
+	if (files) {
 		GFile *cache_location;
 		gchar *dir;
 
-		dir = g_build_filename (g_get_user_cache_dir (), "tracker", NULL);
+		dir = g_build_filename (g_get_user_cache_dir (), "tracker3", "files", NULL);
 		cache_location = g_file_new_for_path (dir);
-		g_free (dir);
-
 		delete_databases (cache_location);
 		g_object_unref (cache_location);
+		g_free (dir);
+	}
+
+	if (rss) {
+		GFile *cache_location;
+		gchar *dir;
+
+		dir = g_build_filename (g_get_user_cache_dir (), "tracker3", "rss", NULL);
+		cache_location = g_file_new_for_path (dir);
+		delete_databases (cache_location);
+		g_object_unref (cache_location);
+		g_free (dir);
 	}
 
 	if (remove_config) {

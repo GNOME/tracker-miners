@@ -2,7 +2,6 @@ miner_enums = gnome.mkenums('tracker-miner-enum-types',
     sources: 'tracker-miner-enums.h',
     c_template: 'tracker-miner-enum-types.c.template',
     h_template: 'tracker-miner-enum-types.h.template',
-    install_header: true,
     install_dir: join_paths(get_option('includedir'), 'tracker-@0@'.format(tracker_api_version), 'libtracker-miner'),
 )
 
@@ -16,19 +15,6 @@ private_sources = [
     'tracker-task-pool.c',
     'tracker-sparql-buffer.c',
     'tracker-utils.c']
-
-miner_headers = [
-    'tracker-miner-online.h',
-    'tracker-data-provider.h',
-    'tracker-indexing-tree.h',
-    'tracker-decorator-fs.h',
-    'tracker-miner-fs.h',
-    'tracker-miner-object.h',
-    'tracker-miner-proxy.h',
-    'tracker-decorator.h',
-    'tracker-miner-enums.h',
-    'tracker-miner.h',
-]
 
 miner_sources = (
     ['tracker-data-provider.c',
@@ -57,6 +43,7 @@ libtracker_miner = library(
     miner_enums[0], miner_enums[1], miner_sources,
     c_args: tracker_c_args,
     install: true,
+    install_dir: tracker_internal_libs_dir,
     install_rpath: tracker_internal_libs_dir,
     # This doesn't depend on tracker_common_dep because of
     # https://github.com/mesonbuild/meson/issues/671
@@ -74,5 +61,5 @@ tracker_miner = declare_dependency(
 )
 
 install_data(
-    'tracker-miner.xml',
-    install_dir: join_paths(get_option('prefix'), get_option('datadir'), 'tracker'))
+    'org.freedesktop.Tracker3.Miner.xml',
+    install_dir: join_paths(get_option('prefix'), get_option('datadir'), 'dbus-1', 'interfaces'))

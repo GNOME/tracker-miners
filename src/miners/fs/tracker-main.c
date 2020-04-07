@@ -52,8 +52,8 @@
 
 #define SECONDS_PER_DAY 60 * 60 * 24
 
-#define DBUS_NAME_SUFFIX "Tracker1.Miner.Files"
-#define DBUS_PATH "/org/freedesktop/Tracker1/Miner/Files"
+#define DBUS_NAME_SUFFIX "Tracker3.Miner.Files"
+#define DBUS_PATH "/org/freedesktop/Tracker3/Miner/Files"
 #define LOCALE_FILENAME "locale-for-miner-apps.txt"
 
 static GMainLoop *main_loop;
@@ -151,12 +151,26 @@ miner_reset_applications (TrackerMiner *miner)
 	}
 }
 
+static GFile *
+get_cache_dir (TrackerDomainOntology *domain_ontology)
+{
+	GFile *cache;
+
+	cache = tracker_domain_ontology_get_cache (domain_ontology);
+	return g_file_get_child (cache, "files");
+}
+
 static void
-save_current_locale (void)
+save_current_locale (TrackerDomainOntology *domain_ontology)
 {
 	GError *error = NULL;
 	gchar *locale = tracker_locale_get (TRACKER_LOCALE_LANGUAGE);
-	gchar *locale_file = g_build_filename (g_get_user_cache_dir (), "tracker", LOCALE_FILENAME, NULL);
+	GFile *cache = get_cache_dir (domain_ontology);
+	gchar *cache_path = g_file_get_path (cache);
+	gchar *locale_file;
+
+	locale_file = g_build_filename (cache_path, LOCALE_FILENAME, NULL);
+	g_free (cache_path);
 
 	g_message ("Saving locale used to index applications");
 	g_message ("  Creating locale file '%s'", locale_file);
@@ -176,14 +190,20 @@ save_current_locale (void)
 }
 
 static gboolean
-detect_locale_changed (TrackerMiner *miner)
+detect_locale_changed (TrackerMiner          *miner,
+		       TrackerDomainOntology *domain_ontology)
 {
+	GFile *cache;
+	gchar *cache_path;
 	gchar *locale_file;
 	gchar *previous_locale = NULL;
 	gchar *current_locale;
 	gboolean changed;
 
-	locale_file = g_build_filename (g_get_user_cache_dir (), "tracker", LOCALE_FILENAME, NULL);
+	cache = get_cache_dir (domain_ontology);
+	cache_path = g_file_get_path (cache);
+	locale_file = g_build_filename (cache_path, LOCALE_FILENAME, NULL);
+	g_free (cache_path);
 
 	if (G_LIKELY (g_file_test (locale_file, G_FILE_TEST_EXISTS))) {
 		gchar *contents;
@@ -300,8 +320,9 @@ initialize_priority_and_scheduling (void)
 }
 
 static gboolean
-should_crawl (TrackerConfig *config,
-              gboolean      *forced)
+should_crawl (TrackerMinerFiles *miner_files,
+              TrackerConfig     *config,
+              gboolean          *forced)
 {
 	gint crawling_interval;
 
@@ -326,7 +347,7 @@ should_crawl (TrackerConfig *config,
 	} else {
 		guint64 then, now;
 
-		then = tracker_miner_files_get_last_crawl_done ();
+		then = tracker_miner_files_get_last_crawl_done (miner_files);
 
 		if (then < 1) {
 			return TRUE;
@@ -412,7 +433,8 @@ miner_finished_cb (TrackerMinerFS *fs,
 	        total_files_found);
 
 	if (do_crawling) {
-		tracker_miner_files_set_last_crawl_done (TRUE);
+		tracker_miner_files_set_last_crawl_done (TRACKER_MINER_FILES (fs),
+							 TRUE);
 	}
 
 	/* We're not sticking around for file updates, so stop
@@ -678,9 +700,7 @@ miner_needs_check (TrackerMiner *miner)
 	 * 1. Still crawling or with files to process in our queues.
 	 * 2. We crash (out of our control usually anyway).
 	 * 3. At least one of the miners is PAUSED, we have
-	 *    to exclude the situations where the miner is
-	 *    exclusively paused due to the store not being
-	 *    available, but the miner is actually done.
+	 *    to exclude the situations where the miner is actually done.
 	 */
 	if (!tracker_miner_is_paused (miner)) {
 		if (tracker_miner_fs_has_items_to_process (TRACKER_MINER_FS (miner))) {
@@ -739,16 +759,17 @@ setup_connection_and_endpoint (TrackerDomainOntology    *domain,
                                TrackerEndpointDBus     **endpoint,
                                GError                  **error)
 {
-	GFile *store;
-	GFile *ontology;
+	GFile *store, *ontology;
 
-	store = tracker_domain_ontology_get_cache (domain);
+	store = get_cache_dir (domain);
 	ontology = tracker_domain_ontology_get_ontology (domain);
 	*sparql_conn = tracker_sparql_connection_new (get_fts_connection_flags (),
 	                                              store,
 	                                              ontology,
 	                                              NULL,
 	                                              error);
+	g_object_unref (store);
+
 	if (!*sparql_conn)
 		return FALSE;
 
@@ -792,6 +813,9 @@ main (gint argc, gchar *argv[])
 	/* Set timezone info */
 	tzset ();
 
+	/* This makes sure we don't steal all the system's resources */
+	initialize_priority_and_scheduling ();
+
 	/* Translators: this messagge will apper immediately after the
 	 * usage string - Usage: COMMAND <THIS_MESSAGE>
 	 */
@@ -824,9 +848,6 @@ main (gint argc, gchar *argv[])
 		g_error_free (error);
 		return EXIT_FAILURE;
 	}
-
-	/* This makes sure we don't steal all the system's resources */
-	initialize_priority_and_scheduling ();
 
 	connection = g_bus_get_sync (TRACKER_IPC_BUS, NULL, &error);
 	if (error) {
@@ -902,7 +923,7 @@ main (gint argc, gchar *argv[])
 	}
 
 	/* If the locales changed, we need to reset some things first */
-	detect_locale_changed (TRACKER_MINER (miner_files));
+	detect_locale_changed (TRACKER_MINER (miner_files), domain_ontology);
 
 	proxy = tracker_miner_proxy_new (miner_files, connection, DBUS_PATH, NULL, &error);
 	if (error) {
@@ -953,7 +974,8 @@ main (gint argc, gchar *argv[])
 	/* Check if we should crawl and if we should force mtime
 	 * checking based on the config.
 	 */
-	do_crawling = should_crawl (config, &force_mtime_checking);
+	do_crawling = should_crawl (TRACKER_MINER_FILES (miner_files),
+	                            config, &force_mtime_checking);
 
 	/* Get the last shutdown state to see if we need to perform a
 	 * full mtime check against the db or not.
@@ -967,7 +989,7 @@ main (gint argc, gchar *argv[])
 	if (force_mtime_checking) {
 		do_mtime_checking = TRUE;
 	} else {
-		do_mtime_checking = tracker_miner_files_get_need_mtime_check ();
+		do_mtime_checking = tracker_miner_files_get_need_mtime_check (TRACKER_MINER_FILES (miner_files));
 	}
 
 	g_message ("  %s %s",
@@ -978,7 +1000,7 @@ main (gint argc, gchar *argv[])
 	 * event of a crash, this is changed back on shutdown if
 	 * everything appears to be fine.
 	 */
-	tracker_miner_files_set_need_mtime_check (TRUE);
+	tracker_miner_files_set_need_mtime_check (TRACKER_MINER_FILES (miner_files), TRUE);
 
 	/* Configure files miner */
 	tracker_miner_files_set_mtime_checking (TRACKER_MINER_FILES (miner_files), do_mtime_checking);
@@ -997,8 +1019,8 @@ main (gint argc, gchar *argv[])
 	g_message ("Shutdown started");
 
 	if (miners_timeout_id == 0 && !miner_needs_check (miner_files)) {
-		tracker_miner_files_set_need_mtime_check (FALSE);
-		save_current_locale ();
+		tracker_miner_files_set_need_mtime_check (TRACKER_MINER_FILES (miner_files), FALSE);
+		save_current_locale (domain_ontology);
 	}
 
 	g_main_loop_unref (main_loop);

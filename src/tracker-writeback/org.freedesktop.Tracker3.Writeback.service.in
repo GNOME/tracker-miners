@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=org.freedesktop.Tracker3.Writeback
+Exec=@libexecdir@/tracker-writeback-3
+SystemdService=tracker-writeback-3.service

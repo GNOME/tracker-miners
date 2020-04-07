@@ -4,8 +4,8 @@ ConditionUser=!root
 
 [Service]
 Type=dbus
-BusName=org.freedesktop.Tracker1.Miner.RSS
-ExecStart=@libexecdir@/tracker-miner-rss
+BusName=org.freedesktop.Tracker3.Miner.RSS
+ExecStart=@libexecdir@/tracker-miner-rss-3
 Restart=on-failure
 # Don't restart after tracker daemon -k (aka tracker-control -k)
 RestartPreventExitStatus=SIGKILL

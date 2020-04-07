@@ -4,22 +4,6 @@
 #mesondefine LOCALEDIR
 #mesondefine SHAREDIR
 #mesondefine TRACKER_MINERS_DIR
-#mesondefine TRACKER_UI_DIR
-
-/* Define if we disable the journal */
-#mesondefine DISABLE_JOURNAL
-
-/* Include functional tests in the installation */
-#mesondefine DIST_FUNCTIONAL_TESTS
-
-/* Use new evolution-shell API */
-#mesondefine EVOLUTION_SHELL_2_91
-
-/* Use new evolution-shell API */
-#mesondefine EVOLUTION_SHELL_3_2
-
-/* Use new evolution-shell API */
-#mesondefine EVOLUTION_SHELL_3_3_5
 
 /* Define the gettext package to be used */
 #mesondefine GETTEXT_PACKAGE
@@ -65,9 +49,6 @@
 
 /* Define if we have libseccomp */
 #mesondefine HAVE_LIBSECCOMP
-
-/* Define if we have libstemmer */
-#mesondefine HAVE_LIBSTEMMER
 
 /* Define if we have NetworkManager for network status detection */
 #mesondefine HAVE_NETWORK_MANAGER
