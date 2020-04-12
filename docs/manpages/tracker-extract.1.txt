@@ -1,0 +1,76 @@
+tracker-extract(1)
+==================
+
+== NAME
+
+tracker-extract - Extract metadata from a file.
+
+== SYNOPSYS
+
+*tracker extract* _FILE_
+
+== DESCRIPTION
+
+*tracker extract* reads the file provided and extracts any metadata it
+can from this file, then displays the metadata on standard output.
+
+The metadata is displayed as a SPARQL update command, that can be run
+against a SPARQL endpoint to update its copy of the metadata.
+
+The actual extraction is done by a separate process. This is done to
+isolate the calling process from any memory leaks or crashes in the
+libraries Tracker uses to extract metadata.
+
+For more information see the libtracker-extract reference documentation.
+
+== OPTIONS
+
+*-v, --verbosity=<__LEVEL__>*::
+  This sets the log verbosity for the extractor process.
+
+The possible _LEVEL_ options are:
+
+___________________________________________________________________
+· _debug_ - Show EVERYTHING, from debug messages to errors.
+
+· _detailed_ - Show enough detail to understand what is happening.
+
+· _minimal_ - Show an overview of what is going on
+
+· _errors_ - Show only warnings, criticals, errors or fatal events.
+___________________________________________________________________
+
+*-o, --output-format=<__FORMAT__>*::
+  Choose which format to use to output results. Supported formats are
+  _sparql_, _turtle_ and _json-ld_.
+
+== EXAMPLES
+
+Using command line to extract metadata from a file:::
+
+$ tracker extract /path/to/some/file.mp3
+
+== ENVIRONMENT
+
+*TRACKER_EXTRACTORS_DIR*::
+  This is the directory which tracker uses to load the shared libraries
+  from (used for extracting metadata for specific file types). These are
+  needed on each invocation of tracker-store. If unset it will default
+  to the correct place. This is used mainly for testing purposes. The
+  default location is /usr/lib/tracker-1.0/extract-modules/.
+*TRACKER_EXTRACTOR_RULES_DIR*::
+  This is the directory which tracker uses to load the rules files from.
+  The rules files describe extractor modules and their supported MIME
+  types. The default location is /usr/share/tracker/extract-rules/.
+*TRACKER_USE_CONFIG_FILES*::
+  Don't use GSettings, instead use a config file similar to how settings
+  were saved in 0.10.x. That is, a file which is much like an .ini file.
+  These are saved to $HOME/.config/tracker/
+
+== SEE ALSO
+
+*tracker-store*(1), *tracker-sparql*(1), *tracker-stats*(1),
+*tracker-info*(1).
+
+- */usr/lib/tracker-1.0/extract-modules/*
+- */usr/share/tracker/extract-rules/*

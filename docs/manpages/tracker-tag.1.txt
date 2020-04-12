@@ -1,0 +1,75 @@
+tracker-tag(1)
+==============
+
+== NAME
+
+tracker-tag - Add, remove and list tags.
+
+== SYNOPSIS
+
+....
+tracker tag FILE1 [FILE2 ...] [-l <limit>] [-o <offset>] [-r]
+tracker tag -t [[TAG1] [TAG2] ...] [-s] [-r]
+tracker tag -a <TAG> [-e <description>] 
+tracker tag -d <TAG>
+....
+
+== DESCRIPTION
+
+List tags for local files or by the tag labels themselves if -t is used.
+
+It's also possible to manage tags with the -a and and -d options.
+
+The _FILE_ argument can be either a local path or a URI. It also does
+not have to be an absolute path.
+
+== OPTIONS
+
+*-t, --list*::
+  List all tags. Results include the number of files associated with
+  that tag and the tag's unique identifier. You can show the files
+  associated with each tag by using --show-files.
+
+The _TAG_ arguments are optional. If no _TAG_ argument is specified, all
+tags are listed. If one or more __TAG__s are given, either matching tags
+are listed (OR condition). For example, this will match any tags named
+either _foo_, _bar_ or _baz_:
+
+....
+$ tracker-tag -t foo bar baz
+....
+
+*-s, --show-files*::
+  Show the files associated with each tag. This option is ONLY available
+  WITH the *--list* option.
+*-a, --add=TAG*::
+  Add a tag with the name _TAG_. If no _FILE_ arguments are specified,
+  the tag is simply created (if it didn'talready exist) and no files are
+  associated with it. Multiple _FILE_ arguments can be specified.
+*-d, --delete=TAG*::
+  Delete a tag with the name _TAG_. If no _FILE_ arguments are
+  specified, the tag is deleted for ALL files. If _FILE_ arguments are
+  specified, only those files have the _TAG_ deleted.
+*-e, --description=STRING*::
+  This option ONLY applies when using *--add* and provides a description
+  to go with the tag label according to _STRING_.
+*-l, --limit=N*::
+  Limit search to N results. The default is 512.
+*-o, --offset=N*::
+  Offset the search results by N. For example, start at item number 10
+  in the results. The default is 0.
+*-r, --and-operator*::
+  Use AND operator for search terms instead of OR (the default). For
+  example:
+
+....
+$ tracker-tag -s -t sliff sloff
+....
+
+Should show files in the database that have both the _sliff_ and _sloff_
+tags.
+
+== SEE ALSO
+
+*tracker-store*(1), *tracker-sparql*(1), *tracker-search*(1),
+*tracker-info*(1).

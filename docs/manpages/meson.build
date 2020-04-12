@@ -7,30 +7,41 @@ if have_tracker_miner_rss
   daemon_manpages += 'miner-rss'
 endif
 
-foreach m: daemon_manpages
-    manpage = configure_file(
-        input: 'tracker-@0@.1'.format(m),
-        output: 'tracker-@0@-@1@.1'.format(m, tracker_api_major),
-        copy: true,
-        install: false)
-    install_man(manpage)
-endforeach
-
 cli_manpages = [
-    'daemon',
-    'extract',
-    'index',
-    'reset',
-    'search',
-    'status',
-    'tag',
+  'daemon',
+  'extract',
+  'index',
+  'reset',
+  'search',
+  'status',
+  'tag',
 ]
 
-foreach m: cli_manpages
-    manpage = configure_file(
-        input: 'tracker-@0@.1'.format(m),
-        output: 'tracker@0@-@1@.1'.format(tracker_api_major, m),
-        copy: true,
-        install: false)
-    install_man(manpage)
+foreach m : daemon_manpages + cli_manpages
+  manpage_src = 'tracker-@0@.1.txt'.format(m)
+  manpage_xml = 'tracker-@0@.1.xml'.format(m)
+  manpage = 'tracker@0@-@1@.1'.format(tracker_api_major, m)
+
+  xml = custom_target(manpage_xml,
+    command: [asciidoc,
+              '--attribute=author=The Tracker developers',
+              '--attribute=manversion=@0@'.format(meson.project_version()),
+              '--attribute=manmanual=Tracker manual',
+              '--backend', 'docbook',
+              '--doctype', 'manpage',
+              '--out-file', '@OUTPUT@', '@INPUT@'],
+    input: manpage_src,
+    output: manpage_xml
+  )
+
+  custom_target(manpage,
+    command: [xsltproc,
+              '--stringparam', 'man.authors.section.enabled', '0',
+              '/etc/asciidoc/docbook-xsl/manpage.xsl', '@INPUT@'],
+    capture: true,
+    input: xml,
+    output: manpage,
+    install: true,
+    install_dir: get_option('mandir')
+  )
 endforeach
