@@ -90,13 +90,6 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 
 	metadata = tracker_resource_new (NULL);
 
-	if ((tag = av_dict_get (format->metadata, "creation_time", NULL, 0))) {
-		content_created = tracker_date_guess (tag->value);
-		if (content_created) {
-			tracker_resource_set_string (metadata, "nie:contentCreated", content_created);
-		}
-	}
-
 	if (audio_stream) {
 		if (audio_stream->codec->sample_rate > 0) {
 			tracker_resource_set_int64 (metadata, "nfo:sampleRate", audio_stream->codec->sample_rate);
@@ -148,6 +141,13 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 			tracker_resource_set_int64 (metadata, "nmm:season", atoi(tag->value));
 		}
 
+		if ((tag = av_dict_get (format->metadata, "creation_time", NULL, 0))) {
+			content_created = tracker_date_guess (tag->value);
+			if (content_created) {
+				tracker_resource_set_string (metadata, "nie:contentCreated", content_created);
+			}
+		}
+
 	} else if (audio_stream) {
 		TrackerResource *album_artist = NULL, *performer = NULL;
 		char *album_artist_name = NULL;
@@ -184,6 +184,13 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 
 		if (!performer && (tag = find_tag (format, audio_stream, "performer"))) {
 			performer = tracker_extract_new_artist (tag->value);
+		}
+
+		if ((tag = av_dict_get (format->metadata, "date", NULL, 0))) {
+			content_created = tracker_date_guess (tag->value);
+			if (content_created) {
+				tracker_resource_set_string (metadata, "nie:contentCreated", content_created);
+			}
 		}
 
 		if (performer) {
