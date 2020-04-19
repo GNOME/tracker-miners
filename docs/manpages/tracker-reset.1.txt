@@ -7,7 +7,7 @@ tracker-reset - Reset the index and configuration
 
 == SYNOPSIS
 
-*tracker reset* [--hard | --soft] [--config] [--file _FILE_]
+*tracker reset* [--filesystem | --rss] [--config] [--file _FILE_]
 
 == DESCRIPTION
 
@@ -25,16 +25,11 @@ hard reset option. This behaves as if Tracker was just installed.
 
 == OPTIONS
 
-*-r, --hard*::
-  This kills all processes in the same way that *tracker daemon* --kill
-  does but it also removes all databases. Restarting *tracker-store*
-  re-creates the databases.
-*-e, --soft*::
-  A soft reset works exactly the same way that *--hard* does, with the
-  exception that the backup and journal are not removed. These are
-  restored when *tracker-store* is restarted. This command is useful if
-  you have a corrupt database but want to reply the journal to restore
-  it to the last known good place.
+*--filesystem*::
+  Removes data stored by tracker-miner-fs(1). The miner will automatically
+  recreate its cache from the filesystem when it restarts.
+*--rss::
+  Removes data stored by tracker-miner-rss(1).
 *-c, --config*::
   Resets all configuration to its defaults.
 *-f, --file _FILE_*::
@@ -45,4 +40,4 @@ hard reset option. This behaves as if Tracker was just installed.
 
 == SEE ALSO
 
-*tracker-daemon*(1). *tracker*(1).
+*tracker-daemon*(1). *tracker-miner-fs*(1), *tracker-miner-rss*(1).

@@ -50,27 +50,9 @@ Using command line to extract metadata from a file:::
 
 $ tracker extract /path/to/some/file.mp3
 
-== ENVIRONMENT
-
-*TRACKER_EXTRACTORS_DIR*::
-  This is the directory which tracker uses to load the shared libraries
-  from (used for extracting metadata for specific file types). These are
-  needed on each invocation of tracker-store. If unset it will default
-  to the correct place. This is used mainly for testing purposes. The
-  default location is /usr/lib/tracker-1.0/extract-modules/.
-*TRACKER_EXTRACTOR_RULES_DIR*::
-  This is the directory which tracker uses to load the rules files from.
-  The rules files describe extractor modules and their supported MIME
-  types. The default location is /usr/share/tracker/extract-rules/.
-*TRACKER_USE_CONFIG_FILES*::
-  Don't use GSettings, instead use a config file similar to how settings
-  were saved in 0.10.x. That is, a file which is much like an .ini file.
-  These are saved to $HOME/.config/tracker/
-
 == SEE ALSO
 
-*tracker-store*(1), *tracker-sparql*(1), *tracker-stats*(1),
-*tracker-info*(1).
+*tracker-sparql*(1), *tracker-stats*(1), *tracker-info*(1).
 
 - */usr/lib/tracker-1.0/extract-modules/*
 - */usr/share/tracker/extract-rules/*

@@ -71,5 +71,4 @@ tags.
 
 == SEE ALSO
 
-*tracker-store*(1), *tracker-sparql*(1), *tracker-search*(1),
-*tracker-info*(1).
+*tracker-sparql*(1), *tracker-search*(1), *tracker-info*(1).

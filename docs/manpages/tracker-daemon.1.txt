@@ -18,10 +18,7 @@ tracker daemon --miner <miner> --resume <cookie>
 
 == DESCRIPTION
 
-Tracker has many components to it including a "store" for handling data
-set updates and "miners" for handling data mining in their respective
-areas.
-
+Tracker indexes content with daemon processes that run in the background.
 The *tracker daemon* command allows for control of these components.
 This ranges from starting, stopping and killing processes to pausing and
 resuming them.
@@ -32,11 +29,7 @@ happening in real time from a top level and right down where the SPARQL
 commits are happening too.
 
 If no arguments are provided this command will show the current status
-of all Tracker entities (store and all available data miners).
-
-For *tracker-store*, the status is always "Idle" unless it is restoring
-a backup and/or replaying a journal (see also *tracker reset* --soft).
-For a list of common statuses, see *--list-common-statuses*.
+of all Tracker data miners.
 
 The data miners can be paused or resumed using this command and you can
 also list miners running and available.
@@ -45,34 +38,16 @@ also list miners running and available.
 
 *-p, --list-processes*::
   This lists all Tracker processes in the system.
-*-k, --kill=[_daemons_]*::
+*-k, --kill::
   This uses SIGKILL to stop all Tracker processes found matching the
   parameter, if no extra parameter is passed, "all" will be assumed.
   This is not advised unless you are having problems stopping Tracker in
   the first place. This *GUARANTEES* death.
-
-The possible _daemons_ options are:
-
-_____________________________________
-· _all_ - All daemons.
-
-· _store_ - Only the *tracker-store*.
-
-· _miners_ - Only data miners.
-_____________________________________
-
-*-t, --terminate=[daemons]*::
-  This uses SIGTERM to stop all Tracker processes found matching the
-  parameter, if no extra parameter is passed, "all" will be assumed.
-  This is recommended over --kill because it gives the processes time to
-  shutdown cleanly.
-
-For a list of possible _daemons_, see --kill.
-
+*-t, --terminate=::
+  This uses SIGTERM to stop all Tracker processes.  This is recommended over
+  --kill because it gives the processes time to shutdown cleanly.
 *-s, --start*::
-  Starts all miners. This indirectly starts *tracker-store* too because
-  it is needed for miners to operate properly. The store is started from
-  D-Bus.
+  Starts all miners.
 *--get-log-verbosity*::
   This displays the log verbosity for ALL components using GSettings for
   this configuration. For possible values, see *--set-log-verbosity.*
@@ -111,7 +86,7 @@ be a comma separated list of shorthand or long hand ontology properties.
 For example:
 
 ....
-    $ tracker-control -w nie:url,nie:mimeType,nfo:fileSize,nie:dataSource
+    $ tracker-daemon -w nie:url,nie:mimeType,nfo:fileSize,nie:dataSource
     Now listening for resource updates to the database
     All nie:plainTextContent properties are omitted
 
@@ -168,7 +143,3 @@ of the miner in question.
   The _cookie_ is given by a successful *--pause* command. It is a
   number which identifies each pause request. When all pauses have been
   resumed, the miner will resume working.
-
-== SEE ALSO
-
-*tracker-store*(1).

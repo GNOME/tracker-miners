@@ -94,5 +94,4 @@ _expression_::
 
 == SEE ALSO
 
-*tracker-store*(1), *tracker-stats*(1), *tracker-tag*(1),
-*tracker-info*(1).
+*tracker-stats*(1), *tracker-tag*(1), *tracker-info*(1).

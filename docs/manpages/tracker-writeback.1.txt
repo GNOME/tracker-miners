@@ -39,4 +39,4 @@ tracker-miner-fs configuration.
 
 == SEE ALSO
 
-*tracker-store*(1), *tracker-miner-fs*(1). *tracker-extract*(1).
+*tracker-miner-fs*(1). *tracker-extract*(1).

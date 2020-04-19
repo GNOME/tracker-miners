@@ -41,19 +41,6 @@ than one instance of this at the same time.
   would be monitored for changes. This works with non-existing *FILE*
   arguments as well as existing *FILE* arguments.
 
-== ENVIRONMENT
-
-*TRACKER_USE_LOG_FILES*::
-  Don't just log to stdout and stderr, but to log files too which are
-  kept in $HOME/.local/share/tracker/. This came into effect in 0.15.3
-  and 0.16.0. After this version of Tracker, logging to file (usually
-  useful for debugging) can only be done by declaring this environment
-  variable.
-*TRACKER_USE_CONFIG_FILES*::
-  Don't use GSettings, instead use a config file similar to how settings
-  were saved in 0.10.x. That is, a file which is much like an .ini file.
-  These are saved to $HOME/.config/tracker/
-
 == SEE ALSO
 
-*tracker-store*(1), *tracker-info*(1).
+*tracker-info*(1).

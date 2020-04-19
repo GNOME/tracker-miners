@@ -27,7 +27,7 @@ than one instance of this at the same time.
 *-v, --verbosity=\{0|1|2|3}*::
   Sets the logging level, 0=errors, 1=minimal, 2=detailed, 3=debug.
 *-a, --add-feed=URL*::
-  Adds a feed to the Tracker store. This must be used with *--title*
+  Adds a feed to be indexed. This must be used with *--title*
   option. An examples of such a URL would be:
 
 http://planet.gnome.org/atom.xml
@@ -43,4 +43,4 @@ You can use *tracker-search --feeds* to get the latest feed information.
 
 == SEE ALSO
 
-*tracker-store*(1), *tracker-info*(1), *tracker-search*(1).
+*tracker-info*(1), *tracker-search*(1).

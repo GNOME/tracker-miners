@@ -58,8 +58,7 @@ finally statistics about the data in the database (e.g. how many
 
 == SEE ALSO
 
-*tracker-store*(1), *tracker-control*(1), *tracker-sparql*(1),
-*tracker-info*(1).
+*tracker-daemon*(1), *tracker-sparql*(1), *tracker-info*(1).
 
 - *http://nepomuk.semanticdesktop.org/*
 - *http://www.w3.org/TR/rdf-sparql-query/*
