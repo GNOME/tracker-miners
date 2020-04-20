@@ -6,7 +6,6 @@ variables:
   # See HACKING.md for more information.
   G_MESSAGES_DEBUG: "Tracker"
   TRACKER_DEBUG: ""
-  TRACKER_VERBOSITY: "1"
   TRACKER_TESTS_VERBOSE: "no"
 
   # This can be used when debugging test failures that only occur within GitLab CI.
@@ -44,7 +43,6 @@ stages:
       echo
       echo "G_MESSAGES_DEBUG: ${G_MESSAGES_DEBUG}"
       echo "TRACKER_DEBUG: ${TRACKER_DEBUG}"
-      echo "TRACKER_VERBOSITY: ${TRACKER_VERBOSITY}"
       echo "TRACKER_TESTS_VERBOSE: ${TRACKER_TESTS_VERBOSE}"
       echo "MESON_TEST_EXTRA_ARGS: ${MESON_TEST_EXTRA_ARGS}"
       echo

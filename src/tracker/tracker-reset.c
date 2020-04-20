@@ -32,19 +32,16 @@
 #include <libtracker-sparql/tracker-sparql.h>
 
 #include "tracker-process.h"
-#include "tracker-config.h"
 #include "tracker-color.h"
 #include "tracker-miner-manager.h"
 
 static gboolean files = FALSE;
 static gboolean rss = FALSE;
-static gboolean remove_config;
 static gchar *filename = NULL;
 
 #define RESET_OPTIONS_ENABLED() \
 	(files || \
 	 rss || \
-	 remove_config || \
 	 filename)
 
 static GOptionEntry entries[] = {
@@ -53,9 +50,6 @@ static GOptionEntry entries[] = {
 	  NULL },
 	{ "rss", 'r', 0, G_OPTION_ARG_NONE, &rss,
 	  N_("Remove RSS indexer database"),
-	  NULL },
-	{ "config", 'c', 0, G_OPTION_ARG_NONE, &remove_config,
-	  N_("Remove all configuration files so they are re-generated on next start"),
 	  NULL },
 	{ "file", 'f', 0, G_OPTION_ARG_FILENAME, &filename,
 	  N_("Erase indexed information about a file, works recursively for directories"),
@@ -221,47 +215,6 @@ reset_run (void)
 		delete_databases (cache_location);
 		g_object_unref (cache_location);
 		g_free (dir);
-	}
-
-	if (remove_config) {
-		GSList *all, *l;
-
-		g_print ("%s\n", _("Resetting existing configuration…"));
-
-		all = tracker_gsettings_get_all (NULL);
-
-		if (!all) {
-			return EXIT_FAILURE;
-		}
-
-		for (l = all; l; l = l->next) {
-			ComponentGSettings *c = l->data;
-			gchar **keys, **p;
-
-			if (!c) {
-				continue;
-			}
-
-			g_print ("  %s\n", c->name);
-
-			keys = g_settings_schema_list_keys (c->schema);
-			for (p = keys; p && *p; p++) {
-				g_print ("    %s\n", *p);
-				g_settings_reset (c->settings, *p);
-			}
-
-			if (keys) {
-				g_strfreev (keys);
-			}
-
-			g_settings_apply (c->settings);
-		}
-
-		g_settings_sync ();
-
-		tracker_gsettings_free (all);
-
-		return EXIT_SUCCESS;
 	}
 
 	return EXIT_SUCCESS;

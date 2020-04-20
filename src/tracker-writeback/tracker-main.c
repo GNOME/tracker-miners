@@ -24,10 +24,7 @@
 
 #include <glib/gi18n.h>
 
-#include <libtracker-miners-common/tracker-log.h>
-
 #include "tracker-writeback.h"
-#include "tracker-config.h"
 
 #define ABOUT	  \
 	"Tracker " PACKAGE_VERSION "\n"
@@ -65,24 +62,14 @@ static GOptionEntry  entries[] = {
 };
 
 
-static void
-sanity_check_option_values (TrackerConfig *config)
-{
-	g_message ("General options:");
-	g_message ("  Verbosity  ............................  %d",
-	           tracker_config_get_verbosity (config));
-}
-
 int
 main (int   argc,
       char *argv[])
 {
-	TrackerConfig *config;
 	TrackerController *controller;
 	GOptionContext *context;
 	GMainLoop *loop;
 	GError *error = NULL;
-	gchar *log_filename;
 	guint shutdown_timeout;
 
 	/* Set up locale */
@@ -106,22 +93,6 @@ main (int   argc,
 		return EXIT_SUCCESS;
 	}
 
-	/* Initialize logging */
-	config = tracker_config_new ();
-
-	if (verbosity > -1) {
-		tracker_config_set_verbosity (config, verbosity);
-	}
-
-	tracker_log_init (tracker_config_get_verbosity (config),
-	                  &log_filename);
-	if (log_filename != NULL) {
-		g_message ("Using log file:'%s'", log_filename);
-		g_free (log_filename);
-	}
-
-	sanity_check_option_values (config);
-
 	if (disable_shutdown) {
 		shutdown_timeout = 0;
 	} else {
@@ -141,14 +112,9 @@ main (int   argc,
 	loop = g_main_loop_new (NULL, FALSE);
 	g_main_loop_run (loop);
 
-
-	tracker_log_shutdown ();
-
 	g_object_unref (controller);
 
 	g_main_loop_unref (loop);
-
-	g_object_unref (config);
 
 	return EXIT_SUCCESS;
 }

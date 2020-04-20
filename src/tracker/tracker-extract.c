@@ -28,9 +28,6 @@
 
 #include <libtracker-miners-common/tracker-common.h>
 
-#include "tracker-config.h"
-
-static gchar *verbosity;
 static gchar *output_format = "turtle";
 static gchar **filenames;
 
@@ -38,9 +35,6 @@ static gchar **filenames;
 	((filenames && g_strv_length (filenames) > 0))
 
 static GOptionEntry entries[] = {
-	{ "verbosity", 'v', 0, G_OPTION_ARG_STRING, &verbosity,
-	  N_("Sets the logging verbosity to LEVEL (“debug”, “detailed”, “minimal”, “errors”) for all processes"),
-	  N_("LEVEL") },
 	{ "output-format", 'o', 0, G_OPTION_ARG_STRING, &output_format,
 	  N_("Output results format: “sparql”, “turtle” or “json-ld”"),
 	  N_("FORMAT") },
@@ -52,22 +46,17 @@ static GOptionEntry entries[] = {
 
 
 static gint
-extract_files (TrackerVerbosity  verbosity,
-               char             *output_format)
+extract_files (char *output_format)
 {
 	char **p;
 	char *tracker_extract_path;
-	char verbosity_str[2];
 	GError *error = NULL;
-
-	snprintf (verbosity_str, 2, "%i", verbosity);
 
 	tracker_extract_path = g_build_filename(LIBEXECDIR, "tracker-extract-3", NULL);
 
 	for (p = filenames; *p; p++) {
 		char *argv[] = {tracker_extract_path,
 		                "--output-format", output_format,
-		                "--verbosity", verbosity_str,
 		                "--file", *p, NULL };
 
 		g_spawn_sync(NULL, argv, NULL, G_SPAWN_DEFAULT, NULL, NULL, NULL, NULL, NULL, &error);
@@ -89,25 +78,7 @@ extract_files (TrackerVerbosity  verbosity,
 static int
 extract_run (void)
 {
-	TrackerVerbosity verbosity_level = TRACKER_VERBOSITY_ERRORS;
-
-	if (verbosity) {
-		if (g_ascii_strcasecmp (verbosity, "debug") == 0) {
-			verbosity_level = TRACKER_VERBOSITY_DEBUG;
-		} else if (g_ascii_strcasecmp (verbosity, "detailed") == 0) {
-			verbosity_level = TRACKER_VERBOSITY_DETAILED;
-		} else if (g_ascii_strcasecmp (verbosity, "minimal") == 0) {
-			verbosity_level = TRACKER_VERBOSITY_MINIMAL;
-		} else if (g_ascii_strcasecmp (verbosity, "errors") == 0) {
-			verbosity_level = TRACKER_VERBOSITY_ERRORS;
-		} else {
-			g_printerr ("%s\n",
-			            _("Invalid log verbosity, try “debug”, “detailed”, “minimal” or “errors”"));
-			return EXIT_FAILURE;
-		}
-	}
-
-	return extract_files (verbosity_level, output_format);
+	return extract_files (output_format);
 }
 
 static int
