@@ -119,6 +119,7 @@ add_project_arguments('-Wno-pointer-sign', language: 'c')
 
 add_project_arguments('-DTRACKER_COMPILATION', language: 'c')
 add_project_arguments('-DG_LOG_DOMAIN="Tracker"', language: 'c')
+add_project_arguments('-DG_LOG_STRUCTURED=1', language: 'c')
 
 debug_cflags = []
 buildtype = get_option('buildtype')
