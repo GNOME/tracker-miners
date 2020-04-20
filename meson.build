@@ -120,6 +120,19 @@ add_project_arguments('-Wno-pointer-sign', language: 'c')
 add_project_arguments('-DTRACKER_COMPILATION', language: 'c')
 add_project_arguments('-DG_LOG_DOMAIN="Tracker"', language: 'c')
 
+debug_cflags = []
+buildtype = get_option('buildtype')
+if buildtype.startswith('debug')
+  debug_cflags += '-DG_ENABLE_DEBUG'
+  if buildtype == 'debug'
+    debug_cflags += '-DG_ENABLE_CONSISTENCY_CHECKS'
+  endif
+elif buildtype == 'release'
+  debug_cflags += '-DG_DISABLE_CAST_CHECKS'
+endif
+
+add_project_arguments(debug_cflags, language: 'c')
+
 ##################################################################
 # Check for libtracker-common: battery/mains power detection
 #

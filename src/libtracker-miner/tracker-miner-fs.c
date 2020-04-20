@@ -30,32 +30,6 @@
 #include "tracker-sparql-buffer.h"
 #include "tracker-file-notifier.h"
 
-/* If defined will print push/pop actions on queues */
-#ifdef EVENT_QUEUE_ENABLE_TRACE
-#warning Event Queue traces enabled
-#define EVENT_QUEUE_LOG_PREFIX "[Event Queues] "
-#define EVENT_QUEUE_STATUS_TIMEOUT_SECS 30
-#define trace_eq(message, ...) g_message (EVENT_QUEUE_LOG_PREFIX message, ##__VA_ARGS__)
-#define trace_eq_event(event) \
-	do { \
-		const gchar *event_type_name[] = { "CREATED", "UPDATED", "DELETED", "MOVED" }; \
-		gchar *uri1 = g_file_get_uri (event->file); \
-		gchar *uri2 = event->dest_file ? g_file_get_uri (event->dest_file) : NULL; \
-		g_message ("%s New %s event: %s%s%s%s", \
-		           EVENT_QUEUE_LOG_PREFIX, \
-		           event_type_name[event->type], \
-		           event->attributes_update ? "(attributes only) " : "", \
-		           uri1, \
-		           uri2 ? "->" : "", \
-		           uri2 ? uri2 : ""); \
-		g_free (uri1); \
-		g_free (uri2); \
-	} while (0)
-#else
-#define trace_eq(...)
-#define trace_eq_event(...)
-#endif /* EVENT_QUEUE_ENABLE_TRACE */
-
 /* Default processing pool limits to be set */
 #define DEFAULT_WAIT_POOL_LIMIT 1
 #define DEFAULT_READY_POOL_LIMIT 1
@@ -298,6 +272,36 @@ G_DEFINE_ABSTRACT_TYPE_WITH_CODE (TrackerMinerFS, tracker_miner_fs, TRACKER_TYPE
                                   G_ADD_PRIVATE (TrackerMinerFS)
                                   G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE,
                                                          miner_fs_initable_iface_init));
+
+/* For TRACKER_DEBUG=miner-fs-events */
+#ifdef G_ENABLE_DEBUG
+#define EVENT_QUEUE_LOG_PREFIX "[Event Queues] "
+#define EVENT_QUEUE_STATUS_TIMEOUT_SECS 30
+
+static void
+debug_print_event (QueueEvent *event)
+{
+	const gchar *event_type_name[] = { "CREATED", "UPDATED", "DELETED", "MOVED" };
+	gchar *uri1 = g_file_get_uri (event->file);
+	gchar *uri2 = event->dest_file ? g_file_get_uri (event->dest_file) : NULL;
+	g_message ("%s New %s event: %s%s%s%s",
+	            EVENT_QUEUE_LOG_PREFIX,
+	            event_type_name[event->type],
+	            event->attributes_update ? "(attributes only) " : "",
+	            uri1,
+	            uri2 ? "->" : "",
+	            uri2 ? uri2 : "");
+	g_free (uri1);
+	g_free (uri2);
+}
+
+#define trace_eq(message, ...) TRACKER_NOTE (MINER_FS_EVENTS, g_message (EVENT_QUEUE_LOG_PREFIX message, ##__VA_ARGS__))
+#define trace_eq_event(event) TRACKER_NOTE (MINER_FS_EVENTS, debug_print_event (event));
+
+#else
+#define trace_eq(...)
+#define trace_eq_event(...)
+#endif /* G_ENABLE_DEBUG */
 
 static void
 tracker_miner_fs_class_init (TrackerMinerFSClass *klass)

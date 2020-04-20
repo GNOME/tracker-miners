@@ -10,6 +10,7 @@ tracker_miners_common_sources = [
   'tracker-date-time.c',
   'tracker-dbus.c',
   'tracker-domain-ontology.c',
+  'tracker-debug.c',
   'tracker-file-utils.c',
   'tracker-fts-config.c',
   'tracker-ioprio.c',

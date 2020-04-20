@@ -30,7 +30,9 @@
 
 #include "tracker-date-time.h"
 #include "tracker-dbus.h"
+#include "tracker-debug.h"
 #include "tracker-domain-ontology.h"
+#include "tracker-enums.h"
 #include "tracker-file-utils.h"
 #include "tracker-fts-config.h"
 #include "tracker-ioprio.h"
