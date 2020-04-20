@@ -35,7 +35,6 @@
 #include <libtracker-miners-common/tracker-common.h>
 #include <libtracker-sparql/tracker-sparql.h>
 
-#include "tracker-config.h"
 #include "tracker-process.h"
 #include "tracker-dbus.h"
 #include "tracker-miner-manager.h"
@@ -72,8 +71,6 @@ static gboolean list_miners_available;
 static gboolean pause_details;
 
 static gboolean list_processes;
-static gchar *set_log_verbosity;
-static gboolean get_log_verbosity;
 static gboolean start;
 static gboolean kill_miners;
 static gboolean terminate_miners;
@@ -90,8 +87,6 @@ static gchar *restore;
 	  list_miners_available || \
 	  pause_details) || \
 	 (list_processes || \
-	  get_log_verbosity || \
-	  set_log_verbosity || \
 	  start || \
 	  kill_miners || \
 	  terminate_miners || \
@@ -164,12 +159,6 @@ static GOptionEntry entries[] = {
 	  N_("APPS") },
 	{ "start", 's', 0, G_OPTION_ARG_NONE, &start,
 	  N_("Starts miners"),
-	  NULL },
-	{ "set-log-verbosity", 0, 0, G_OPTION_ARG_STRING, &set_log_verbosity,
-	  N_("Sets the logging verbosity to LEVEL (“debug”, “detailed”, “minimal”, “errors”) for all processes"),
-	  N_("LEVEL") },
-	{ "get-log-verbosity", 0, 0, G_OPTION_ARG_NONE, &get_log_verbosity,
-	  N_("Show logging values in terms of log verbosity for each process"),
 	  NULL },
 	{ NULL }
 };
@@ -702,63 +691,6 @@ miner_pause_details (void)
 	return EXIT_SUCCESS;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-inline static const gchar *
-verbosity_to_string (TrackerVerbosity verbosity)
-{
-        GType type;
-        GEnumClass *enum_class;
-        GEnumValue *enum_value;
-
-        type = tracker_verbosity_get_type ();
-        enum_class = G_ENUM_CLASS (g_type_class_peek (type));
-        enum_value = g_enum_get_value (enum_class, verbosity);
-
-        if (!enum_value) {
-                return "unknown";
-        }
-
-        return enum_value->value_nick;
-}
-
-inline static void
-tracker_gsettings_print_verbosity (GSList   *all,
-                                   gint      longest,
-                                   gboolean  miners)
-{
-	GSList *l;
-
-	for (l = all; l; l = l->next) {
-		ComponentGSettings *c;
-		TrackerVerbosity v;
-
-		c = l->data;
-
-		if (c->is_miner == miners) {
-			continue;
-		}
-
-		v = g_settings_get_enum (c->settings, "verbosity");
-
-		g_print ("  %-*.*s: %s\n",
-		         longest,
-		         longest,
-		         c->name,
-		         verbosity_to_string (v));
-	}
-}
-
 static gint
 daemon_run (void)
 {
@@ -985,8 +917,6 @@ daemon_run (void)
 
 	/* Processes */
 	GError *error = NULL;
-	gpointer verbosity_type_enum_class_pointer = NULL;
-	TrackerVerbosity set_log_verbosity_value = TRACKER_VERBOSITY_ERRORS;
 
 	/* Constraints */
 
@@ -994,44 +924,6 @@ daemon_run (void)
 		g_printerr ("%s\n",
 		            _("You can not use the --kill and --terminate arguments together"));
 		return EXIT_FAILURE;
-	}
-
-	if (get_log_verbosity && set_log_verbosity) {
-		g_printerr ("%s\n",
-		            _("You can not use the --get-logging and --set-logging arguments together"));
-		return EXIT_FAILURE;
-	}
-
-	if (set_log_verbosity) {
-		if (g_ascii_strcasecmp (set_log_verbosity, "debug") == 0) {
-			set_log_verbosity_value = TRACKER_VERBOSITY_DEBUG;
-		} else if (g_ascii_strcasecmp (set_log_verbosity, "detailed") == 0) {
-			set_log_verbosity_value = TRACKER_VERBOSITY_DETAILED;
-		} else if (g_ascii_strcasecmp (set_log_verbosity, "minimal") == 0) {
-			set_log_verbosity_value = TRACKER_VERBOSITY_MINIMAL;
-		} else if (g_ascii_strcasecmp (set_log_verbosity, "errors") == 0) {
-			set_log_verbosity_value = TRACKER_VERBOSITY_ERRORS;
-		} else {
-			g_printerr ("%s\n",
-			            _("Invalid log verbosity, try “debug”, “detailed”, “minimal” or “errors”"));
-			return EXIT_FAILURE;
-		}
-	}
-
-	if (get_log_verbosity || set_log_verbosity) {
-		GType etype;
-
-		/* Since we don't reference this enum anywhere, we do
-		 * it here to make sure it exists when we call
-		 * g_type_class_peek(). This wouldn't be necessary if
-		 * it was a param in a GObject for example.
-		 *
-		 * This does mean that we are leaking by 1 reference
-		 * here and should clean it up, but it doesn't grow so
-		 * this is acceptable.
-		 */
-		etype = tracker_verbosity_get_type ();
-		verbosity_type_enum_class_pointer = g_type_class_ref (etype);
 	}
 
 	if (list_processes) {
@@ -1071,82 +963,6 @@ daemon_run (void)
 			retval = tracker_process_stop (TRACKER_PROCESS_TYPE_MINERS, TRACKER_PROCESS_TYPE_NONE);
 
 		return retval;
-	}
-
-	/* Deal with logging changes AFTER the config may have been
-	 * reset, this way users can actually use --remove-config with
-	 * the --set-logging switch.
-	 */
-	if (get_log_verbosity) {
-		GSList *all;
-		gint longest = 0;
-
-		all = tracker_gsettings_get_all (&longest);
-
-		if (!all) {
-			return EXIT_FAILURE;
-		}
-
-		g_print ("%s:\n", _("Components"));
-		tracker_gsettings_print_verbosity (all, longest, TRUE);
-		g_print ("\n");
-
-		/* Miners */
-		g_print ("%s (%s):\n",
-		         _("Miners"),
-		         _("Only those with config listed"));
-		tracker_gsettings_print_verbosity (all, longest, FALSE);
-		g_print ("\n");
-
-		tracker_gsettings_free (all);
-		return EXIT_SUCCESS;
-	}
-
-	if (set_log_verbosity) {
-		GSList *all;
-		gchar *str;
-		gint longest = 0;
-
-		all = tracker_gsettings_get_all (&longest);
-
-		if (!all) {
-			return EXIT_FAILURE;
-		}
-
-		str = g_strdup_printf (_("Setting log verbosity for all components to “%s”…"), set_log_verbosity);
-		g_print ("%s\n", str);
-		g_print ("\n");
-		g_free (str);
-
-		tracker_gsettings_set_all (all, set_log_verbosity_value);
-		tracker_gsettings_free (all);
-
-		/* We free to make sure we get new settings and that
-		 * they're saved properly.
-		 */
-		all = tracker_gsettings_get_all (&longest);
-
-		if (!all) {
-			return EXIT_FAILURE;
-		}
-
-		g_print ("%s:\n", _("Components"));
-		tracker_gsettings_print_verbosity (all, longest, TRUE);
-		g_print ("\n");
-
-		/* Miners */
-		g_print ("%s (%s):\n",
-		         _("Miners"),
-		         _("Only those with config listed"));
-		tracker_gsettings_print_verbosity (all, longest, FALSE);
-		g_print ("\n");
-
-		tracker_gsettings_free (all);
-		return EXIT_SUCCESS;
-	}
-
-	if (verbosity_type_enum_class_pointer) {
-		g_type_class_unref (verbosity_type_enum_class_pointer);
 	}
 
 	if (start) {

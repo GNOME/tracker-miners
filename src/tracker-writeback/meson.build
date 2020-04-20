@@ -28,8 +28,6 @@ foreach module : modules
 endforeach
 
 tracker_writeback_sources = [
-  'tracker-config.c',
-  'tracker-config.h',
   'tracker-writeback-file.c',
   'tracker-writeback-file.h',
   'tracker-writeback-module.c',

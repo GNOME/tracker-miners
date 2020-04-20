@@ -19,12 +19,6 @@ Boston, MA  02110-1301, USA.
 -->
 <schemalist>
   <schema id="org.freedesktop.Tracker3.Miner.Files" path="/org/freedesktop/tracker/miner/files/" gettext-domain="tracker-miners">
-    <key name="verbosity" enum="org.freedesktop.TrackerMiners3.TrackerVerbosity">
-      <default>'errors'</default>
-      <summary>Log verbosity</summary>
-      <description>Log verbosity.</description>
-    </key>
-
     <key name="initial-sleep" type="i">
       <summary>Initial sleep</summary>
       <description>Initial sleep time, in seconds.</description>
