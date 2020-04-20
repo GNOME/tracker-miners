@@ -44,7 +44,6 @@ static void     config_constructed          (GObject       *object);
 enum {
 	PROP_0,
 	PROP_VERBOSITY,
-	PROP_SCHED_IDLE,
 	PROP_MAX_BYTES,
 	PROP_MAX_MEDIA_ART_WIDTH,
 	PROP_WAIT_FOR_MINER_FS,
@@ -70,14 +69,6 @@ tracker_config_class_init (TrackerConfigClass *klass)
 	                                                    "Log verbosity (0=errors, 1=minimal, 2=detailed, 3=debug)",
 	                                                    TRACKER_TYPE_VERBOSITY,
 	                                                    TRACKER_VERBOSITY_ERRORS,
-	                                                    G_PARAM_READWRITE));
-	g_object_class_install_property (object_class,
-	                                 PROP_SCHED_IDLE,
-	                                 g_param_spec_enum ("sched-idle",
-	                                                    "Scheduler priority when idle",
-	                                                    "Scheduler priority when idle (0=always, 1=first-index, 2=never)",
-	                                                    TRACKER_TYPE_SCHED_IDLE,
-	                                                    TRACKER_SCHED_IDLE_FIRST_INDEX,
 	                                                    G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class,
@@ -121,7 +112,6 @@ config_set_property (GObject      *object,
 		break;
 
 	/* We don't care about the others... we don't save anyway. */
-	case PROP_SCHED_IDLE:
 	case PROP_MAX_BYTES:
 	case PROP_MAX_MEDIA_ART_WIDTH:
 	case PROP_WAIT_FOR_MINER_FS:
@@ -145,11 +135,6 @@ config_get_property (GObject    *object,
 	case PROP_VERBOSITY:
 		g_value_set_enum (value,
 		                  tracker_config_get_verbosity (config));
-		break;
-
-	case PROP_SCHED_IDLE:
-		g_value_set_enum (value,
-		                  tracker_config_get_sched_idle (config));
 		break;
 
 	case PROP_MAX_BYTES:
@@ -210,7 +195,6 @@ config_constructed (GObject *object)
 	 * config is different to the default.
 	 */
 	g_settings_bind (settings, "verbosity", object, "verbosity", G_SETTINGS_BIND_GET | G_SETTINGS_BIND_GET_NO_CHANGES);
-	g_settings_bind (settings, "sched-idle", object, "sched-idle", G_SETTINGS_BIND_GET);
 	g_settings_bind (settings, "wait-for-miner-fs", object, "wait-for-miner-fs", G_SETTINGS_BIND_GET);
 
 	/* Cache settings accessed from extractor modules, we don't want
@@ -277,14 +261,6 @@ tracker_config_set_verbosity (TrackerConfig *config,
 	g_return_if_fail (TRACKER_IS_CONFIG (config));
 
 	g_settings_set_enum (G_SETTINGS (config), "verbosity", value);
-}
-
-gint
-tracker_config_get_sched_idle (TrackerConfig *config)
-{
-	g_return_val_if_fail (TRACKER_IS_CONFIG (config), TRACKER_SCHED_IDLE_FIRST_INDEX);
-
-	return g_settings_get_enum (G_SETTINGS (config), "sched-idle");
 }
 
 gint

@@ -180,8 +180,6 @@ sanity_check_option_values (TrackerConfig *config)
 	g_message ("General options:");
 	g_message ("  Verbosity  ............................  %d",
 	           tracker_config_get_verbosity (config));
-	g_message ("  Sched Idle  ...........................  %d",
-	           tracker_config_get_sched_idle (config));
 	g_message ("  Max bytes (per file)  .................  %d",
 	           tracker_config_get_max_bytes (config));
 }

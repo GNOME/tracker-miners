@@ -320,7 +320,7 @@ item_warn (TrackerSparqlConnection *conn,
 
 	g_warning ("If the error above is recurrent for the same item/ID, "
 	           "consider running \"%s\" in the terminal with the "
-	           "TRACKER_VERBOSITY=3 environment variable, and filing a "
+	           "G_MESSAGES_DEBUG=Tracker environment variable, and filing a "
 	           "bug with the additional information", g_get_prgname ());
 
 	g_debug ("Sparql was:\n%s", sparql);

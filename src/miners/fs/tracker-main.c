@@ -58,7 +58,6 @@
 
 static GMainLoop *main_loop;
 
-static gint verbosity = -1;
 static gint initial_sleep = -1;
 static gboolean no_daemon;
 static gchar *eligible;
@@ -68,11 +67,6 @@ static gboolean do_crawling = FALSE;
 static gchar *domain_ontology_name = NULL;
 
 static GOptionEntry entries[] = {
-	{ "verbosity", 'v', 0,
-	  G_OPTION_ARG_INT, &verbosity,
-	  N_("Logging, 0 = errors only, "
-	     "1 = minimal, 2 = detailed and 3 = debug (default=0)"),
-	  NULL },
 	{ "initial-sleep", 's', 0,
 	  G_OPTION_ARG_INT, &initial_sleep,
 	  N_("Initial sleep time in seconds, "
@@ -101,10 +95,6 @@ static void
 sanity_check_option_values (TrackerConfig *config)
 {
 	g_message ("General options:");
-	g_message ("  Verbosity  ............................  %d",
-	           tracker_config_get_verbosity (config));
-	g_message ("  Sched Idle  ...........................  %d",
-	           tracker_config_get_sched_idle (config));
 	g_message ("  Initial Sleep  ........................  %d",
 	           tracker_config_get_initial_sleep (config));
 	g_message ("  Writeback  ............................  %s",

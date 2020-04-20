@@ -38,7 +38,6 @@
 
 /* Default values */
 #define DEFAULT_VERBOSITY                        0
-#define DEFAULT_SCHED_IDLE                       1
 #define DEFAULT_INITIAL_SLEEP                    15       /* 0->1000 */
 #define DEFAULT_ENABLE_MONITORS                  TRUE
 #define DEFAULT_THROTTLE                         0        /* 0->20 */
@@ -101,7 +100,6 @@ enum {
 
 	/* General */
 	PROP_VERBOSITY,
-	PROP_SCHED_IDLE,
 	PROP_INITIAL_SLEEP,
 
 	/* Monitors */
@@ -147,14 +145,6 @@ tracker_config_class_init (TrackerConfigClass *klass)
 	                                                    "Log verbosity (0=errors, 1=minimal, 2=detailed, 3=debug)",
 	                                                    TRACKER_TYPE_VERBOSITY,
 	                                                    DEFAULT_VERBOSITY,
-	                                                    G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
-	g_object_class_install_property (object_class,
-	                                 PROP_SCHED_IDLE,
-	                                 g_param_spec_enum ("sched-idle",
-	                                                    "Scheduler priority when idle",
-	                                                    "Scheduler priority when idle (0=always, 1=first-index, 2=never)",
-	                                                    TRACKER_TYPE_SCHED_IDLE,
-	                                                    DEFAULT_SCHED_IDLE,
 	                                                    G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 	g_object_class_install_property (object_class,
 	                                 PROP_INITIAL_SLEEP,
@@ -405,9 +395,6 @@ config_get_property (GObject    *object,
 		/* General */
 	case PROP_VERBOSITY:
 		g_value_set_enum (value, tracker_config_get_verbosity (config));
-		break;
-	case PROP_SCHED_IDLE:
-		g_value_set_enum (value, tracker_config_get_sched_idle (config));
 		break;
 	case PROP_INITIAL_SLEEP:
 		g_value_set_int (value, tracker_config_get_initial_sleep (config));
@@ -677,7 +664,6 @@ config_constructed (GObject *object)
 	 * config is different to the default.
 	 */
 	g_settings_bind (settings, "verbosity", object, "verbosity", G_SETTINGS_BIND_GET | G_SETTINGS_BIND_GET_NO_CHANGES);
-	g_settings_bind (settings, "sched-idle", object, "sched-idle", G_SETTINGS_BIND_GET);
 	g_settings_bind (settings, "initial-sleep", object, "initial-sleep", G_SETTINGS_BIND_GET | G_SETTINGS_BIND_GET_NO_CHANGES);
 	g_settings_bind (settings, "throttle", object, "throttle", G_SETTINGS_BIND_GET);
 	g_settings_bind (settings, "low-disk-space-limit", object, "low-disk-space-limit", G_SETTINGS_BIND_GET);
@@ -748,14 +734,6 @@ tracker_config_get_verbosity (TrackerConfig *config)
 	g_return_val_if_fail (TRACKER_IS_CONFIG (config), DEFAULT_VERBOSITY);
 
 	return g_settings_get_enum (G_SETTINGS (config), "verbosity");
-}
-
-gint
-tracker_config_get_sched_idle (TrackerConfig *config)
-{
-	g_return_val_if_fail (TRACKER_IS_CONFIG (config), DEFAULT_SCHED_IDLE);
-
-	return g_settings_get_enum (G_SETTINGS (config), "sched-idle");
 }
 
 gint

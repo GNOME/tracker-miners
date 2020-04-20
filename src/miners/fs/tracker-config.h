@@ -47,7 +47,6 @@ GType          tracker_config_get_type                             (void) G_GNUC
 TrackerConfig *tracker_config_new                                  (void);
 
 gint           tracker_config_get_verbosity                        (TrackerConfig *config);
-gint           tracker_config_get_sched_idle                       (TrackerConfig *config);
 gint           tracker_config_get_initial_sleep                    (TrackerConfig *config);
 gboolean       tracker_config_get_enable_monitors                  (TrackerConfig *config);
 gint           tracker_config_get_throttle                         (TrackerConfig *config);
