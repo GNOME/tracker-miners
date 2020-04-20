@@ -32,7 +32,6 @@
 #include <libtracker-miners-common/tracker-common.h>
 #include <libtracker-sparql/tracker-sparql.h>
 
-#include "tracker-config.h"
 #include "tracker-miner-manager.h"
 
 #define STATUS_OPTIONS_ENABLED()	  \
@@ -168,9 +167,7 @@ collect_debug (void)
 	 * 1. Package details, e.g. version.
 	 * 2. Disk size, space left, type (SSD/etc)
 	 * 3. Size of dataset (tracker-stats), size of databases
-	 * 4. Current configuration (libtracker-fts, tracker-miner-fs, tracker-extract)
-	 *    All txt files in ~/.cache/
-	 * 5. Statistics about data (tracker-stats)
+	 * 4. Statistics about data (tracker-stats)
 	 */
 
 	GDir *d;
@@ -228,43 +225,6 @@ collect_debug (void)
 	}
 	g_dir_close (d);
 	g_print ("\n");
-
-	/* 4. Current configuration (libtracker-fts, tracker-miner-fs, tracker-extract)
-	 *    All txt files in ~/.cache/
-	 */
-	GSList *all, *l;
-
-	g_print ("[%s]\n", _("Configuration"));
-
-	all = tracker_gsettings_get_all (NULL);
-
-	if (all) {
-		for (l = all; l; l = l->next) {
-			ComponentGSettings *c = l->data;
-			gchar **keys, **p;
-
-			if (!c) {
-				continue;
-			}
-
-			keys = g_settings_schema_list_keys (c->schema);
-			for (p = keys; p && *p; p++) {
-				GVariant *v;
-				gchar *printed;
-
-				v = g_settings_get_value (c->settings, *p);
-				printed = g_variant_print (v, FALSE);
-				g_print ("%s.%s: %s\n", c->name, *p, printed);
-				g_free (printed);
-				g_variant_unref (v);
-			}
-		}
-
-		tracker_gsettings_free (all);
-	} else {
-		g_print ("** %s **\n", _("No configuration was found"));
-	}
-	g_print ("\n\n");
 
 	g_print ("[%s]\n", _("States"));
 

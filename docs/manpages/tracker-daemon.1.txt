@@ -23,8 +23,7 @@ The *tracker daemon* command allows for control of these components.
 This ranges from starting, stopping and killing processes to pausing and
 resuming them.
 
-In addition to all this, there are ways to change the log verbsity for
-all processes that generate logs and to follow or watch what is
+In addition to all this, there are ways to follow or watch what is
 happening in real time from a top level and right down where the SPARQL
 commits are happening too.
 
@@ -48,27 +47,6 @@ also list miners running and available.
   --kill because it gives the processes time to shutdown cleanly.
 *-s, --start*::
   Starts all miners.
-*--get-log-verbosity*::
-  This displays the log verbosity for ALL components using GSettings for
-  this configuration. For possible values, see *--set-log-verbosity.*
-*--set-log-verbosity=<__verbosity__>*::
-  This sets the log verbosity for ALL daemons using GSettings to store
-  their "verbosity" configuration.
-
-The possible _verbosity_ options are:
-
-__________________________________________________________________________________________________________
-· _debug_ - Show EVERYTHING, from debug messages to errors. This often
-includes actual SQL being executed.
-
-· _detailed_ - Show enough detail to understand what is happening.
-
-· _minimal_ - Show an overview of what is going on, e.g. stats and when
-things start or stop.
-
-· _errors_ - Show only warnings, criticals, errors or fatal events.
-__________________________________________________________________________________________________________
-
 *-f, --follow*::
   Follow status changes to daemons as they happen. This is a top level
   view of what is happening. You will see the name for each daemon and a
