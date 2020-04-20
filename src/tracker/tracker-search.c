@@ -1714,8 +1714,6 @@ main (int argc, const char **argv)
 
 	setlocale (LC_ALL, "");
 
-	tracker_log_init (3, NULL);
-
 	bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
 	bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
 	textdomain (GETTEXT_PACKAGE);

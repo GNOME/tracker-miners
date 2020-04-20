@@ -10,7 +10,6 @@ modules = [
 
 common_sources = [
     'tracker-miner-manager.c',
-    'tracker-config.c',
     'tracker-dbus.c',
     'tracker-process.c',
 ]
