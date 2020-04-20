@@ -32,8 +32,6 @@ tracker-miner-fs configuration.
   Show summary of options.
 *-V, --version*::
   Returns the version of this binary.
-*-v, --verbosity=\{0|1|2|3}*::
-  Sets the logging level, 0=errors, 1=minimal, 2=detailed, 3=debug.
 *-d, --disable-shutdown*::
   Disable shutting down after 30 seconds of inactivity.
 

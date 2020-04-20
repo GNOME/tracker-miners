@@ -32,17 +32,11 @@
 #define DBUS_NAME_SUFFIX "Tracker3.Miner.RSS"
 #define DBUS_PATH "/org/freedesktop/Tracker3/Miner/RSS"
 
-static gint verbosity = -1;
 static gchar *add_feed;
 static gchar *title;
 static gchar *domain_ontology_name = NULL;
 
 static GOptionEntry entries[] = {
-	{ "verbosity", 'v', 0,
-	  G_OPTION_ARG_INT, &verbosity,
-	  N_("Logging, 0 = errors only, "
-	  "1 = minimal, 2 = detailed and 3 = debug (default=0)"),
-	  NULL },
 	{ "add-feed", 'a', 0,
 	  G_OPTION_ARG_STRING, &add_feed,
 	  /* Translators: this is a "feed" as in RSS */
@@ -125,7 +119,6 @@ setup_connection_and_endpoint (TrackerDomainOntology    *domain,
 int
 main (int argc, char **argv)
 {
-	gchar *log_filename;
 	GMainLoop *loop;
 	GOptionContext *context;
 	TrackerMinerRSS *miner;
@@ -221,12 +214,6 @@ main (int argc, char **argv)
 		return EXIT_SUCCESS;
 	}
 
-	tracker_log_init (verbosity, &log_filename);
-	if (log_filename != NULL) {
-		g_message ("Using log file:'%s'", log_filename);
-		g_free (log_filename);
-	}
-
 	domain_ontology = tracker_domain_ontology_new (domain_ontology_name, NULL, &error);
 	if (error) {
 		g_critical ("Could not load domain ontology '%s': %s",
@@ -301,7 +288,6 @@ main (int argc, char **argv)
 
 	g_main_loop_run (loop);
 
-	tracker_log_shutdown ();
 	g_main_loop_unref (loop);
 	g_object_unref (sparql_conn);
 	g_object_unref (endpoint);

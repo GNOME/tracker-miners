@@ -25,21 +25,6 @@ For more information see the libtracker-extract reference documentation.
 
 == OPTIONS
 
-*-v, --verbosity=<__LEVEL__>*::
-  This sets the log verbosity for the extractor process.
-
-The possible _LEVEL_ options are:
-
-___________________________________________________________________
-· _debug_ - Show EVERYTHING, from debug messages to errors.
-
-· _detailed_ - Show enough detail to understand what is happening.
-
-· _minimal_ - Show an overview of what is going on
-
-· _errors_ - Show only warnings, criticals, errors or fatal events.
-___________________________________________________________________
-
 *-o, --output-format=<__FORMAT__>*::
   Choose which format to use to output results. Supported formats are
   _sparql_, _turtle_ and _json-ld_.

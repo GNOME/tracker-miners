@@ -269,7 +269,7 @@ def get_tracker_extract_jsonld_output(extra_env, filename, mime_type=None):
     """
 
     tracker_extract = os.path.join(cfg.TRACKER_EXTRACT_PATH)
-    command = [tracker_extract, '--verbosity=0', '--output-format=json-ld', '--file', str(filename)]
+    command = [tracker_extract, '--output-format=json-ld', '--file', str(filename)]
     if mime_type is not None:
         command.extend(['--mime', mime_type])
 

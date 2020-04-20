@@ -7,7 +7,7 @@ tracker-reset - Reset the index and configuration
 
 == SYNOPSIS
 
-*tracker reset* [--filesystem | --rss] [--config] [--file _FILE_]
+*tracker reset* [--filesystem | --rss] [--file _FILE_]
 
 == DESCRIPTION
 
@@ -30,8 +30,6 @@ hard reset option. This behaves as if Tracker was just installed.
   recreate its cache from the filesystem when it restarts.
 *--rss::
   Removes data stored by tracker-miner-rss(1).
-*-c, --config*::
-  Resets all configuration to its defaults.
 *-f, --file _FILE_*::
   Resets all indexed information about _FILE_, works recursively for
   directories. Nothing will be done if _FILE_ is not currently indexed.
