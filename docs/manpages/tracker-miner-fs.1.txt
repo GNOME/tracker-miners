@@ -39,6 +39,17 @@ than one instance of this at the same time.
   would be monitored for changes. This works with non-existing *FILE*
   arguments as well as existing *FILE* arguments.
 
+== ENVIRONMENT
+
+*G_MESSAGES_DEBUG*::
+  Controls verbose log output from GLib-based code. Use
+  `G_MESSAGES_DEBUG=Tracker` to see only Tracker-related
+  logs, or `G_MESSAGES_DEBUG=all` to see everything.
+*TRACKER_DEBUG*::
+  Enables more specialized debug output. Pass a comma-separated
+  list of one or more keywords:
+    miner-fs-events::: log processing of file-system changes
+
 == SEE ALSO
 
 *tracker-info*(1).

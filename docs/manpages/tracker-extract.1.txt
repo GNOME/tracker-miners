@@ -35,6 +35,13 @@ Using command line to extract metadata from a file:::
 
 $ tracker extract /path/to/some/file.mp3
 
+== ENVIRONMENT
+
+*G_MESSAGES_DEBUG*::
+  Controls verbose log output from GLib-based code. Use
+  `G_MESSAGES_DEBUG=Tracker` to see only Tracker-related
+  logs, or `G_MESSAGES_DEBUG=all` to see everything.
+
 == SEE ALSO
 
 *tracker-sparql*(1), *tracker-stats*(1), *tracker-info*(1).

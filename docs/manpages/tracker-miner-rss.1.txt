@@ -39,6 +39,13 @@ You can use *tracker-search --feeds* to get the latest feed information.
 *-t, --title=STRING*::
   The title to use when adding a feed (see the *--add-feed* option).
 
+== ENVIRONMENT
+
+*G_MESSAGES_DEBUG*::
+  Controls verbose log output from GLib-based code. Use
+  `G_MESSAGES_DEBUG=Tracker` to see only Tracker-related
+  logs, or `G_MESSAGES_DEBUG=all` to see everything.
+
 == SEE ALSO
 
 *tracker-info*(1), *tracker-search*(1).
