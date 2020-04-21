@@ -30,6 +30,7 @@
 
 #define SOFTWARE_CATEGORY_URN_PREFIX "urn:software-category:"
 #define THEME_ICON_URN_PREFIX        "urn:theme-icon:"
+#define LINK_URN_PREFIX              "urn:link:"
 
 static GKeyFile *
 get_desktop_key_file (GFile   *file,
@@ -161,6 +162,45 @@ process_desktop_file (TrackerResource  *resource,
 	if (name && g_ascii_strcasecmp (type, "Application") == 0) {
 		tracker_resource_add_uri (resource, "rdf:type", "nfo:SoftwareApplication");
 		is_software = TRUE;
+	} else if (name && g_ascii_strcasecmp (type, "Link") == 0) {
+		gchar *link_url;
+
+		link_url = g_key_file_get_string (key_file, GROUP_DESKTOP_ENTRY, "URL", NULL);
+
+		if (link_url) {
+			TrackerResource *website_resource;
+			gchar *escaped_link_url;
+			gchar *link_uri;
+
+			g_strstrip (link_url);
+			escaped_link_url = g_uri_escape_string (link_url,
+								G_URI_RESERVED_CHARS_ALLOWED_IN_PATH,
+								FALSE);
+			link_uri = g_strdup_printf (LINK_URN_PREFIX "%s", escaped_link_url);
+
+			website_resource = tracker_resource_new (link_uri);
+			tracker_resource_add_uri (website_resource, "rdf:type", "nfo:Website");
+			tracker_resource_set_string (website_resource, "nie:url", link_url);
+			tracker_resource_set_take_relation (resource, "nie:isStoredAs", website_resource);
+
+			g_free (link_url);
+			g_free (escaped_link_url);
+			g_free (link_uri);
+		} else {
+			/* a Link desktop entry must have an URL */
+			gchar *uri;
+
+			uri = g_file_get_uri (file);
+			g_warning ("Link desktop entry '%s' does not have an url", uri);
+
+			g_free (uri);
+			g_free (type);
+			g_key_file_free (key_file);
+			g_strfreev (cats);
+			g_free (lang);
+			g_free (name);
+			return FALSE;
+		}
 	} else {
 		/* Invalid type, all valid types are already listed above */
 		g_warning ("Unknown desktop entry type '%s'", type);

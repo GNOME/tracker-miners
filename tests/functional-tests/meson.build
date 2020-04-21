@@ -34,7 +34,9 @@ extractor_tests = [
   'audio/mp3-id3v2.4-1',
   'audio/mp3-id3v2.3-empty-artist-album',
   'audio/mp3-id3v2.4-2',
-  'audio/flac'
+  'audio/flac',
+  'desktop/application',
+  'desktop/link-wikipedia-tracker'
 ]
 
 if libvorbis.found()
