@@ -1,0 +1,20 @@
+{
+    "test": {
+        "Filename": "application.desktop"
+    },
+    "metadata": {
+        "@type": [
+            "nfo:SoftwareApplication",
+            "nfo:Executable"
+        ],
+        "nfo:softwareCmdLine": "/usr/bin/foo",
+        "nfo:softwareIcon": {
+            "@id": "urn:theme-icon:foo",
+            "@type": [
+                "nfo:Website"
+            ]
+        },
+        "nie:comment": "my awesome application",
+        "nie:title" : "Foo"
+    }
+}
