@@ -5,7 +5,7 @@
   xmlns:rdfs='http://www.w3.org/2000/01/rdf-schema#'
   xmlns:stArea='http://ns.adobe.com/xmp/sType/Area#'
   xmlns:stDim='http://ns.adobe.com/xap/1.0/sType/Dimensions#'
-  xmlns:nco='http://www.semanticdesktop.org/ontologies/2007/03/22/nco#'
+  xmlns:nco='http://tracker.api.gnome.org/ontology/v3/nco#'
   xmlns:xmpRights='http://ns.adobe.com/xap/1.0/rights/'>
   <mwg-rs:Regions rdf:parseType='Resource'>
    <mwg-rs:AppliedToDimensions rdf:parseType='Resource'>

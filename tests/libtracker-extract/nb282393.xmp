@@ -7,7 +7,7 @@
     xmlns:exif="http://ns.adobe.com/exif/1.0/"
     xmlns:mwg-rs="http://www.metadataworkinggroup.com/schemas/regions/"
     xmlns:stArea="http://ns.adobe.com/xmp/sType/Area#"
-    xmlns:nco="http://www.semanticdesktop.org/ontologies/2007/03/22/nco#"
+    xmlns:nco="http://tracker.api.gnome.org/ontology/v3/nco#"
     xmlns:stDim="http://ns.adobe.com/xap/1.0/sType/Dimensions#"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
    xmp:CreateDate="2011-09-11T11:29:48"
