@@ -802,14 +802,15 @@ sparql_contents_compose_query (GFile *directory)
 	gchar *sparql, *uri;
 
 	uri = g_file_get_uri (directory);
-	sparql = g_strdup_printf ("SELECT ?url ?u ?lastModified ?isFolder "
+	sparql = g_strdup_printf ("SELECT ?url ?ie ?lastModified ?isFolder "
 	                          "FROM <" TRACKER_OWN_GRAPH_URN "> {"
 	                          " ?u nfo:belongsToContainer ?f ;"
 	                          "    nfo:fileLastModified ?lastModified ;"
+	                          "    nie:interpretedAs ?ie ;"
 	                          "    nie:url ?url ."
-	                          " OPTIONAL { ?u nie:mimeType ?mimeType . "
+	                          " OPTIONAL { ?ie nie:mimeType ?mimeType . "
 	                          "            BIND (IF (?mimeType = \"inode/directory\", true, false) AS ?isFolder) } ."
-	                          " ?f nie:url ?folderUrl ."
+	                          " ?f nie:isStoredAs/nie:url ?folderUrl ."
 	                          " FILTER (?folderUrl = \"%s\")"
 	                          "}", uri);
 	g_free (uri);
@@ -900,10 +901,11 @@ sparql_files_compose_query (GFile **files,
 	gchar *uri;
 	gint i = 0;
 
-	str = g_string_new ("SELECT ?url ?u ?lastModified "
+	str = g_string_new ("SELECT ?url ?ie ?lastModified "
 	                    "FROM <" TRACKER_OWN_GRAPH_URN "> {"
 			    "  ?u a rdfs:Resource ;"
 	                    "     nfo:fileLastModified ?lastModified ;"
+	                    "     nie:interpretedAs ?ie ;"
 	                    "     nie:url ?url . "
 			    "  FILTER (?url IN (");
 	for (i = 0; i < n_files; i++) {

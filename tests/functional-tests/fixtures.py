@@ -110,7 +110,7 @@ class TrackerMinerTest(ut.TestCase):
 
                 for tf in monitored_files:
                     url = self.uri(tf)
-                    self.tracker.ensure_resource(f"a nfo:Document ; nie:url <{url}>")
+                    self.tracker.ensure_resource(f"a nfo:Document ; nie:isStoredAs <{url}>")
             except Exception:
                 self.sandbox.stop()
                 raise
@@ -170,7 +170,7 @@ class TrackerMinerTest(ut.TestCase):
 
         expected = [
             'a nfo:Document',
-            f'nie:url <{url}>',
+            f'nie:isStoredAs <{url}>',
         ]
 
         if content:
@@ -184,15 +184,15 @@ class TrackerMinerTest(ut.TestCase):
         from_url = self.uri(from_path)
         to_url = self.uri(to_path)
         return self.tracker.await_update(resource_id,
-                                         f'nie:url <{from_url}>',
-                                         f'nie:url <{to_url}>')
+                                         f'nie:isStoredAs <{from_url}>',
+                                         f'nie:isStoredAs <{to_url}>')
 
     def await_photo_inserted(self, path):
         url = self.uri(path)
 
         expected = [
             'a nmm:Photo',
-            f'nie:url <{url}>',
+            f'nie:isStoredAs <{url}>',
         ]
 
         return self.tracker.await_insert('; '.join(expected))
@@ -225,7 +225,7 @@ class TrackerMinerFTSTest (TrackerMinerTest):
                 path.write_text(text)
         else:
             url = self.uri(self.testfile)
-            expected = f'a nfo:Document; nie:url <{url}>; nie:plainTextContent "{text_escaped}"'
+            expected = f'a nfo:Document; nie:isStoredAs <{url}>; nie:plainTextContent "{text_escaped}"'
             with self.tracker.await_insert(expected):
                 path.write_text(text)
 
@@ -237,7 +237,7 @@ class TrackerMinerFTSTest (TrackerMinerTest):
         results = self.tracker.query("""
                 SELECT ?url WHERE {
                   ?u a nfo:TextDocument ;
-                      nie:url ?url ;
+                      nie:isStoredAs ?url ;
                       fts:match '%s'.
                  }
                  """ % (word))
@@ -257,7 +257,7 @@ class TrackerMinerFTSTest (TrackerMinerTest):
         self.assertIn(self.uri(self.testfile), results)
 
     def _query_id(self, uri):
-        query = "SELECT tracker:id(?urn) WHERE { ?urn nie:url \"%s\". }" % uri
+        query = "SELECT tracker:id(?urn) WHERE { ?urn nie:isStoredAs/nie:url \"%s\". }" % uri
         result = self.tracker.query(query)
         assert len(result) == 1
         return int(result[0][0])
@@ -446,7 +446,7 @@ class TrackerWritebackTest (TrackerMinerTest):
         url = path.as_uri()
 
         # Copy and wait. The extractor adds the nfo:duration property.
-        expected = f'a nfo:Audio ; nie:url <{url}> ; nfo:duration ?duration'
+        expected = f'a nfo:Audio ; nie:isStoredAs <{url}> ; nfo:duration ?duration'
         with self.tracker.await_insert(expected):
             shutil.copy(path, self.indexed_dir)
         return path
@@ -456,7 +456,7 @@ class TrackerWritebackTest (TrackerMinerTest):
         url = dest_path.as_uri()
 
         # Copy and wait. The extractor adds the nfo:width property.
-        expected = f'a nfo:Image ; nie:url <{url}> ; nfo:width ?width'
+        expected = f'a nfo:Image ; nie:isStoredAs <{url}> ; nfo:width ?width'
         with self.tracker.await_insert(expected):
             shutil.copy(source_path, self.indexed_dir)
         return dest_path

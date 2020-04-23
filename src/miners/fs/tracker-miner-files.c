@@ -534,7 +534,8 @@ tracker_miner_files_init (TrackerMinerFiles *mf)
 	                                             "  GRAPH <" TRACKER_OWN_GRAPH_URN "> {"
 						     "    ?u a nfo:FileDataObject ;"
 						     "       tracker:available true ; "
-						     "       a ?class . "
+	                                             "       nie:interpretedAs ?ie . "
+						     "    ?ie a ?class . "
 						     "    FILTER (?class IN (%s) && "
 						     "            NOT EXISTS { ?u nie:dataSource <" TRACKER_EXTRACT_DATA_SOURCE "> })"
 	                                             "  }"
@@ -2323,25 +2324,6 @@ index_applications_changed_cb (GObject    *gobject,
 	}
 }
 
-static const gchar *
-miner_files_get_file_urn (TrackerMinerFiles *miner,
-                          GFile             *file,
-                          gboolean          *is_iri)
-{
-	const gchar *urn;
-
-	urn = tracker_miner_fs_get_urn (TRACKER_MINER_FS (miner), file);
-	*is_iri = TRUE;
-
-	if (!urn) {
-		/* This is a new insertion, use anonymous URNs to store files */
-		urn = "_:file";
-		*is_iri = FALSE;
-	}
-
-	return urn;
-}
-
 static void
 miner_files_add_to_datasource (TrackerMinerFiles *mf,
                                GFile             *file,
@@ -2454,9 +2436,9 @@ process_file_cb (GObject      *object,
                  gpointer      user_data)
 {
 	TrackerMinerFilesPrivate *priv;
-	TrackerResource *resource;
+	TrackerResource *resource, *element_resource;
 	ProcessFileData *data;
-	const gchar *mime_type, *urn;
+	const gchar *mime_type;
 	gchar *parent_urn;
 	gchar *delete_properties_sparql = NULL, *mount_point_sparql;
 	GFileInfo *file_info;
@@ -2464,7 +2446,6 @@ process_file_cb (GObject      *object,
 	GFile *file, *parent;
 	gchar *uri, *sparql_str, *sparql_update_str, *time_str;
 	GError *error = NULL;
-	gboolean is_iri;
 	gboolean is_special;
 	gboolean is_directory;
 
@@ -2495,44 +2476,36 @@ process_file_cb (GObject      *object,
 
 	uri = g_file_get_uri (file);
 	mime_type = g_file_info_get_content_type (file_info);
-	urn = miner_files_get_file_urn (TRACKER_MINER_FILES (data->miner), file, &is_iri);
 
 	data->mime_type = g_strdup (mime_type);
 
-	if (is_iri) {
-		/* Update: delete all statements inserted by miner except:
-		 *  - rdf:type statements as they could cause implicit deletion of user data
-		 *  - nie:contentCreated so it persists across updates
+	if (tracker_miner_fs_get_urn (TRACKER_MINER_FS (data->miner), file)) {
+		/* Update: delete all information elements for the given data object
+		 * and delete dataSources, so we ensure the file is extracted again.
 		 */
 		delete_properties_sparql =
-			g_strdup_printf ("DELETE {"
-			                 "  GRAPH <%s> {"
-			                 "    <%s> ?p ?o"
-			                 "  } "
-			                 "} "
-			                 "WHERE {"
-			                 "  GRAPH <%s> {"
-			                 "    <%s> ?p ?o"
-			                 "    FILTER (?p != rdf:type && ?p != nie:contentCreated)"
-			                 "  } "
+			g_strdup_printf ("WITH <" TRACKER_OWN_GRAPH_URN "> "
+			                 "DELETE {"
+			                 "  <%s> nie:interpretedAs ?ie ; "
+			                 "       nie:dataSource ?ds . "
+			                 "  ?ie a rdfs:Resource . "
+			                 "} WHERE {"
+			                 "  <%s> nie:interpretedAs ?ie ."
+			                 "  OPTIONAL { <%s> nie:dataSource ?ds } "
 			                 "} ",
-			                 TRACKER_OWN_GRAPH_URN, urn,
-			                 TRACKER_OWN_GRAPH_URN, urn);
+			                 uri, uri, uri);
 	}
 
-	resource = tracker_resource_new (NULL);
-
-	if (is_iri) {
-		tracker_resource_set_identifier (resource, urn);
-	}
+	resource = tracker_resource_new (uri);
+	element_resource = tracker_resource_new (NULL);
 
 	tracker_resource_add_uri (resource, "rdf:type", "nfo:FileDataObject");
-	tracker_resource_add_uri (resource, "rdf:type", "nie:InformationElement");
+	tracker_resource_add_uri (element_resource, "rdf:type", "nie:InformationElement");
 
 	is_directory = (g_file_info_get_file_type (file_info) == G_FILE_TYPE_DIRECTORY ?
 	                TRUE : FALSE);
 	if (is_directory) {
-		tracker_resource_add_uri (resource, "rdf:type", "nfo:Folder");
+		tracker_resource_add_uri (element_resource, "rdf:type", "nfo:Folder");
 	}
 
 	parent = g_file_get_parent (file);
@@ -2560,21 +2533,17 @@ process_file_cb (GObject      *object,
 	g_free (time_str);
 
 	/* Laying the link between the IE and the DO. We use IE = DO */
-	if (is_iri) {
-		tracker_resource_add_uri (resource, "nie:isStoredAs", urn);
-	} else {
-		tracker_resource_add_relation (resource, "nie:isStoredAs", resource);
-	}
+	tracker_resource_add_relation (element_resource, "nie:isStoredAs", resource);
+	tracker_resource_add_relation (resource, "nie:interpretedAs", element_resource);
 
 	/* The URL of the DataObject (because IE = DO, this is correct) */
 	tracker_resource_set_string (resource, "nie:url", uri);
 
-	tracker_resource_set_string (resource, "nie:mimeType", mime_type);
+	tracker_resource_set_string (element_resource, "nie:mimeType", mime_type);
 
 	miner_files_add_to_datasource (data->miner, file, resource);
 
-	if (g_file_info_get_size (file_info) > 0)
-		miner_files_add_rdf_types (resource, file, mime_type);
+	miner_files_add_rdf_types (element_resource, file, mime_type);
 
 	mount_point_sparql = update_mount_point_sparql (data);
 	sparql_update_str = tracker_resource_print_sparql_update (resource, NULL, TRACKER_OWN_GRAPH_URN),
@@ -2642,13 +2611,11 @@ process_file_attributes_cb (GObject      *object,
 {
 	TrackerResource *resource;
 	ProcessFileData *data;
-	const gchar *urn;
 	GFileInfo *file_info;
 	guint64 time_;
 	GFile *file;
 	gchar *uri, *time_str, *sparql_str;
 	GError *error = NULL;
-	gboolean is_iri;
 
 	data = user_data;
 	file = G_FILE (object);
@@ -2662,20 +2629,7 @@ process_file_attributes_cb (GObject      *object,
 	}
 
 	uri = g_file_get_uri (file);
-	urn = miner_files_get_file_urn (TRACKER_MINER_FILES (data->miner), file, &is_iri);
-
-	/* We MUST have an IRI in attributes updating */
-	if (!is_iri) {
-		error = g_error_new_literal (miner_files_error_quark,
-		                             0,
-		                             "Received request to update attributes but no IRI available!");
-		/* Notify about the error */
-		tracker_miner_fs_notify_finish (TRACKER_MINER_FS (data->miner), data->task, NULL, error);
-		process_file_data_free (data);
-		return;
-	}
-
-	resource = tracker_resource_new (urn);
+	resource = tracker_resource_new (uri);
 
 	/* Update nfo:fileLastModified */
 	time_ = g_file_info_get_attribute_uint64 (file_info, G_FILE_ATTRIBUTE_TIME_MODIFIED);
@@ -2851,15 +2805,13 @@ miner_files_move_file (TrackerMinerFS *fs,
 {
 	TrackerMinerFilesPrivate *priv = TRACKER_MINER_FILES (fs)->private;
 	GString *sparql = g_string_new (NULL);
-	const gchar *new_parent_iri;
-	gchar *uri, *source_uri, *display_name;
-	gchar *source_iri;
+	const gchar *new_parent_iri = NULL;
+	gchar *uri, *source_uri, *display_name, *container_clause = NULL;
 	gchar *path, *basename;
 	GFile *new_parent;
 
 	uri = g_file_get_uri (file);
 	source_uri = g_file_get_uri (source_file);
-	source_iri = tracker_miner_fs_query_urn (fs, source_file);
 
 	if (priv->thumbnailer) {
 		GFileInfo *file_info;
@@ -2909,50 +2861,54 @@ miner_files_move_file (TrackerMinerFS *fs,
 	g_free (basename);
 	g_free (path);
 
+	/* Get new parent information */
+	new_parent = g_file_get_parent (file);
+	if (new_parent)
+		new_parent_iri = tracker_miner_fs_query_urn (fs, new_parent);
+	if (new_parent_iri)
+		container_clause = g_strdup_printf ("; nfo:belongsToContainer <%s>", new_parent_iri);
+
 	g_string_append_printf (sparql,
 	                        "WITH <" TRACKER_OWN_GRAPH_URN "> "
 	                        "DELETE { "
-	                        "  <%s> nfo:fileName ?f ; "
-	                        "       nie:url ?u ; "
-	                        "       nfo:belongsToContainer ?b"
+	                        "  <%s> a rdfs:Resource . "
+	                        "  ?ie nie:isStoredAs <%s> "
+	                        "} INSERT { "
+	                        "  <%s> a nfo:FileDataObject ; "
+	                        "       nfo:fileName \"%s\" ; "
+	                        "       nie:url \"%s\" "
+	                        "       %s ; "
+	                        "       ?p ?o . "
+	                        "  ?ie nie:isStoredAs <%s> "
 	                        "} WHERE { "
-	                        "  <%s> nfo:fileName ?f ; "
-	                        "       nie:url ?u . "
-	                        "       OPTIONAL { <%s> nfo:belongsToContainer ?b }"
+	                        "  <%s> ?p ?o ; "
+	                        "       nie:interpretedAs ?ie . "
+	                        "  FILTER (?p != nfo:fileName && ?p != nie:url && ?p != nfo:belongsToContainer) . "
 	                        "} ",
-	                        source_iri, source_iri, source_iri);
-
-	/* Get new parent information */
-	new_parent = g_file_get_parent (file);
-	new_parent_iri = tracker_miner_fs_query_urn (fs, new_parent);
-
-	g_string_append_printf (sparql,
-	                        "INSERT INTO <" TRACKER_OWN_GRAPH_URN "> {"
-	                        "  <%s> nfo:fileName \"%s\" ; "
-	                        "       nie:url \"%s\" ",
-	                        source_iri, display_name, uri);
-
-	if (new_parent && new_parent_iri) {
-		g_string_append_printf (sparql, "; nfo:belongsToContainer \"%s\"",
-		                        new_parent_iri);
-	}
-
-	g_string_append (sparql, "}");
+	                        source_uri, source_uri,
+	                        uri, display_name, uri, container_clause, uri,
+	                        source_uri);
+	g_free (container_clause);
 
 	if (recursive) {
 		g_string_append_printf (sparql,
 		                        "WITH <" TRACKER_OWN_GRAPH_URN "> "
 		                        " DELETE { "
-		                        "  ?u nie:url ?url "
+		                        "  ?u a rdfs:Resource . "
+		                        "  ?ie nie:isStoredAs ?u "
 		                        "} INSERT { "
-		                        "  GRAPH <" TRACKER_OWN_GRAPH_URN "> {"
-		                        "    ?u nie:url ?new_url "
-		                        "  }"
-		                        "} WHERE {"
-		                        "  ?u a rdfs:Resource;"
-		                        "     nie:url ?url ."
+		                        "  ?new_url a nfo:FileDataObject ; "
+		                        "           nie:url ?new_url ; "
+		                        "           ?p ?o ."
+		                        "  ?ie nie:isStoredAs ?new_url . "
+		                        "} WHERE { "
+		                        "  ?u a rdfs:Resource; "
+		                        "     nie:url ?url ; "
+		                        "     nie:interpretedAs ?ie ; "
+		                        "     ?p ?o . "
 		                        "  BIND (CONCAT (\"%s/\", SUBSTR (?url, STRLEN (\"%s/\") + 1)) AS ?new_url) ."
-		                        "  FILTER (STRSTARTS (?url, \"%s/\"))"
+		                        "  FILTER (STRSTARTS (?url, \"%s/\")) . "
+		                        "  FILTER (?p != nie:url) . "
 		                        "} ",
 		                        uri, source_uri, source_uri);
 	}
