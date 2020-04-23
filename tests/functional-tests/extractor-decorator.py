@@ -57,13 +57,15 @@ class ExtractorDecoratorTest(fixtures.TrackerMinerTest):
                 ' WHERE { GRAPH ?g { <%s> nie:title ?title } }' % (file_urn, file_urn))
             assert not store.ask('ASK { <%s> nie:title ?title }' % file_urn)
 
+            file_uri = 'file://' + os.path.join(self.indexed_dir, file_path)
+
             # Request re-indexing (same as `tracker index --file ...`)
             # The extractor should reindex the file and re-add the metadata that we
             # deleted, so we should see the nie:title property change.
             with self.tracker.await_insert(f'nie:title "{VALID_FILE_TITLE}"'):
-                miner_fs.index_file('file://' + os.path.join(self.indexed_dir, file_path))
+                miner_fs.index_file(file_uri)
 
-            title_result = store.query('SELECT ?title { <%s> nie:title ?title }' % file_urn)
+            title_result = store.query('SELECT ?title { <%s> nie:interpretedAs/nie:title ?title }' % file_uri)
             assert len(title_result) == 1
             self.assertEqual(title_result[0][0], VALID_FILE_TITLE)
         finally:

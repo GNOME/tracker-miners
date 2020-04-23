@@ -39,10 +39,9 @@ class MinerResourceRemovalTest(TrackerMinerTest):
 
     def create_test_content(self, file_urn, title):
         sparql = "WITH %s INSERT { \
-                    _:ie a nmm:MusicPiece ; \
+                    <%s> a nmm:MusicPiece ; \
                          nie:title \"%s\" ; \
-                         nie:isStoredAs <%s> \
-                  } " % (TRACKER_OWN_GRAPH_URN, title, file_urn)
+                  } " % (TRACKER_OWN_GRAPH_URN, file_urn, title)
 
         with self.tracker.await_insert(f'a nmm:MusicPiece; nie:title "{title}"') as resource:
             self.tracker.update(sparql)

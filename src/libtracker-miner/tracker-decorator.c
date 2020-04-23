@@ -720,8 +720,9 @@ create_query_string (TrackerDecorator  *decorator,
 			g_string_append_printf (query,
 			                        "{ ?urn a rdfs:Resource;"
 			                        "       a ?type ;"
-			                        "       tracker:available true ."
-			                        "  FILTER (! EXISTS { ?urn nie:dataSource <%s> } ",
+			                        "       nie:isStoredAs ?do . "
+			                        "  ?do tracker:available true ."
+			                        "  FILTER (! EXISTS { ?do nie:dataSource <%s> } ",
 			                        priv->data_source);
 
 			query_add_blacklisted_filter (decorator, query);
@@ -753,7 +754,7 @@ create_remaining_items_query (TrackerDecorator *decorator)
 	gchar *clauses[] = {
 		"?urn",
 		"tracker:id(?urn)",
-		"nie:url(?urn)",
+		"nie:isStoredAs(?urn)",
 		"nie:mimeType(?urn)",
 		NULL
 	};

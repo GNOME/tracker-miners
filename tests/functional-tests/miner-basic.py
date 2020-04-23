@@ -50,7 +50,7 @@ class MinerCrawlTest(fixtures.TrackerMinerTest):
         return self.tracker.query("""
           SELECT ?url WHERE {
               ?u a nfo:TextDocument ;
-                 nie:url ?url.
+                 nie:isStoredAs/nie:url ?url.
           }
           """)
 
@@ -66,7 +66,7 @@ class MinerCrawlTest(fixtures.TrackerMinerTest):
 
     def __get_file_urn(self, filepath):
         result = self.tracker.query("""
-          SELECT ?u WHERE {
+          SELECT nie:interpretedAs(?u) WHERE {
               ?u a nfo:FileDataObject ;
                  nie:url \"%s\" .
           }
