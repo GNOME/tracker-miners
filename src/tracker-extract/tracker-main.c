@@ -289,6 +289,9 @@ main (int argc, char *argv[])
 	bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
 	textdomain (GETTEXT_PACKAGE);
 
+	/* This makes sure we don't steal all the system's resources */
+	initialize_priority_and_scheduling ();
+
 	/* Translators: this message will appear immediately after the  */
 	/* usage string - Usage: COMMAND [OPTION]... <THIS_MESSAGE>     */
 	context = g_option_context_new (_("— Extract file meta data"));
@@ -334,9 +337,6 @@ main (int argc, char *argv[])
 		g_error_free (error);
 		return EXIT_FAILURE;
 	}
-
-	/* This makes sure we don't steal all the system's resources */
-	initialize_priority_and_scheduling ();
 
 	connection = g_bus_get_sync (TRACKER_IPC_BUS, NULL, &error);
 	if (error) {
