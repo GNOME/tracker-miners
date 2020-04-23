@@ -570,7 +570,7 @@ read_metadata (TrackerResource      *metadata,
 	g_ptr_array_free (keywords, TRUE);
 
 	if (g_strcmp0(pd.software, "gnome-screenshot") == 0) {
-		tracker_resource_add_uri (metadata, "nie:isPartOf", "nfo:image-category-screenshot");
+		tracker_resource_add_uri (metadata, "nie:isLogicalPartOf", "nfo:image-category-screenshot");
 	}
 
 	tracker_exif_free (ed);
