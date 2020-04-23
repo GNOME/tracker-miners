@@ -34,51 +34,47 @@ class FlacCuesheetTest(fixtures.TrackerExtractTestCase):
     def spec(self, audio_path):
         audio_uri = audio_path.as_uri()
         return {
-            '@type': ['nfo:Audio'],
-            'nie:url': audio_uri,
+            '@type': ['nfo:Audio', 'nmm:MusicPiece', 'nfo:Audio'],
+            'nfo:audioOffset': 0.0,
             'nfo:duration': 360,
+            'nie:title': 'Only Shallow',
+            'nmm:trackNumber': 1,
             'nfo:sampleRate': 44100,
-            'nie:hasLogicalPart': [
-                {
-                    '@type': ['nmm:MusicPiece', 'nfo:Audio'],
-                    'nfo:audioOffset': 0.0,
-                    'nfo:duration': 257,
-                    'nie:isLogicalPartOf': audio_uri,
-                    'nie:isStoredAs': audio_uri,
-                    'nie:title': 'Only Shallow',
-                    'nmm:trackNumber': 1,
-                    'nmm:musicAlbum': {
-                        '@id': 'urn:album:Loveless:My%20Bloody%20Valentine',
-                        '@type': 'nmm:MusicAlbum',
-                        'nmm:albumTrackCount': 2,
-                        'nmm:albumArtist': ['urn:artist:My%20Bloody%20Valentine'],
-                        'nie:title': 'Loveless',
-                    },
-                    'nmm:musicAlbumDisc': {
-                        '@id': 'urn:album-disc:Loveless:My%20Bloody%20Valentine:Disc1',
-                        '@type': 'nmm:MusicAlbumDisc',
-                        'nmm:setNumber': 1,
-                        'nmm:albumDiscAlbum': 'urn:album:Loveless:My%20Bloody%20Valentine',
-                    },
-                    'nmm:performer': {
-                        '@id': 'urn:artist:My%20Bloody%20Valentine',
-                        '@type': 'nmm:Artist',
-                        'nmm:artistName': 'My Bloody Valentine',
-                    },
-                },
-                {
-                    '@type': ['nmm:MusicPiece', 'nfo:Audio'],
-                    'nfo:audioOffset': 257.6933333333333,
-                    'nfo:duration': 102,
-                    'nie:isLogicalPartOf': audio_uri,
-                    'nie:isStoredAs': audio_uri,
-                    'nmm:musicAlbum': 'urn:album:Loveless:My%20Bloody%20Valentine',
-                    'nmm:musicAlbumDisc': 'urn:album-disc:Loveless:My%20Bloody%20Valentine:Disc1',
-                    'nmm:performer': 'urn:artist:My%20Bloody%20Valentine',
-                    'nie:title': 'Loomer',
-                    'nmm:trackNumber': 2,
-                }
-            ],
+            'nmm:musicAlbum': 'urn:album:Loveless:My%20Bloody%20Valentine',
+            'nmm:musicAlbumDisc': 'urn:album-disc:Loveless:My%20Bloody%20Valentine:Disc1',
+            'nie:isStoredAs': {
+                '@id': audio_uri,
+                'nie:interpretedAs': [
+                    audio_uri,
+                    {
+                        '@type': ['nmm:MusicPiece', 'nfo:Audio'],
+                        'nfo:audioOffset': 257.6933333333333,
+                        'nfo:duration': 102,
+                        'nmm:trackNumber': 2,
+                        'nmm:performer': 'urn:artist:My%20Bloody%20Valentine',
+                        'nie:isStoredAs': audio_uri,
+                        'nie:title': 'Loomer',
+                        'nmm:musicAlbum': {
+                            '@id': 'urn:album:Loveless:My%20Bloody%20Valentine',
+                            'nie:title': 'Loveless',
+                            'nmm:albumTrackCount': 2,
+                            '@type': 'nmm:MusicAlbum',
+                            'nmm:albumArtist': ['urn:artist:My%20Bloody%20Valentine']
+                        },
+                        'nmm:musicAlbumDisc': {
+                            '@id': 'urn:album-disc:Loveless:My%20Bloody%20Valentine:Disc1',
+                            'nmm:setNumber': 1,
+                            'nmm:albumDiscAlbum': 'urn:album:Loveless:My%20Bloody%20Valentine',
+                            '@type': 'nmm:MusicAlbumDisc'
+                        }
+                    }
+                ]
+            },
+            'nmm:performer': {
+                '@id': 'urn:artist:My%20Bloody%20Valentine',
+                'nmm:artistName': 'My Bloody Valentine',
+                '@type': 'nmm:Artist'
+            }
         }
 
     def test_external_cue_sheet(self):

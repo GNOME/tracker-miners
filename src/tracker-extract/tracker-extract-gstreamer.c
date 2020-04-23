@@ -631,21 +631,18 @@ extractor_apply_video_metadata (MetadataExtractor *extractor,
 	set_keywords_from_gst_tag (video, tag_list);
 }
 
-static TrackerResource *
-extract_track (MetadataExtractor    *extractor,
+static void
+extract_track (TrackerResource      *track,
+               MetadataExtractor    *extractor,
                TrackerTocEntry      *toc_entry,
                const gchar          *file_url,
                TrackerResource      *album_disc)
 {
-	TrackerResource *track;
 	TrackerResource *track_performer = NULL, *track_composer = NULL;
-	gchar *track_uri;
-
-	track_uri = tracker_sparql_get_uuid_urn ();
-	track = tracker_resource_new (track_uri);
 
 	tracker_resource_add_uri (track, "rdf:type", "nmm:MusicPiece");
 	tracker_resource_add_uri (track, "rdf:type", "nfo:Audio");
+	tracker_resource_add_string (track, "nie:generator", TRACKER_PREFIX_TRACKER "extractor-data-source");
 
 	extractor_apply_general_metadata (extractor,
 	                                  toc_entry->tag_list,
@@ -674,10 +671,6 @@ extract_track (MetadataExtractor    *extractor,
 	}
 
 	tracker_resource_set_double (track, "nfo:audioOffset", toc_entry->start);
-
-	g_free (track_uri);
-
-	return track;
 }
 
 #define CHUNK_N_BYTES (2 << 15)
@@ -850,16 +843,27 @@ extract_metadata (MetadataExtractor      *extractor,
 			 * concrete nfo:FileDataObject using nie:isStoredAs.
 			 */
 			if (extractor->toc && g_list_length (extractor->toc->entry_list) > 1) {
+				TrackerResource *file_resource;
+
+				file_resource = tracker_resource_new (file_url);
+
 				for (node = extractor->toc->entry_list; node; node = node->next) {
 					TrackerResource *track;
 
-					track = extract_track (extractor, node->data, file_url, album_disc);
-					tracker_resource_set_relation (track, "nie:isStoredAs", resource);
-					tracker_resource_set_relation (track, "nie:isLogicalPartOf", resource);
-					tracker_resource_add_take_relation (resource, "nie:hasLogicalPart", track);
+					/* Reuse the "root" InformationElement resource for the first track,
+					 * so there's no spare ones.
+					 */
+					if (node == extractor->toc->entry_list)
+						track = resource;
+					else
+						track = tracker_resource_new (NULL);
+
+					extract_track (track, extractor, node->data, file_url, album_disc);
+					tracker_resource_set_relation (track, "nie:isStoredAs", file_resource);
+					tracker_resource_add_take_relation (file_resource, "nie:interpretedAs", track);
 				}
 
-				tracker_resource_set_string (resource, "nie:url", file_url);
+				g_object_unref (file_resource);
 			} else {
 				extractor_apply_audio_metadata (extractor,
 				                                extractor->tagcache,
