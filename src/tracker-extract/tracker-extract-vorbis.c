@@ -314,7 +314,8 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 	}
 
 	if (vd.acoustid_fingerprint) {
-		TrackerResource *hash_resource;
+		TrackerResource *hash_resource, *file_resource;
+		gchar *uri;
 
 		hash_resource = tracker_resource_new (NULL);
 		tracker_resource_set_uri (hash_resource, "rdf:type", "nfo:FileHash");
@@ -322,7 +323,12 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 		tracker_resource_set_string (hash_resource, "nfo:hashValue", vd.acoustid_fingerprint);
 		tracker_resource_set_string (hash_resource, "nfo:hashAlgorithm", "chromaprint");
 
-		tracker_resource_set_relation (metadata, "nfo:hasHash", hash_resource);
+		uri = g_file_get_uri (file);
+		file_resource = tracker_resource_new (uri);
+		tracker_resource_add_take_relation (metadata, "nie:isStoredAs", file_resource);
+		g_free (uri);
+
+		tracker_resource_set_relation (file_resource, "nfo:hasHash", hash_resource);
 
 		g_object_unref (hash_resource);
 
