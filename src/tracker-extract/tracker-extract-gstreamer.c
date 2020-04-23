@@ -884,7 +884,7 @@ extract_metadata (MetadataExtractor      *extractor,
 		g_object_unref (file);
 
 		if (hash) {
-			TrackerResource *hash_resource;
+			TrackerResource *file_resource, *hash_resource;
 			char *hash_str;
 
 			hash_resource = tracker_resource_new (NULL);
@@ -896,7 +896,10 @@ extract_metadata (MetadataExtractor      *extractor,
 
 			tracker_resource_set_string (hash_resource, "nfo:hashAlgorithm", "gibest");
 
-			tracker_resource_set_relation (resource, "nfo:hasHash", hash_resource);
+			file_resource = tracker_resource_new (file_url);
+			tracker_resource_add_take_relation (resource, "nie:isStoredAs", file_resource);
+
+			tracker_resource_set_relation (file_resource, "nfo:hasHash", hash_resource);
 
 			g_object_unref (hash_resource);
 		}
