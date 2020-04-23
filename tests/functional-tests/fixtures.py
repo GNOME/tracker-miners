@@ -269,12 +269,14 @@ def get_tracker_extract_jsonld_output(extra_env, filename, mime_type=None):
     """
 
     tracker_extract = os.path.join(cfg.TRACKER_EXTRACT_PATH)
-    command = [tracker_extract, '--verbosity=0', '--output-format=json-ld', '--file', str(filename)]
+    command = [tracker_extract, '--output-format=json-ld', '--file', str(filename)]
     if mime_type is not None:
         command.extend(['--mime', mime_type])
 
-    # We depend on parsing the output, so verbosity MUST be 0.
-    extra_env['TRACKER_VERBOSITY'] = '0'
+    # We depend on parsing the output, so we must avoid the GLib log handler
+    # writing stuff to stdout.
+    extra_env['G_MESSAGES_DEBUG'] = ''
+
     # Tell GStreamer not to fork to create the registry
     extra_env['GST_REGISTRY_FORK'] = 'no'
     log.debug('Adding to environment: %s', ' '.join('%s=%s' % (k, v) for k, v in extra_env.items()))

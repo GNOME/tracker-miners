@@ -24,8 +24,6 @@ than one instance of this at the same time.
   Show summary of options.
 *-V, --version*::
   Returns the version of this binary.
-*-v, --verbosity=\{0|1|2|3}*::
-  Sets the logging level, 0=errors, 1=minimal, 2=detailed, 3=debug.
 *-s, --initial-sleep=SECONDS*::
   Sets the initial sleep time before crawling the file system is
   started. If the *--no-daemon* option is used, this option is ignored.
@@ -40,6 +38,17 @@ than one instance of this at the same time.
   configuration rules. In addition to this, it will check if *FILE*
   would be monitored for changes. This works with non-existing *FILE*
   arguments as well as existing *FILE* arguments.
+
+== ENVIRONMENT
+
+*G_MESSAGES_DEBUG*::
+  Controls verbose log output from GLib-based code. Use
+  `G_MESSAGES_DEBUG=Tracker` to see only Tracker-related
+  logs, or `G_MESSAGES_DEBUG=all` to see everything.
+*TRACKER_DEBUG*::
+  Enables more specialized debug output. Pass a comma-separated
+  list of one or more keywords:
+    miner-fs-events::: log processing of file-system changes
 
 == SEE ALSO
 

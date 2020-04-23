@@ -46,13 +46,8 @@ struct TrackerConfigClass {
 GType          tracker_config_get_type                (void) G_GNUC_CONST;
 
 TrackerConfig *tracker_config_new                     (void);
-gint           tracker_config_get_verbosity           (TrackerConfig *config);
-gint           tracker_config_get_sched_idle          (TrackerConfig *config);
 gint           tracker_config_get_max_bytes           (TrackerConfig *config);
 gboolean       tracker_config_get_wait_for_miner_fs   (TrackerConfig *config);
-
-void           tracker_config_set_verbosity           (TrackerConfig *config,
-                                                       gint           value);
 
 G_END_DECLS
 

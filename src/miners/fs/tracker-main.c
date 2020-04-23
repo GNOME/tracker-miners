@@ -58,7 +58,6 @@
 
 static GMainLoop *main_loop;
 
-static gint verbosity = -1;
 static gint initial_sleep = -1;
 static gboolean no_daemon;
 static gchar *eligible;
@@ -68,11 +67,6 @@ static gboolean do_crawling = FALSE;
 static gchar *domain_ontology_name = NULL;
 
 static GOptionEntry entries[] = {
-	{ "verbosity", 'v', 0,
-	  G_OPTION_ARG_INT, &verbosity,
-	  N_("Logging, 0 = errors only, "
-	     "1 = minimal, 2 = detailed and 3 = debug (default=0)"),
-	  NULL },
 	{ "initial-sleep", 's', 0,
 	  G_OPTION_ARG_INT, &initial_sleep,
 	  N_("Initial sleep time in seconds, "
@@ -101,10 +95,6 @@ static void
 sanity_check_option_values (TrackerConfig *config)
 {
 	g_message ("General options:");
-	g_message ("  Verbosity  ............................  %d",
-	           tracker_config_get_verbosity (config));
-	g_message ("  Sched Idle  ...........................  %d",
-	           tracker_config_get_sched_idle (config));
 	g_message ("  Initial Sleep  ........................  %d",
 	           tracker_config_get_initial_sleep (config));
 	g_message ("  Writeback  ............................  %s",
@@ -792,7 +782,6 @@ main (gint argc, gchar *argv[])
 	TrackerMinerFilesIndex *miner_files_index;
 	GOptionContext *context;
 	GError *error = NULL;
-	gchar *log_filename = NULL;
 	gboolean do_mtime_checking;
 	gboolean force_mtime_checking = FALSE;
 	TrackerMinerProxy *proxy;
@@ -860,19 +849,8 @@ main (gint argc, gchar *argv[])
 	/* Initialize logging */
 	config = tracker_config_new ();
 
-	if (verbosity > -1) {
-		tracker_config_set_verbosity (config, verbosity);
-	}
-
 	if (initial_sleep > -1) {
 		tracker_config_set_initial_sleep (config, initial_sleep);
-	}
-
-	tracker_log_init (tracker_config_get_verbosity (config),
-	                  &log_filename);
-	if (log_filename) {
-		g_message ("Using log file:'%s'", log_filename);
-		g_free (log_filename);
 	}
 
 	sanity_check_option_values (config);
@@ -918,7 +896,6 @@ main (gint argc, gchar *argv[])
 		g_critical ("Couldn't create new Files miner: '%s'",
 		            error ? error->message : "unknown error");
 		g_object_unref (config);
-		tracker_log_shutdown ();
 		return EXIT_FAILURE;
 	}
 
@@ -931,7 +908,6 @@ main (gint argc, gchar *argv[])
 		g_error_free (error);
 		g_object_unref (config);
 		g_object_unref (miner_files);
-		tracker_log_shutdown ();
 		return EXIT_FAILURE;
 	}
 
@@ -944,7 +920,6 @@ main (gint argc, gchar *argv[])
 		            error ? error->message : "unknown error");
 		g_object_unref (config);
 		g_object_unref (miner_files);
-		tracker_log_shutdown ();
 		return EXIT_FAILURE;
 	}
 
@@ -954,7 +929,6 @@ main (gint argc, gchar *argv[])
 		g_object_unref (miner_files);
 		tracker_writeback_shutdown ();
 		g_object_unref (config);
-		tracker_log_shutdown ();
 		return EXIT_FAILURE;
 	}
 
@@ -1034,7 +1008,6 @@ main (gint argc, gchar *argv[])
 	tracker_domain_ontology_unref (domain_ontology);
 
 	tracker_writeback_shutdown ();
-	tracker_log_shutdown ();
 
 	g_print ("\nOK\n\n");
 

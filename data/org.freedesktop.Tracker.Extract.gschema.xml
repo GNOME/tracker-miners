@@ -19,22 +19,6 @@ Boston, MA  02110-1301, USA.
 -->
 <schemalist>
   <schema id="org.freedesktop.Tracker3.Extract" path="/org/freedesktop/tracker/extract/" gettext-domain="tracker-miners">
-    <key name="verbosity" enum="org.freedesktop.TrackerMiners3.TrackerVerbosity">
-      <default>'errors'</default>
-      <summary>Log verbosity</summary>
-      <description>Log verbosity.</description>
-    </key>
-
-    <key name="sched-idle" enum="org.freedesktop.TrackerMiners3.TrackerSchedIdle">
-      <default>'first-index'</default>
-      <summary>Scheduler priority when idle</summary>
-      <description>
-	The scheduler is the kernel component that decides which
-	runnable application will be executed by the CPU next. Each
-	application has an associated scheduling policy and priority.
-      </description>
-    </key>
-
     <key name="max-bytes" type="i">
       <summary>Max bytes to extract</summary>
       <description>Maximum number of UTF-8 bytes to extract.</description>

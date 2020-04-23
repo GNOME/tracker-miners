@@ -37,8 +37,6 @@
 #define CONFIG_PATH   "/org/freedesktop/tracker/miner/files/"
 
 /* Default values */
-#define DEFAULT_VERBOSITY                        0
-#define DEFAULT_SCHED_IDLE                       1
 #define DEFAULT_INITIAL_SLEEP                    15       /* 0->1000 */
 #define DEFAULT_ENABLE_MONITORS                  TRUE
 #define DEFAULT_THROTTLE                         0        /* 0->20 */
@@ -100,8 +98,6 @@ enum {
 	PROP_0,
 
 	/* General */
-	PROP_VERBOSITY,
-	PROP_SCHED_IDLE,
 	PROP_INITIAL_SLEEP,
 
 	/* Monitors */
@@ -140,22 +136,6 @@ tracker_config_class_init (TrackerConfigClass *klass)
 	object_class->constructed  = config_constructed;
 
 	/* General */
-	g_object_class_install_property (object_class,
-	                                 PROP_VERBOSITY,
-	                                 g_param_spec_enum ("verbosity",
-	                                                    "Log verbosity",
-	                                                    "Log verbosity (0=errors, 1=minimal, 2=detailed, 3=debug)",
-	                                                    TRACKER_TYPE_VERBOSITY,
-	                                                    DEFAULT_VERBOSITY,
-	                                                    G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
-	g_object_class_install_property (object_class,
-	                                 PROP_SCHED_IDLE,
-	                                 g_param_spec_enum ("sched-idle",
-	                                                    "Scheduler priority when idle",
-	                                                    "Scheduler priority when idle (0=always, 1=first-index, 2=never)",
-	                                                    TRACKER_TYPE_SCHED_IDLE,
-	                                                    DEFAULT_SCHED_IDLE,
-	                                                    G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 	g_object_class_install_property (object_class,
 	                                 PROP_INITIAL_SLEEP,
 	                                 g_param_spec_int ("initial-sleep",
@@ -324,9 +304,6 @@ config_set_property (GObject      *object,
 		/* NOTE: We handle these because we have to be able
 		 * to save these based on command line overrides.
 		 */
-	case PROP_VERBOSITY:
-		tracker_config_set_verbosity (config, g_value_get_enum (value));
-		break;
 	case PROP_INITIAL_SLEEP:
 		tracker_config_set_initial_sleep (config, g_value_get_int (value));
 		break;
@@ -403,12 +380,6 @@ config_get_property (GObject    *object,
 
 	switch (param_id) {
 		/* General */
-	case PROP_VERBOSITY:
-		g_value_set_enum (value, tracker_config_get_verbosity (config));
-		break;
-	case PROP_SCHED_IDLE:
-		g_value_set_enum (value, tracker_config_get_sched_idle (config));
-		break;
 	case PROP_INITIAL_SLEEP:
 		g_value_set_int (value, tracker_config_get_initial_sleep (config));
 		break;
@@ -651,8 +622,7 @@ config_constructed (GObject *object)
 	 *
 	 * NOTE: We need this. If we don't we can't have local
 	 * settings which are *NOT* stored in the GSettings database.
-	 * We need this for overriding things like verbosity on start
-	 * up.
+	 * We need this for overriding things on start up.
 	 */
 	if (G_LIKELY (!g_getenv ("TRACKER_USE_CONFIG_FILES"))) {
 		g_settings_delay (settings);
@@ -660,11 +630,10 @@ config_constructed (GObject *object)
 
 	/* Set up bindings:
 	 *
-	 * What's interesting here is that 'verbosity' and
-	 * 'initial-sleep' are command line arguments that can be
-	 * overridden, so we don't update the config when we set them
-	 * from main() because it's a session configuration only, not
-	 * a permanent one. To do this we use the flag
+	 * What's interesting here is that 'initial-sleep' is a
+	 * command line argument that can be overridden, so we don't update the
+	 * config when we set it from main() because it's a session configuration
+	 * only, not a permanent one. To do this we use the flag
 	 * G_SETTINGS_BIND_GET_NO_CHANGES.
 	 *
 	 * For the other settings, we don't bind the
@@ -676,8 +645,6 @@ config_constructed (GObject *object)
 	 * file for convenience. But this is only necessary if the
 	 * config is different to the default.
 	 */
-	g_settings_bind (settings, "verbosity", object, "verbosity", G_SETTINGS_BIND_GET | G_SETTINGS_BIND_GET_NO_CHANGES);
-	g_settings_bind (settings, "sched-idle", object, "sched-idle", G_SETTINGS_BIND_GET);
 	g_settings_bind (settings, "initial-sleep", object, "initial-sleep", G_SETTINGS_BIND_GET | G_SETTINGS_BIND_GET_NO_CHANGES);
 	g_settings_bind (settings, "throttle", object, "throttle", G_SETTINGS_BIND_GET);
 	g_settings_bind (settings, "low-disk-space-limit", object, "low-disk-space-limit", G_SETTINGS_BIND_GET);
@@ -740,22 +707,6 @@ tracker_config_new (void)
 	}
 
 	return config;
-}
-
-gint
-tracker_config_get_verbosity (TrackerConfig *config)
-{
-	g_return_val_if_fail (TRACKER_IS_CONFIG (config), DEFAULT_VERBOSITY);
-
-	return g_settings_get_enum (G_SETTINGS (config), "verbosity");
-}
-
-gint
-tracker_config_get_sched_idle (TrackerConfig *config)
-{
-	g_return_val_if_fail (TRACKER_IS_CONFIG (config), DEFAULT_SCHED_IDLE);
-
-	return g_settings_get_enum (G_SETTINGS (config), "sched-idle");
 }
 
 gint
@@ -912,16 +863,6 @@ tracker_config_get_removable_days_threshold (TrackerConfig *config)
 	g_return_val_if_fail (TRACKER_IS_CONFIG (config), DEFAULT_REMOVABLE_DAYS_THRESHOLD);
 
 	return g_settings_get_int (G_SETTINGS (config), "removable-days-threshold");
-}
-
-void
-tracker_config_set_verbosity (TrackerConfig *config,
-                              gint           value)
-{
-	g_return_if_fail (TRACKER_IS_CONFIG (config));
-
-	g_settings_set_enum (G_SETTINGS (config), "verbosity", value);
-	g_object_notify (G_OBJECT (config), "verbosity");
 }
 
 void

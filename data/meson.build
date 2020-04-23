@@ -2,7 +2,6 @@ schemas = {
   'org.freedesktop.Tracker.Extract.gschema.xml': 'org.freedesktop.Tracker@0@.Extract.gschema.xml'.format(tracker_api_major),
   'org.freedesktop.Tracker.FTS.gschema.xml': 'org.freedesktop.Tracker@0@.FTS.gschema.xml'.format(tracker_api_major),
   'org.freedesktop.Tracker.Miner.Files.gschema.xml': 'org.freedesktop.Tracker@0@.Miner.Files.gschema.xml'.format(tracker_api_major),
-  'org.freedesktop.Tracker.Writeback.gschema.xml': 'org.freedesktop.Tracker@0@.Writeback.gschema.xml'.format(tracker_api_major),
 }
 
 schemas_file_deps = []

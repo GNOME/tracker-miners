@@ -36,7 +36,6 @@
 #endif
 
 #include "tracker-dbus.h"
-#include "tracker-log.h"
 
 /* How long clients can exist since last D-Bus call before being
  * cleaned up.
