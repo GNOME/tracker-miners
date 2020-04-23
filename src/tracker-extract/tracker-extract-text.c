@@ -99,7 +99,6 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 
 	metadata = tracker_resource_new (NULL);
 	tracker_resource_add_uri (metadata, "rdf:type", "nfo:PlainTextDocument");
-	tracker_resource_add_uri (metadata, "rdf:type", "nfo:FileDataObject");
 
 	if (content) {
 		tracker_resource_set_string (metadata, "nie:plainTextContent", content);
