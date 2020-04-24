@@ -222,7 +222,7 @@ tracker_domain_ontology_new (const gchar   *domain_name,
 	TrackerDomainOntology *domain_ontology;
 	GError *inner_error = NULL;
 	GKeyFile *key_file = NULL;
-	gchar *path, *path_for_tests;
+	gchar *path;
 
 	domain_ontology = g_new0 (TrackerDomainOntology, 1);
 	domain_ontology->name = g_strdup (domain_name);
@@ -249,19 +249,20 @@ tracker_domain_ontology_new (const gchar   *domain_name,
 			goto end;
 		}
 	} else {
-		path = g_build_filename (SHAREDIR, TRACKERSHAREDIR, "domain-ontologies",
-		                         DEFAULT_RULE, NULL);
-
-		if (!g_file_test (path, G_FILE_TEST_IS_REGULAR)) {
+		if (g_getenv ("TRACKER_TEST_DOMAIN_ONTOLOGY_RULE")) {
 			/* This is only for uninstalled tests */
-			path_for_tests = g_strdup (g_getenv ("TRACKER_TEST_DOMAIN_ONTOLOGY_RULE"));
+			path = g_strdup (g_getenv ("TRACKER_TEST_DOMAIN_ONTOLOGY_RULE"));
 
-			if (path_for_tests == NULL) {
+			if (!g_file_test (path, G_FILE_TEST_IS_REGULAR)) {
+				g_error ("Unable to find test domain ontology rule %s", path);
+			}
+		} else {
+			path = g_build_filename (SHAREDIR, TRACKERSHAREDIR, "domain-ontologies",
+		                             DEFAULT_RULE, NULL);
+
+			if (!g_file_test (path, G_FILE_TEST_IS_REGULAR)) {
 				g_error ("Unable to find default domain ontology rule %s", path);
 			}
-
-			g_free (path);
-			path = path_for_tests;
 		}
 	}
 
