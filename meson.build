@@ -1,6 +1,6 @@
 project('tracker-miners', 'c',
         version: '2.99.0',
-        meson_version: '>=0.50')
+        meson_version: '>=0.51')
 
 gnome = import('gnome')
 i18n = import('i18n')
@@ -405,6 +405,8 @@ tracker_uninstalled_writeback_modules_dir = join_paths(meson.current_build_dir()
 uninstalled_tracker_extract_path = join_paths(meson.current_build_dir(), 'src', 'tracker-extract', 'tracker-extract-3')
 
 gsettings_schema_dir = join_paths(get_option('prefix'), get_option('datadir'), 'glib-2.0', 'schemas')
+po_dir = join_paths(meson.current_source_dir(), 'po')
+xdg_autostart_dir = join_paths(get_option('sysconfdir'), 'xdg', 'autostart')
 
 glib_compile_schemas = find_program('glib-compile-schemas')
 glib_mkenums = find_program('glib-mkenums')

@@ -1,1 +1,5 @@
-i18n.gettext(tracker_versioned_name, preset: 'glib')
+i18n.gettext(
+  'tracker-miners',
+  preset: 'glib',
+  args: '--keyword=DisplayName',
+)

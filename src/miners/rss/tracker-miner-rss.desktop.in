@@ -1,7 +1,6 @@
 [Desktop Entry]
-_Name=Tracker RSS/ATOM Feeds Miner
-_Comment=Fetch RSS/ATOM feeds
-Icon=
+Name=Tracker RSS/ATOM Feeds Miner
+Comment=Fetch RSS/ATOM feeds
 Exec=@libexecdir@/tracker-miner-rss-3
 Terminal=false
 Type=Application
@@ -13,7 +12,3 @@ X-KDE-StartupNotify=false
 X-KDE-UniqueApplet=true
 NoDisplay=true
 OnlyShowIn=GNOME;KDE;XFCE;Unity;
-X-GNOME-Bugzilla-Bugzilla=GNOME
-X-GNOME-Bugzilla-Product=tracker
-X-GNOME-Bugzilla-Component=Miners
-X-GNOME-Bugzilla-Version=@VERSION@

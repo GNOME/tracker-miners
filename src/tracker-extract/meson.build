@@ -169,31 +169,17 @@ executable('tracker-extract-@0@'.format(tracker_api_major),
   install_dir: join_paths(get_option('prefix'), get_option('libexecdir')),
   install_rpath: tracker_install_rpath)
 
-dbus_service_file_untranslated = configure_file(
-  input: 'org.freedesktop.Tracker3.Miner.Extract.service.in.in',
-  output: 'org.freedesktop.Tracker3.Miner.Extract.service.in',
-  configuration: conf)
-
-dbus_service_file = custom_target('tracker-extract-dbus-service-file',
-  input: dbus_service_file_untranslated,
+# This file allows starting the service with D-Bus autoactivation.
+# It's also used by tracker-control to identify the miner.
+dbus_service_file = configure_file(
+  input: 'org.freedesktop.Tracker3.Miner.Extract.service.in',
   output: 'org.freedesktop.Tracker3.Miner.Extract.service',
-  command: ['intltool-merge', '--quiet', '--desktop-style', '--utf8', join_paths(meson.source_root(), 'po'), '@INPUT@', '@OUTPUT@'],
+  configuration: conf,
   install: true,
   install_dir: dbus_services_dir)
 
-desktop_file_untranslated = configure_file(
-  input: 'tracker-extract.desktop.in.in',
-  output: 'tracker-extract.desktop.in',
-  configuration: conf)
-
-desktop_file = custom_target('tracker-extract-desktop-file',
-  input: desktop_file_untranslated,
-  output: 'tracker-extract-@0@.desktop'.format(tracker_api_major),
-  command: ['intltool-merge', '--quiet', '--desktop-style', '--utf8', join_paths(meson.source_root(), 'po'), '@INPUT@', '@OUTPUT@'],
-  install: true,
-  install_dir: join_paths(get_option('sysconfdir'), 'xdg/autostart'))
-
 if get_option('systemd_user_services')
+  # This file allows starting the service as a systemd user service.
   configure_file(
     input: 'tracker-extract.service.in',
     output: 'tracker-extract-@0@.service'.format(tracker_api_major),

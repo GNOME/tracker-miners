@@ -35,31 +35,27 @@ executable('tracker-miner-fs-@0@'.format(tracker_api_major),
     install_rpath: tracker_install_rpath,
 )
 
-dbus_service_file_untranslated = configure_file(
-    input: 'org.freedesktop.Tracker3.Miner.Files.service.in.in',
-    output: 'org.freedesktop.Tracker3.Miner.Files.service.in',
-    configuration: conf)
-
-dbus_service_file = custom_target('tracker-miner-files-dbus-service-file',
-    input: dbus_service_file_untranslated,
+# This file allows starting the service with D-Bus autoactivation.
+# It's also used by tracker-control to identify the miner.
+dbus_service_file = configure_file(
+    input: 'org.freedesktop.Tracker3.Miner.Files.service.in',
     output: 'org.freedesktop.Tracker3.Miner.Files.service',
-    command: ['intltool-merge', '--quiet', '--desktop-style', '--utf8', join_paths(meson.source_root(), 'po'), '@INPUT@', '@OUTPUT@'],
+    configuration: conf,
     install: true,
-    install_dir: dbus_services_dir)
+    install_dir: dbus_services_dir,
+)
 
-desktop_file_untranslated = configure_file(
-    input: 'tracker-miner-fs.desktop.in.in',
-    output: 'tracker-miner-fs.desktop.in',
-    configuration: conf)
-
-desktop_file = custom_target('tracker-miner-fs-desktop-file',
-    input: desktop_file_untranslated,
+# This file allows starting the service automatically using XDG autostart.
+# systemd user service activation is preferred if available.
+desktop_file = configure_file(
+    input: 'tracker-miner-fs.desktop.in',
     output: 'tracker-miner-fs-@0@.desktop'.format(tracker_api_major),
-    command: ['intltool-merge', '--quiet', '--desktop-style', '--utf8', join_paths(meson.source_root(), 'po'), '@INPUT@', '@OUTPUT@'],
+    configuration: conf,
     install: true,
-    install_dir: join_paths(get_option('sysconfdir'), 'xdg/autostart'))
+    install_dir: xdg_autostart_dir)
 
 if get_option('systemd_user_services')
+  # This file allows starting the service as a systemd user service.
   configure_file(
       input: 'tracker-miner-fs.service.in',
       output: 'tracker-miner-fs-@0@.service'.format(tracker_api_major),

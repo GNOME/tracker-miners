@@ -1,7 +1,6 @@
 [Desktop Entry]
-_Name=Tracker File System Miner
-_Comment=Crawls and processes files on the file system
-Icon=
+Name=Tracker File System Miner
+Comment=Crawls and processes files on the file system
 Exec=@libexecdir@/tracker-miner-fs-3
 Terminal=false
 Type=Application
@@ -13,7 +12,3 @@ X-KDE-StartupNotify=false
 X-KDE-UniqueApplet=true
 NoDisplay=true
 OnlyShowIn=GNOME;KDE;XFCE;X-IVI;Unity;
-X-GNOME-Bugzilla-Bugzilla=GNOME
-X-GNOME-Bugzilla-Product=tracker
-X-GNOME-Bugzilla-Component=Miners
-X-GNOME-Bugzilla-Version=@VERSION@

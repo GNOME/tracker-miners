@@ -6,5 +6,5 @@ SystemdService=tracker-miner-rss-3.service
 # Miner details needed for tracker-control
 Path=/org/freedesktop/Tracker3/Miner/RSS
 NameSuffix=Miner.RSS
-_DisplayName=RSS/ATOM Feeds
-_Comment=Fetch RSS/ATOM Feeds
+DisplayName=RSS/ATOM Feeds
+Comment=Fetch RSS/ATOM Feeds
