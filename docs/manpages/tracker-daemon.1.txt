@@ -72,11 +72,11 @@ For example:
 
     'nfo:Document'
        'nfo:fileSize' = '1770'
-       'nie:dataSource' = 'http://www.tracker-project.org/ontologies/tracker#extractor-data-source'
+       'nie:dataSource' = 'http://tracker.api.gnome.org/ontology/v3/tracker#extractor-data-source'
        'nie:mimeType' = 'text/plain'
        'nie:url' = 'file:///home/martyn/.bash_aliases'
     'nfo:Document'
-       'nie:dataSource' = 'http://www.tracker-project.org/ontologies/tracker#extractor-data-source'
+       'nie:dataSource' = 'http://tracker.api.gnome.org/ontology/v3/tracker#extractor-data-source'
 
     ...
 ....

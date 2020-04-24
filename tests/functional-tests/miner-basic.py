@@ -38,7 +38,7 @@ import fixtures
 
 log = logging.getLogger(__name__)
 
-NFO_DOCUMENT = 'http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#Document'
+NFO_DOCUMENT = 'http://tracker.api.gnome.org/ontology/v3/nfo#Document'
 
 
 class MinerCrawlTest(fixtures.TrackerMinerTest):
