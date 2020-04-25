@@ -118,13 +118,13 @@ initialize_priority_and_scheduling (void)
 	 * successful call so we have to check value of errno too.
 	 * Stupid...
 	 */
-	g_message ("Setting priority nice level to 19");
+	TRACKER_NOTE (CONFIG, g_message ("Setting priority nice level to 19"));
 
 	if (nice (19) == -1) {
 		const gchar *str = g_strerror (errno);
 
-		g_message ("Couldn't set nice value to 19, %s",
-		           str ? str : "no error given");
+		TRACKER_NOTE (CONFIG, g_message ("Couldn't set nice value to 19, %s",
+		                      str ? str : "no error given"));
 	}
 }
 
@@ -169,11 +169,15 @@ initialize_signal_handler (void)
 }
 
 static void
-sanity_check_option_values (TrackerConfig *config)
+log_option_values (TrackerConfig *config)
 {
-	g_message ("General options:");
-	g_message ("  Max bytes (per file)  .................  %d",
-	           tracker_config_get_max_bytes (config));
+#ifdef G_ENABLE_DEBUG
+	if (TRACKER_DEBUG_CHECK (CONFIG)) {
+		g_message ("General options:");
+		g_message ("  Max bytes (per file)  .................  %d",
+		           tracker_config_get_max_bytes (config));
+	}
+#endif
 }
 
 TrackerConfig *
@@ -349,7 +353,7 @@ main (int argc, char *argv[])
 	config = tracker_config_new ();
 
 	/* Extractor command line arguments */
-	sanity_check_option_values (config);
+	log_option_values (config);
 
 	/* Set conditions when we use stand alone settings */
 	if (filename) {

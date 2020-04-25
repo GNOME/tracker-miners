@@ -131,8 +131,6 @@ tracker_power_initable_init (GInitable     *initable,
 	TrackerPower *power;
 	TrackerPowerPrivate *priv;
 
-	g_message ("Initializing UPower...");
-
 	power = TRACKER_POWER (initable);
 	priv = GET_PRIV (power);
 

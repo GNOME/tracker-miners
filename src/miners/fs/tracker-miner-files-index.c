@@ -537,9 +537,9 @@ tracker_miner_files_index_new (TrackerMinerFiles *miner_files)
 	/* Register the service name for the miner */
 	full_path = g_strconcat (TRACKER_MINER_DBUS_PATH_PREFIX, "Files/Index", NULL);
 
-	g_message ("Registering D-Bus object...");
-	g_message ("  Path:'%s'", full_path);
-	g_message ("  Object Type:'%s'", G_OBJECT_TYPE_NAME (miner));
+	g_debug ("Registering D-Bus object...");
+	g_debug ("  Path:'%s'", full_path);
+	g_debug ("  Object Type:'%s'", G_OBJECT_TYPE_NAME (miner));
 
 	priv->registration_id =
 		g_dbus_connection_register_object (priv->d_connection,
