@@ -701,14 +701,17 @@ finish_current_directory (TrackerFileNotifier *notifier,
 		               priv->current_index_root->files_found,
 		               priv->current_index_root->files_ignored);
 
-		g_info ("  Notified files after %2.2f seconds",
-		        g_timer_elapsed (priv->timer, NULL));
-		g_info ("  Found %d directories, ignored %d directories",
-		        priv->current_index_root->directories_found,
-		        priv->current_index_root->directories_ignored);
-		g_info ("  Found %d files, ignored %d files",
-		        priv->current_index_root->files_found,
-		        priv->current_index_root->files_ignored);
+		TRACKER_NOTE (STATISTICS,
+		              g_message ("  Notified files after %2.2f seconds",
+		                         g_timer_elapsed (priv->timer, NULL)));
+		TRACKER_NOTE (STATISTICS,
+		              g_message ("  Found %d directories, ignored %d directories",
+		                        priv->current_index_root->directories_found,
+		                        priv->current_index_root->directories_ignored));
+		TRACKER_NOTE (STATISTICS,
+		              g_message ("  Found %d files, ignored %d files",
+		                         priv->current_index_root->files_found,
+		                         priv->current_index_root->files_ignored));
 
 		if (!interrupted) {
 			g_clear_pointer (&priv->current_index_root, root_data_free);
