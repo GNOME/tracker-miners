@@ -26,6 +26,8 @@
 
 #include "tracker-sched.h"
 
+#include "tracker-debug.h"
+
 /* Sets the priority of the current thread to SCHED_IDLE.
  *
  * Threads spawned from a SCHED_IDLE thread will inherit the same priority,
@@ -45,7 +47,7 @@ tracker_sched_idle (void)
 	}
 
 	if (result == 0) {
-		g_message ("Set scheduler policy to SCHED_IDLE");
+		TRACKER_NOTE (CONFIG, g_message ("Set scheduler policy to SCHED_IDLE"));
 
 		return TRUE;
 	} else {
