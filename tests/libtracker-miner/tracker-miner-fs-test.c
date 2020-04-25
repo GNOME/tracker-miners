@@ -286,11 +286,12 @@ static void
 fixture_teardown (TrackerMinerFSTestFixture *fixture,
                   gconstpointer              data)
 {
-	DELETE_FOLDER (fixture, "/");
-
 	g_object_unref (fixture->test_root);
 	g_object_unref (fixture->miner);
 	g_object_unref (fixture->connection);
+
+	DELETE_FOLDER (fixture, "/");
+
 	g_free (fixture->test_root_path);
 }
 
