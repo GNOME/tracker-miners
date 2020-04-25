@@ -984,8 +984,6 @@ miner_started (TrackerMiner *miner)
 
 	fs->priv->been_started = TRUE;
 
-	g_info ("Initializing");
-
 	g_object_set (miner,
 	              "progress", 0.0,
 	              "status", "Initializing",
@@ -998,8 +996,6 @@ miner_started (TrackerMiner *miner)
 static void
 miner_stopped (TrackerMiner *miner)
 {
-	g_info ("Idle");
-
 	g_object_set (miner,
 	              "progress", 1.0,
 	              "status", "Idle",
@@ -1130,8 +1126,6 @@ process_stop (TrackerMinerFS *fs)
 
 	fs->priv->timer_stopped = TRUE;
 	fs->priv->extraction_timer_stopped = TRUE;
-
-	g_info ("Idle");
 
 	g_object_set (fs,
 	              "progress", 1.0,
@@ -1773,7 +1767,6 @@ miner_handle_next_item (TrackerMinerFS *fs)
 			 */
 			if (g_strcmp0 (status, "Processing…") != 0) {
 				/* Don't spam this */
-				g_info ("Processing…");
 				g_object_set (fs,
 				              "status", "Processing…",
 				              "progress", CLAMP (progress_now, 0.02, 1.00),
@@ -1999,7 +1992,6 @@ item_queue_handlers_set_up (TrackerMinerFS *fs)
 
 		/* Don't spam this */
 		if (progress > 0.01 && g_strcmp0 (status, "Processing…") != 0) {
-			g_info ("Processing…");
 			g_object_set (fs, "status", "Processing…", NULL);
 		}
 
