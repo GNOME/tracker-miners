@@ -142,7 +142,7 @@ tracker_thumbnailer_initable_init (GInitable     *initable,
 	private->request_id = 1;
 	private->service_is_available = FALSE;
 
-	g_message ("Thumbnailer connections being set up... (using same bus as Tracker, i.e. session or system)");
+	g_debug ("Thumbnailer connections being set up... (using same bus as Tracker, i.e. session or system)");
 
 	private->connection = g_bus_get_sync (TRACKER_IPC_BUS, NULL, error);
 
@@ -212,7 +212,7 @@ tracker_thumbnailer_initable_init (GInitable     *initable,
 			}
 
 			i = g_hash_table_size (hash);
-			g_message ("Thumbnailer supports %d mime types", i);
+			g_debug ("Thumbnailer supports %d mime types", i);
 
 			g_hash_table_iter_init (&iter, hash);
 			private->supported_mime_types = (GStrv) g_new0 (gchar *, i + 1);
