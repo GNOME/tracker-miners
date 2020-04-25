@@ -23,7 +23,9 @@
 
 #ifdef G_ENABLE_DEBUG
 static const GDebugKey tracker_miners_debug_keys[] = {
+  { "config", TRACKER_DEBUG_CONFIG },
   { "miner-fs-events", TRACKER_DEBUG_MINER_FS_EVENTS },
+  { "statistics", TRACKER_DEBUG_STATISTICS },
 };
 #endif /* G_ENABLE_DEBUG */
 
