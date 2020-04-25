@@ -4,20 +4,20 @@
 stages:
   - test
 
-test-fedora-latest:
+variables:
+  # These can be used to see verbose log output from the functional-tests.
+  # See HACKING.md for more information.
+  G_MESSAGES_DEBUG: "Tracker"
+  TRACKER_VERBOSITY: "1"
+  TRACKER_TESTS_VERBOSE: "no"
+
+.test_template: &test
   stage: test
-  image: registry.gitlab.gnome.org/gnome/tracker-oci-images/amd64/fedora:latest
 
   script:
     # We can build and test tracker-miners against tracker just by building
     # tracker as a submodule.
-    #
-    # Note that this approach doesn't currently work for the functional-tests,
-    # they require the ontologies and domain rules from tracker to be installed
-    # somewhere. It would be nice to improve the functional-tests so that they
-    # will run without depending on any files outside of the build tree. Note
-    # that Tracker is installed on the host here, thanks to `dnf builddep`.
-    - su tracker -c 'mkdir subprojects; cd subprojects; git clone https://gitlab.gnome.org/GNOME/tracker -b tracker-2.3'
+    - su tracker -c '.gitlab-ci/checkout-tracker.sh'
     - su tracker -c 'mkdir build'
     - su tracker -c 'cd build; meson .. --prefix=/usr -Dtracker_core=subproject -Db_lto=true'
     - su tracker -c 'cd build; ninja'
@@ -27,9 +27,33 @@ test-fedora-latest:
       # screenful of junk each time unless we strip these.
       unset $(env|grep -o '^CI_[^=]*')
 
-      su tracker -c 'cd build; dbus-run-session -- env LANG=C.UTF8 LC_ALL=C.UTF8 eatmydata meson test --suite tracker-miners --print-errorlogs'
+      su tracker -c 'cd build; dbus-run-session -- env LANG=C.UTF-8 LC_ALL=C.UTF-8 eatmydata meson test --suite tracker-miners --print-errorlogs'
+
+  after_script:
+    - |
+      echo "Distribution: "
+      echo
+      egrep '^NAME=|^VERSION=' /etc/os-release
+      echo
+      echo "Test suite settings:"
+      echo
+      echo "G_MESSAGES_DEBUG: ${G_MESSAGES_DEBUG}"
+      echo "TRACKER_VERBOSITY: ${TRACKER_VERBOSITY}"
+      echo "TRACKER_TESTS_VERBOSE: ${TRACKER_TESTS_VERBOSE}"
+      echo "MESON_TEST_EXTRA_ARGS: ${MESON_TEST_EXTRA_ARGS}"
+      echo
+      echo "These values can be set at https://gitlab.gnome.org/GNOME/tracker/pipelines/new"
 
   artifacts:
     when: always
     paths:
-    - build/meson-logs/testlog.txt
+    - build/meson-logs/*.txt
+
+
+test-fedora-latest:
+  image: registry.gitlab.gnome.org/gnome/tracker-oci-images/amd64/fedora:latest
+  <<: *test
+
+test-ubuntu-rolling:
+  image: registry.gitlab.gnome.org/gnome/tracker-oci-images/amd64/ubuntu:rolling
+  <<: *test
