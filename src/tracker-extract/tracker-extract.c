@@ -70,7 +70,6 @@ typedef struct {
 	GHashTable *single_thread_extractors;
 
 	gboolean disable_shutdown;
-	gboolean disable_summary_on_finalize;
 
 	gchar *force_module;
 
@@ -95,7 +94,7 @@ typedef struct {
 } TrackerExtractTask;
 
 static void tracker_extract_finalize (GObject *object);
-static void report_statistics        (GObject *object);
+static void log_statistics        (GObject *object);
 static gboolean get_metadata         (TrackerExtractTask *task);
 static gboolean dispatch_task_cb     (TrackerExtractTask *task);
 
@@ -124,11 +123,16 @@ tracker_extract_init (TrackerExtract *object)
 	TrackerExtractPrivate *priv;
 
 	priv = TRACKER_EXTRACT_GET_PRIVATE (object);
-	priv->statistics_data = g_hash_table_new_full (NULL, NULL, NULL,
-	                                               (GDestroyNotify) statistics_data_free);
 	priv->single_thread_extractors = g_hash_table_new (NULL, NULL);
 	priv->thread_pool = g_thread_pool_new ((GFunc) get_metadata,
 	                                       NULL, 10, TRUE, NULL);
+
+#ifdef G_ENABLE_DEBUG
+	if (TRACKER_DEBUG_CHECK (STATISTICS)) {
+		priv->statistics_data = g_hash_table_new_full (NULL, NULL, NULL,
+		                                               (GDestroyNotify) statistics_data_free);
+	}
+#endif
 
 	g_mutex_init (&priv->task_mutex);
 }
@@ -145,11 +149,13 @@ tracker_extract_finalize (GObject *object)
 	g_hash_table_destroy (priv->single_thread_extractors);
 	g_thread_pool_free (priv->thread_pool, TRUE, FALSE);
 
-	if (!priv->disable_summary_on_finalize) {
-		report_statistics (object);
-	}
+	log_statistics (object);
 
-	g_hash_table_destroy (priv->statistics_data);
+#ifdef G_ENABLE_DEBUG
+	if (TRACKER_DEBUG_CHECK (STATISTICS)) {
+		g_hash_table_destroy (priv->statistics_data);
+	}
+#endif
 
 	g_mutex_clear (&priv->task_mutex);
 
@@ -157,48 +163,52 @@ tracker_extract_finalize (GObject *object)
 }
 
 static void
-report_statistics (GObject *object)
+log_statistics (GObject *object)
 {
-	TrackerExtractPrivate *priv;
-	GHashTableIter iter;
-	gpointer key, value;
+#ifdef G_ENABLE_DEBUG
+	if (TRACKER_DEBUG_CHECK (STATISTICS)) {
+		TrackerExtractPrivate *priv;
+		GHashTableIter iter;
+		gpointer key, value;
 
-	priv = TRACKER_EXTRACT_GET_PRIVATE (object);
+		priv = TRACKER_EXTRACT_GET_PRIVATE (object);
 
-	g_mutex_lock (&priv->task_mutex);
+		g_mutex_lock (&priv->task_mutex);
 
-	g_message ("--------------------------------------------------");
-	g_message ("Statistics:");
+		g_message ("--------------------------------------------------");
+		g_message ("Statistics:");
 
-	g_hash_table_iter_init (&iter, priv->statistics_data);
+		g_hash_table_iter_init (&iter, priv->statistics_data);
 
-	while (g_hash_table_iter_next (&iter, &key, &value)) {
-		GModule *module = key;
-		StatisticsData *data = value;
+		while (g_hash_table_iter_next (&iter, &key, &value)) {
+			GModule *module = key;
+			StatisticsData *data = value;
 
-		if (data->extracted_count > 0 || data->failed_count > 0) {
-			const gchar *name, *name_without_path;
+			if (data->extracted_count > 0 || data->failed_count > 0) {
+				const gchar *name, *name_without_path;
 
-			name = g_module_name (module);
-			name_without_path = strrchr (name, G_DIR_SEPARATOR) + 1;
+				name = g_module_name (module);
+				name_without_path = strrchr (name, G_DIR_SEPARATOR) + 1;
 
-			g_message ("    Module:'%s', extracted:%d, failures:%d",
-			           name_without_path,
-			           data->extracted_count,
-			           data->failed_count);
+				g_message ("    Module:'%s', extracted:%d, failures:%d",
+				           name_without_path,
+				           data->extracted_count,
+				           data->failed_count);
+			}
 		}
+
+		g_message ("Unhandled files: %d", priv->unhandled_count);
+
+		if (priv->unhandled_count == 0 &&
+		    g_hash_table_size (priv->statistics_data) < 1) {
+			g_message ("    No files handled");
+		}
+
+		g_message ("--------------------------------------------------");
+
+		g_mutex_unlock (&priv->task_mutex);
 	}
-
-	g_message ("Unhandled files: %d", priv->unhandled_count);
-
-	if (priv->unhandled_count == 0 &&
-	    g_hash_table_size (priv->statistics_data) < 1) {
-		g_message ("    No files handled");
-	}
-
-	g_message ("--------------------------------------------------");
-
-	g_mutex_unlock (&priv->task_mutex);
+#endif
 }
 
 TrackerExtract *
@@ -239,25 +249,29 @@ notify_task_finish (TrackerExtractTask *task,
 	 */
 	g_mutex_lock (&priv->task_mutex);
 
-	if (task->cur_module) {
-		stats_data = g_hash_table_lookup (priv->statistics_data,
-						  task->cur_module);
+#ifdef G_ENABLE_DEBUG
+	if (TRACKER_DEBUG_CHECK (STATISTICS)) {
+		if (task->cur_module) {
+			stats_data = g_hash_table_lookup (priv->statistics_data,
+			                                  task->cur_module);
 
-		if (!stats_data) {
-			stats_data = g_slice_new0 (StatisticsData);
-			g_hash_table_insert (priv->statistics_data,
-					     task->cur_module,
-					     stats_data);
+			if (!stats_data) {
+				stats_data = g_slice_new0 (StatisticsData);
+				g_hash_table_insert (priv->statistics_data,
+				                     task->cur_module,
+				                     stats_data);
+			}
+
+			stats_data->extracted_count++;
+
+			if (!success) {
+				stats_data->failed_count++;
+			}
+		} else {
+			priv->unhandled_count++;
 		}
-
-		stats_data->extracted_count++;
-
-		if (!success) {
-			stats_data->failed_count++;
-		}
-	} else {
-		priv->unhandled_count++;
 	}
+#endif
 
 	priv->running_tasks = g_list_remove (priv->running_tasks, task);
 
@@ -666,13 +680,9 @@ tracker_extract_get_metadata_by_cmdline (TrackerExtract             *object,
                                          TrackerSerializationFormat  output_format)
 {
 	GError *error = NULL;
-	TrackerExtractPrivate *priv;
 	TrackerExtractTask *task;
 	TrackerExtractInfo *info;
 	gboolean no_data_or_modules = TRUE;
-
-	priv = TRACKER_EXTRACT_GET_PRIVATE (object);
-	priv->disable_summary_on_finalize = TRUE;
 
 	g_return_if_fail (uri != NULL);
 
