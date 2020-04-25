@@ -1090,39 +1090,40 @@ notify_roots_finished (TrackerMinerFS *fs,
 }
 
 static void
-process_print_stats (TrackerMinerFS *fs)
+log_stats (TrackerMinerFS *fs)
 {
-	/* Only do this the first time, otherwise the results are
-	 * likely to be inaccurate. Devices can be added or removed so
-	 * we can't assume stats are correct.
-	 */
-	if (!fs->priv->shown_totals) {
-		fs->priv->shown_totals = TRUE;
+#ifdef G_ENABLE_DEBUG
+	if (TRACKER_DEBUG_CHECK (STATISTICS)) {
+		/* Only do this the first time, otherwise the results are
+		 * likely to be inaccurate. Devices can be added or removed so
+		 * we can't assume stats are correct.
+		 */
+		if (!fs->priv->shown_totals) {
+			fs->priv->shown_totals = TRUE;
 
-		g_info ("--------------------------------------------------");
-		g_info ("Total directories : %d (%d ignored)",
-		        fs->priv->total_directories_found,
-		        fs->priv->total_directories_ignored);
-		g_info ("Total files       : %d (%d ignored)",
-		        fs->priv->total_files_found,
-		        fs->priv->total_files_ignored);
-#if 0
-		g_info ("Total monitors    : %d",
-		        tracker_monitor_get_count (fs->priv->monitor));
-#endif
-		g_info ("Total processed   : %d (%d notified, %d with error)",
-		        fs->priv->total_files_processed,
-		        fs->priv->total_files_notified,
-		        fs->priv->total_files_notified_error);
-		g_info ("--------------------------------------------------\n");
+			g_info ("--------------------------------------------------");
+			g_info ("Total directories : %d (%d ignored)",
+			        fs->priv->total_directories_found,
+			        fs->priv->total_directories_ignored);
+			g_info ("Total files       : %d (%d ignored)",
+			        fs->priv->total_files_found,
+			        fs->priv->total_files_ignored);
+			g_info ("Total processed   : %d (%d notified, %d with error)",
+			        fs->priv->total_files_processed,
+			        fs->priv->total_files_notified,
+			        fs->priv->total_files_notified_error);
+			g_info ("--------------------------------------------------\n");
+		}
 	}
+#endif
 }
 
 static void
 process_stop (TrackerMinerFS *fs)
 {
-	/* Now we have finished crawling, print stats and enable monitor events */
-	process_print_stats (fs);
+	/* Now we have finished crawling, we enable monitor events */
+
+	log_stats (fs);
 
 	g_timer_stop (fs->priv->timer);
 	g_timer_stop (fs->priv->extraction_timer);
