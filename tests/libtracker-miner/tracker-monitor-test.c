@@ -234,12 +234,11 @@ test_monitor_common_setup (TrackerMonitorTestFixture *fixture,
 	tracker_monitor_set_enabled (fixture->monitor, FALSE);
 
 	/* Create a temp directory to monitor in the test */
-	basename = g_strdup_printf ("monitor-test-%d", getpid ());
-	fixture->monitored_directory = g_build_path (G_DIR_SEPARATOR_S, g_get_tmp_dir (), basename, NULL);
+	basename = g_dir_make_tmp ("tracker-monitor-test-XXXXXX", NULL);
+
+	fixture->monitored_directory = basename;
 	fixture->monitored_directory_file = g_file_new_for_path (fixture->monitored_directory);
 	g_assert (fixture->monitored_directory_file != NULL);
-	g_assert_cmpint (g_file_make_directory_with_parents (fixture->monitored_directory_file, NULL, NULL), ==, TRUE);
-	g_free (basename);
 	g_assert_cmpint (tracker_monitor_add (fixture->monitor, fixture->monitored_directory_file), ==, TRUE);
 	g_assert_cmpint (tracker_monitor_get_count (fixture->monitor), ==, 1);
 
@@ -999,10 +998,6 @@ test_monitor_directory_event_moved_to_monitored_after_file_create (TrackerMonito
 	/* Add some file to the new dir, WHILE ALREADY MONITORING */
 	set_file_contents (source_path, "lalala.txt", "whatever", &file_in_source_dir);
 
-	/* Ignore the events thus far */
-	events_wait (fixture);
-	g_hash_table_remove_all (fixture->events);
-
 	/* Get final path of the file */
 	file_in_dest_dir_path = g_build_path (G_DIR_SEPARATOR_S,
 	                                      fixture->monitored_directory,
@@ -1120,10 +1115,6 @@ test_monitor_directory_event_moved_to_monitored_after_file_update (TrackerMonito
 
 	/* Set to monitor the new dir also */
 	g_assert_cmpint (tracker_monitor_add (fixture->monitor, source_dir), ==, TRUE);
-
-	/* Ignore the events thus far */
-	events_wait (fixture);
-	g_hash_table_remove_all (fixture->events);
 
 	/* Get final path of the file */
 	file_in_dest_dir_path = g_build_path (G_DIR_SEPARATOR_S,
