@@ -32,6 +32,8 @@
 
 #include "tracker-monitor.h"
 
+#include "libtracker-miners-common/tracker-debug.h"
+
 /* The life time of an item in the cache */
 #define CACHE_LIFETIME_SECONDS 1
 
@@ -243,7 +245,7 @@ tracker_monitor_init (TrackerMonitor *object)
 		if (strcmp (name, "GInotifyDirectoryMonitor") == 0 ||
 		    strcmp (name, "GInotifyFileMonitor") == 0) {
 			/* Using inotify */
-			g_debug ("Monitor backend is Inotify");
+			TRACKER_NOTE (MONITORS, g_message ("Monitor backend is Inotify"));
 
 			/* Setting limit based on kernel
 			 * settings in /proc...
@@ -266,13 +268,13 @@ tracker_monitor_init (TrackerMonitor *object)
 		else if (strcmp (name, "GKqueueDirectoryMonitor") == 0 ||
 		         strcmp (name, "GKqueueFileMonitor") == 0) {
 			/* Using kqueue(2) */
-			g_debug ("Monitor backend is kqueue");
+			TRACKER_NOTE (MONITORS, g_message ("Monitor backend is kqueue"));
 
 			priv->monitor_limit = get_kqueue_limit ();
 		}
 		else if (strcmp (name, "GFamDirectoryMonitor") == 0) {
 			/* Using Fam */
-			g_debug ("Monitor backend is Fam");
+			TRACKER_NOTE (MONITORS, g_message ("Monitor backend is Fam"));
 
 			/* Setting limit to an arbitary limit
 			 * based on testing
@@ -282,7 +284,7 @@ tracker_monitor_init (TrackerMonitor *object)
 		}
 		else if (strcmp (name, "GWin32DirectoryMonitor") == 0) {
 			/* Using Windows */
-			g_debug ("Monitor backend is Windows");
+			TRACKER_NOTE (MONITORS, g_message ("Monitor backend is Windows"));
 
 			/* Guessing limit... */
 			priv->monitor_limit = 8192;
@@ -301,7 +303,7 @@ tracker_monitor_init (TrackerMonitor *object)
 	g_object_unref (file);
 
 	if (priv->enabled)
-		g_debug ("Monitor limit is %d", priv->monitor_limit);
+		TRACKER_NOTE (MONITORS, g_message ("Monitor limit is %d", priv->monitor_limit));
 }
 
 static void
@@ -664,7 +666,7 @@ monitor_event_cb (GFileMonitor      *file_monitor,
 	priv = tracker_monitor_get_instance_private (monitor);
 
 	if (G_UNLIKELY (!priv->enabled)) {
-		g_debug ("Silently dropping monitor event, monitor disabled for now");
+		TRACKER_NOTE (MONITORS, g_message ("Silently dropping monitor event, monitor disabled for now"));
 		return;
 	}
 
@@ -675,11 +677,12 @@ monitor_event_cb (GFileMonitor      *file_monitor,
 		is_directory = check_is_directory (monitor, file);
 
 		other_file_uri = NULL;
-		g_debug ("Received monitor event:%d (%s) for %s:'%s'",
-		         event_type,
-		         monitor_event_to_string (event_type),
-		         is_directory ? "directory" : "file",
-		         file_uri);
+		TRACKER_NOTE (MONITORS,
+		              g_message ("Received monitor event:%d (%s) for %s:'%s'",
+		                         event_type,
+		                         monitor_event_to_string (event_type),
+		                         is_directory ? "directory" : "file",
+		                         file_uri));
 	} else {
 		if (event_type == G_FILE_MONITOR_EVENT_RENAMED ||
 		    event_type == G_FILE_MONITOR_EVENT_MOVED_OUT) {
@@ -689,11 +692,12 @@ monitor_event_cb (GFileMonitor      *file_monitor,
 		}
 
 		other_file_uri = g_file_get_uri (other_file);
-		g_debug ("Received monitor event:%d (%s) for files '%s'->'%s'",
-		         event_type,
-		         monitor_event_to_string (event_type),
-		         file_uri,
-		         other_file_uri);
+		TRACKER_NOTE (MONITORS,
+		              g_message ("Received monitor event:%d (%s) for files '%s'->'%s'",
+		                         event_type,
+		                         monitor_event_to_string (event_type),
+		                         file_uri,
+		                         other_file_uri));
 	}
 
 	switch (event_type) {
@@ -931,9 +935,9 @@ tracker_monitor_add (TrackerMonitor *monitor,
 	                     g_object_ref (file),
 	                     dir_monitor);
 
-	g_debug ("Added monitor for path:'%s', total monitors:%d",
-	         uri,
-	         g_hash_table_size (priv->monitors));
+	TRACKER_NOTE (MONITORS, g_message ("Added monitor for path:'%s', total monitors:%d",
+	                                   uri,
+	                                   g_hash_table_size (priv->monitors)));
 
 	g_free (uri);
 
@@ -957,9 +961,9 @@ tracker_monitor_remove (TrackerMonitor *monitor,
 		gchar *uri;
 
 		uri = g_file_get_uri (file);
-		g_debug ("Removed monitor for path:'%s', total monitors:%d",
-		         uri,
-		         g_hash_table_size (priv->monitors));
+		TRACKER_NOTE (MONITORS, g_message ("Removed monitor for path:'%s', total monitors:%d",
+		                                   uri,
+		                                   g_hash_table_size (priv->monitors)));
 
 		g_free (uri);
 	}
@@ -1007,10 +1011,11 @@ remove_recursively (TrackerMonitor *monitor,
 	}
 
 	uri = g_file_get_uri (file);
-	g_debug ("Removed all monitors %srecursively for path:'%s', "
-	         "total monitors:%d",
-	         !remove_top_level ? "(except top level) " : "",
-	         uri, g_hash_table_size (priv->monitors));
+	TRACKER_NOTE (MONITORS,
+	              g_message ("Removed all monitors %srecursively for path:'%s', )"
+	                         "total monitors:%d",
+	                         !remove_top_level ? "(except top level) " : "",
+	                         uri, g_hash_table_size (priv->monitors)));
 	g_free (uri);
 
 	if (items_removed > 0) {
@@ -1058,7 +1063,7 @@ monitor_cancel_recursively (TrackerMonitor *monitor,
 
 		uri = g_file_get_uri (iter_file);
 		g_file_monitor_cancel (G_FILE_MONITOR (iter_file_monitor));
-		g_debug ("Cancelled monitor for path:'%s'", uri);
+		TRACKER_NOTE (MONITORS, g_message ("Cancelled monitor for path:'%s'", uri));
 		g_free (uri);
 
 		items_cancelled++;
