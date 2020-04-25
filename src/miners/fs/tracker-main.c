@@ -92,27 +92,31 @@ static GOptionEntry entries[] = {
 };
 
 static void
-sanity_check_option_values (TrackerConfig *config)
+log_option_values (TrackerConfig *config)
 {
-	g_message ("General options:");
-	g_message ("  Initial Sleep  ........................  %d",
-	           tracker_config_get_initial_sleep (config));
-	g_message ("  Writeback  ............................  %s",
-	           tracker_config_get_enable_writeback (config) ? "yes" : "no");
+#ifdef G_ENABLE_DEBUG
+	if (TRACKER_DEBUG_CHECK (CONFIG)) {
+		g_message ("General options:");
+		g_message ("  Initial Sleep  ........................  %d",
+		           tracker_config_get_initial_sleep (config));
+		g_message ("  Writeback  ............................  %s",
+		           tracker_config_get_enable_writeback (config) ? "yes" : "no");
 
-	g_message ("Indexer options:");
-	g_message ("  Throttle level  .......................  %d",
-	           tracker_config_get_throttle (config));
-	g_message ("  Indexing while on battery  ............  %s (first time only = %s)",
-	           tracker_config_get_index_on_battery (config) ? "yes" : "no",
-	           tracker_config_get_index_on_battery_first_time (config) ? "yes" : "no");
+		g_message ("Indexer options:");
+		g_message ("  Throttle level  .......................  %d",
+		           tracker_config_get_throttle (config));
+		g_message ("  Indexing while on battery  ............  %s (first time only = %s)",
+		           tracker_config_get_index_on_battery (config) ? "yes" : "no",
+		           tracker_config_get_index_on_battery_first_time (config) ? "yes" : "no");
 
-	if (tracker_config_get_low_disk_space_limit (config) == -1) {
-		g_message ("  Low disk space limit  .................  Disabled");
-	} else {
-		g_message ("  Low disk space limit  .................  %d%%",
-		           tracker_config_get_low_disk_space_limit (config));
+		if (tracker_config_get_low_disk_space_limit (config) == -1) {
+			g_message ("  Low disk space limit  .................  Disabled");
+		} else {
+			g_message ("  Low disk space limit  .................  %d%%",
+			           tracker_config_get_low_disk_space_limit (config));
+		}
 	}
+#endif
 }
 
 static void
@@ -854,7 +858,7 @@ main (gint argc, gchar *argv[])
 		tracker_config_set_initial_sleep (config, initial_sleep);
 	}
 
-	sanity_check_option_values (config);
+	log_option_values (config);
 
 	main_loop = g_main_loop_new (NULL, FALSE);
 
