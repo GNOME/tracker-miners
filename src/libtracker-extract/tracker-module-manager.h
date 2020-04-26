@@ -44,7 +44,7 @@ gboolean  tracker_extract_module_manager_init                (void) G_GNUC_CONST
 
 GStrv tracker_extract_module_manager_get_all_rdf_types (void);
 
-GStrv     tracker_extract_module_manager_get_fallback_rdf_types (const gchar *mimetype);
+GStrv     tracker_extract_module_manager_get_rdf_types (const gchar *mimetype);
 
 GModule * tracker_extract_module_manager_get_module (const gchar                 *mimetype,
                                                      const gchar                **rule_out,
