@@ -2,3 +2,4 @@
 ModulePath=libextract-text.so
 MimeTypes=text/*
 FallbackRdfTypes=nfo:Document;nfo:PlainTextDocument;
+Graph=tracker:Documents
