@@ -272,7 +272,7 @@ get_file_metadata (TrackerExtractTask  *task,
 	*info_out = NULL;
 
 	file = g_file_new_for_uri (task->file);
-	info = tracker_extract_info_new (file, task->mimetype);
+	info = tracker_extract_info_new (file, task->mimetype, NULL);
 	g_object_unref (file);
 
 	if (task->mimetype && *task->mimetype) {
