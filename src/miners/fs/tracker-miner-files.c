@@ -526,7 +526,7 @@ tracker_miner_files_init (TrackerMinerFiles *mf)
 
 	priv->extract_check_cancellable = g_cancellable_new ();
 
-	rdf_types = tracker_extract_module_manager_get_rdf_types ();
+	rdf_types = tracker_extract_module_manager_get_all_rdf_types ();
 	rdf_types_str = g_strjoinv (",", rdf_types);
 	g_strfreev (rdf_types);
 

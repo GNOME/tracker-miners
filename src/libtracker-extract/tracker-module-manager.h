@@ -42,7 +42,7 @@ typedef gboolean (* TrackerExtractMetadataFunc) (TrackerExtractInfo *info);
 
 gboolean  tracker_extract_module_manager_init                (void) G_GNUC_CONST;
 
-GStrv tracker_extract_module_manager_get_rdf_types (void);
+GStrv tracker_extract_module_manager_get_all_rdf_types (void);
 
 GStrv     tracker_extract_module_manager_get_fallback_rdf_types (const gchar *mimetype);
 
