@@ -2,3 +2,4 @@
 ModulePath=libextract-gstreamer.so
 MimeTypes=video/*;
 FallbackRdfTypes=nmm:Video;
+Graph=tracker:Video

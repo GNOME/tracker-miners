@@ -1,3 +1,4 @@
 [ExtractorRule]
 MimeTypes=image/svg+xml;image/svg+xml-compressed;
 FallbackRdfTypes=nfo:Image;nfo:VectorImage;
+Graph=tracker:Pictures
