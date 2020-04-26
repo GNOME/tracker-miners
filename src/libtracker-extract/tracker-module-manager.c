@@ -359,7 +359,7 @@ tracker_extract_module_manager_get_fallback_rdf_types (const gchar *mimetype)
 }
 
 GStrv
-tracker_extract_module_manager_get_rdf_types (void)
+tracker_extract_module_manager_get_all_rdf_types (void)
 {
 	GHashTable *rdf_types;
 	gchar **types, *type;
