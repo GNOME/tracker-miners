@@ -2359,7 +2359,7 @@ miner_files_add_rdf_types (TrackerResource *resource,
 	GStrv rdf_types;
 	gint i = 0;
 
-	rdf_types = tracker_extract_module_manager_get_fallback_rdf_types (mime_type);
+	rdf_types = tracker_extract_module_manager_get_rdf_types (mime_type);
 
 	if (!rdf_types)
 		return;

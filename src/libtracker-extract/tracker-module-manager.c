@@ -309,7 +309,7 @@ tracker_extract_module_manager_get_matching_rules (const gchar *mimetype)
 }
 
 GStrv
-tracker_extract_module_manager_get_fallback_rdf_types (const gchar *mimetype)
+tracker_extract_module_manager_get_rdf_types (const gchar *mimetype)
 {
 	GList *l, *list;
 	GHashTable *rdf_types;
