@@ -29,7 +29,7 @@ import unittest as ut
 import configuration
 from fixtures import TrackerMinerTest
 
-TRACKER_OWN_GRAPH_URN = "urn:uuid:472ed0cc-40ff-4e37-9c0c-062d78656540"
+TRACKER_TEST_GRAPH = "tracker:Documents"
 
 class MinerResourceRemovalTest(TrackerMinerTest):
 
@@ -41,7 +41,7 @@ class MinerResourceRemovalTest(TrackerMinerTest):
         sparql = "WITH %s INSERT { \
                     <%s> a nmm:MusicPiece ; \
                          nie:title \"%s\" ; \
-                  } " % (TRACKER_OWN_GRAPH_URN, file_urn, title)
+                  } " % (TRACKER_TEST_GRAPH, file_urn, title)
 
         with self.tracker.await_insert(f'a nmm:MusicPiece; nie:title "{title}"') as resource:
             self.tracker.update(sparql)
