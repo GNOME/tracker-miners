@@ -182,6 +182,7 @@ get_metadata_cb (TrackerExtract *extract,
 	TrackerExtractInfo *info;
 	TrackerResource *resource;
 	GError *error = NULL;
+	const gchar *graph, *mime_type;
 	gchar *sparql;
 
 	priv = tracker_extract_decorator_get_instance_private (TRACKER_EXTRACT_DECORATOR (data->decorator));
@@ -194,17 +195,22 @@ get_metadata_cb (TrackerExtract *extract,
 		g_message ("Extraction failed: %s\n", error ? error->message : "no error given");
 		g_clear_error (&error);
 
-		sparql = g_strdup_printf ("INSERT DATA { GRAPH <" TRACKER_OWN_GRAPH_URN "> {"
+		mime_type = tracker_decorator_info_get_mimetype (data->decorator_info);
+		graph = tracker_extract_module_manager_get_graph (mime_type);
+
+		sparql = g_strdup_printf ("INSERT DATA { GRAPH %s {"
 		                          "  <%s> nie:dataSource <" TRACKER_EXTRACT_DATA_SOURCE ">;"
 		                          "       nie:dataSource <" TRACKER_EXTRACT_FAILURE_DATA_SOURCE ">."
-		                          "}}", tracker_decorator_info_get_url (data->decorator_info));
+		                          "}}",
+		                          graph,
+		                          tracker_decorator_info_get_url (data->decorator_info));
 
 		tracker_decorator_info_complete (data->decorator_info, sparql);
 	} else {
 		resource = decorator_save_info (TRACKER_EXTRACT_DECORATOR (data->decorator),
 		                                data->decorator_info, info);
 		sparql = tracker_resource_print_sparql_update (resource, NULL,
-		                                               TRACKER_OWN_GRAPH_URN);
+		                                               tracker_extract_info_get_graph (info));
 		tracker_decorator_info_complete (data->decorator_info, sparql);
 		tracker_extract_info_unref (info);
 		g_object_unref (resource);
@@ -584,15 +590,34 @@ decorator_ignore_file (GFile    *file,
 	TrackerSparqlConnection *conn;
 	GError *error = NULL;
 	gchar *uri, *query;
+	const gchar *mimetype, *graph;
+	GFileInfo *info;
 
 	uri = g_file_get_uri (file);
 	g_message ("Extraction on file '%s' has been attempted too many times, ignoring", uri);
 
+	info = g_file_query_info (file,
+	                          G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
+	                          G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
+	                          NULL, &error);
+	if (!info) {
+		g_warning ("Could not get mimetype: %s", error->message);
+		g_error_free (error);
+		return;
+	}
+
+	mimetype = g_file_info_get_attribute_string (info,
+	                                             G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE);
+	graph = tracker_extract_module_manager_get_graph (mimetype);
+	g_object_unref (info);
+
 	conn = tracker_miner_get_connection (TRACKER_MINER (decorator));
-	query = g_strdup_printf ("INSERT DATA { GRAPH <" TRACKER_OWN_GRAPH_URN "> {"
+	query = g_strdup_printf ("INSERT DATA { GRAPH %s {"
 	                         "  <%s> nie:dataSource <" TRACKER_EXTRACT_DATA_SOURCE ">;"
 	                         "       nie:dataSource <" TRACKER_EXTRACT_FAILURE_DATA_SOURCE ">."
-	                         "}}", uri);
+	                         "}}",
+	                         graph,
+	                         uri);
 
 	tracker_sparql_connection_update (conn, query, G_PRIORITY_DEFAULT, NULL, &error);
 
