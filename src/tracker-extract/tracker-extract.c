@@ -83,6 +83,7 @@ typedef struct {
 	GAsyncResult *res;
 	gchar *file;
 	gchar *mimetype;
+	const gchar *graph;
 
 	TrackerExtractMetadataFunc func;
 	GModule *module;
@@ -272,7 +273,7 @@ get_file_metadata (TrackerExtractTask  *task,
 	*info_out = NULL;
 
 	file = g_file_new_for_uri (task->file);
-	info = tracker_extract_info_new (file, task->mimetype, NULL);
+	info = tracker_extract_info_new (file, task->mimetype, task->graph);
 	g_object_unref (file);
 
 	if (task->mimetype && *task->mimetype) {
@@ -550,6 +551,8 @@ dispatch_task_cb (TrackerExtractTask *task)
 
 		return FALSE;
 	}
+
+	task->graph = tracker_extract_module_manager_get_graph (task->mimetype);
 
 	async_queue = g_hash_table_lookup (priv->single_thread_extractors,
 	                                   task->module);
