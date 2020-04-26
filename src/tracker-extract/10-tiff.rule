@@ -2,3 +2,4 @@
 ModulePath=libextract-tiff.so
 MimeTypes=image/tiff
 FallbackRdfTypes=nfo:Image;nmm:Photo;
+Graph=tracker:Pictures

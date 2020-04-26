@@ -2,3 +2,4 @@
 ModulePath=libextract-libav.so
 MimeTypes=video/*;
 FallbackRdfTypes=nmm:Video;
+Graph=tracker:Video

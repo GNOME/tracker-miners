@@ -2,3 +2,4 @@
 ModulePath=libextract-html.so
 MimeTypes=text/html;application/xhtml+xml;
 FallbackRdfTypes=nfo:HtmlDocument
+Graph=tracker:Documents

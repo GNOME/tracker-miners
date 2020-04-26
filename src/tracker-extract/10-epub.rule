@@ -2,3 +2,4 @@
 ModulePath=libextract-epub.so
 MimeTypes=application/epub+zip
 FallbackRdfTypes=nfo:EBook;nfo:TextDocument;
+Graph=tracker:Documents

@@ -2,3 +2,4 @@
 ModulePath=libextract-desktop.so
 MimeTypes=application/x-desktop
 FallbackRdfTypes=nfo:SoftwareApplication;
+Graph=tracker:Software
