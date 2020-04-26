@@ -56,6 +56,8 @@
 
 #define TRACKER_EXTRACT_DATA_SOURCE TRACKER_PREFIX_TRACKER "extractor-data-source"
 
+#define DEFAULT_GRAPH "tracker:FileSystem"
+
 #define TRACKER_MINER_FILES_GET_PRIVATE(o) (tracker_miner_files_get_instance_private (TRACKER_MINER_FILES (o)))
 
 static GQuark miner_files_error_quark = 0;
@@ -531,14 +533,12 @@ tracker_miner_files_init (TrackerMinerFiles *mf)
 	g_strfreev (rdf_types);
 
 	priv->extract_check_query = g_strdup_printf ("SELECT ?u { "
-	                                             "  GRAPH <" TRACKER_OWN_GRAPH_URN "> {"
-						     "    ?u a nfo:FileDataObject ;"
-						     "       tracker:available true ; "
-	                                             "       nie:interpretedAs ?ie . "
-						     "    ?ie a ?class . "
-						     "    FILTER (?class IN (%s) && "
-						     "            NOT EXISTS { ?u nie:dataSource <" TRACKER_EXTRACT_DATA_SOURCE "> })"
-	                                             "  }"
+						     "  ?u a nfo:FileDataObject ;"
+						     "     tracker:available true ; "
+	                                             "     nie:interpretedAs ?ie . "
+						     "  ?ie a ?class . "
+						     "  FILTER (?class IN (%s) && "
+						     "          NOT EXISTS { ?u nie:dataSource <" TRACKER_EXTRACT_DATA_SOURCE "> })"
 						     "} LIMIT 1",
 						     rdf_types_str);
 	g_free (rdf_types_str);
@@ -996,7 +996,7 @@ ensure_mount_point_exists (TrackerMinerFiles *miner,
 
 		/* Create a nfo:Folder for the mount point */
 		g_string_append_printf (accumulator,
-		                        "INSERT SILENT INTO <" TRACKER_OWN_GRAPH_URN "> {"
+		                        "INSERT SILENT {"
 		                        " _:file a nfo:FileDataObject, nie:InformationElement, nfo:Folder ; "
 		                        "        nie:isStoredAs _:file ; "
 		                        "        nie:url \"%s\" ; "
@@ -1045,19 +1045,19 @@ set_up_mount_point_type (TrackerMinerFiles *miner,
 	         removable_device_urn);
 
 	g_string_append_printf (accumulator,
-	                        "WITH <" TRACKER_OWN_GRAPH_URN "> DELETE { <%s> tracker:isRemovable ?unknown } WHERE { <%s> a tracker:Volume; tracker:isRemovable ?unknown } ",
+	                        "DELETE { <%s> tracker:isRemovable ?unknown } WHERE { <%s> a tracker:Volume; tracker:isRemovable ?unknown } ",
 	                        removable_device_urn, removable_device_urn);
 
 	g_string_append_printf (accumulator,
-	                        "INSERT INTO <" TRACKER_OWN_GRAPH_URN "> { <%s> a tracker:Volume; tracker:isRemovable %s } ",
+	                        "INSERT DATA { <%s> a tracker:Volume; tracker:isRemovable %s } ",
 	                        removable_device_urn, removable ? "true" : "false");
 
 	g_string_append_printf (accumulator,
-	                        "WITH <" TRACKER_OWN_GRAPH_URN "> DELETE { <%s> tracker:isOptical ?unknown } WHERE { <%s> a tracker:Volume; tracker:isOptical ?unknown } ",
+	                        "DELETE { <%s> tracker:isOptical ?unknown } WHERE { <%s> a tracker:Volume; tracker:isOptical ?unknown } ",
 	                        removable_device_urn, removable_device_urn);
 
 	g_string_append_printf (accumulator,
-	                        "INSERT INTO <" TRACKER_OWN_GRAPH_URN "> { <%s> a tracker:Volume; tracker:isOptical %s } ",
+	                        "INSERT { <%s> a tracker:Volume; tracker:isOptical %s } ",
 	                        removable_device_urn, optical ? "true" : "false");
 }
 
@@ -1090,7 +1090,6 @@ set_up_mount_point (TrackerMinerFiles *miner,
 			ensure_mount_point_exists (miner, file, queries);
 
 			g_string_append_printf (queries,
-			                        "WITH <" TRACKER_OWN_GRAPH_URN "> "
 			                        "DELETE { "
 			                        "  <%s> tracker:mountPoint ?u "
 			                        "} WHERE { "
@@ -1100,7 +1099,6 @@ set_up_mount_point (TrackerMinerFiles *miner,
 			                        removable_device_urn, uri);
 
 			g_string_append_printf (queries,
-			                        "WITH <" TRACKER_OWN_GRAPH_URN "> "
 			                        "DELETE { <%s> a rdfs:Resource }  "
 			                        "INSERT { "
 			                        "  <%s> a tracker:Volume; "
@@ -1116,21 +1114,21 @@ set_up_mount_point (TrackerMinerFiles *miner,
 		}
 
 		g_string_append_printf (queries,
-		                        "WITH <" TRACKER_OWN_GRAPH_URN "> DELETE { <%s> tracker:isMounted ?unknown } WHERE { <%s> a tracker:Volume; tracker:isMounted ?unknown } ",
+		                        "DELETE { <%s> tracker:isMounted ?unknown } WHERE { <%s> a tracker:Volume; tracker:isMounted ?unknown } ",
 		                        removable_device_urn, removable_device_urn);
 
                 if (mount_name) {
                         g_string_append_printf (queries,
-                                                "INSERT INTO <" TRACKER_OWN_GRAPH_URN "> { <%s> a tracker:Volume; tracker:isMounted true; nie:title \"%s\" } ",
+                                                "INSERT DATA { <%s> a tracker:Volume; tracker:isMounted true; nie:title \"%s\" } ",
                                                 removable_device_urn, mount_name);
                 } else {
                         g_string_append_printf (queries,
-                                                "INSERT INTO <" TRACKER_OWN_GRAPH_URN "> { <%s> a tracker:Volume; tracker:isMounted true } ",
+                                                "INSERT DATA { <%s> a tracker:Volume; tracker:isMounted true } ",
                                                 removable_device_urn);
                 }
 
                 g_string_append_printf (queries,
-                                        "INSERT { GRAPH <" TRACKER_OWN_GRAPH_URN "> { ?do tracker:available true } } WHERE { ?do nie:dataSource <%s> } ",
+                                        "INSERT { ?do tracker:available true } WHERE { ?do nie:dataSource <%s> } ",
                                         removable_device_urn);
 	} else {
 		gchar *now;
@@ -1141,23 +1139,23 @@ set_up_mount_point (TrackerMinerFiles *miner,
 		now = tracker_date_to_string (time (NULL));
 
 		g_string_append_printf (queries,
-		                        "WITH <" TRACKER_OWN_GRAPH_URN "> DELETE { <%s> tracker:unmountDate ?unknown } WHERE { <%s> a tracker:Volume; tracker:unmountDate ?unknown } ",
+		                        "DELETE { <%s> tracker:unmountDate ?unknown } WHERE { <%s> a tracker:Volume; tracker:unmountDate ?unknown } ",
 		                        removable_device_urn, removable_device_urn);
 
 		g_string_append_printf (queries,
-		                        "INSERT INTO <" TRACKER_OWN_GRAPH_URN "> { <%s> a tracker:Volume; tracker:unmountDate \"%s\" } ",
+		                        "INSERT { <%s> a tracker:Volume; tracker:unmountDate \"%s\" } ",
 		                        removable_device_urn, now);
 
 		g_string_append_printf (queries,
-		                        "WITH <" TRACKER_OWN_GRAPH_URN "> DELETE { <%s> tracker:isMounted ?unknown } WHERE { <%s> a tracker:Volume; tracker:isMounted ?unknown } ",
+		                        "DELETE { <%s> tracker:isMounted ?unknown } WHERE { <%s> a tracker:Volume; tracker:isMounted ?unknown } ",
 		                        removable_device_urn, removable_device_urn);
 
 		g_string_append_printf (queries,
-		                        "INSERT INTO <" TRACKER_OWN_GRAPH_URN "> { <%s> a tracker:Volume; tracker:isMounted false } ",
+		                        "INSERT { <%s> a tracker:Volume; tracker:isMounted false } ",
 		                        removable_device_urn);
 
 		g_string_append_printf (queries,
-		                        "WITH <" TRACKER_OWN_GRAPH_URN "> DELETE { ?do tracker:available true } WHERE { ?do nie:dataSource <%s> } ",
+		                        "DELETE { ?do tracker:available true } WHERE { ?do nie:dataSource <%s> } ",
 		                        removable_device_urn);
 
 		g_free (now);
@@ -2351,18 +2349,33 @@ miner_files_add_to_datasource (TrackerMinerFiles *mf,
 	g_free (removable_device_urn);
 }
 
-static void
-miner_files_add_rdf_types (TrackerResource *resource,
-                           GFile           *file,
-                           const gchar     *mime_type)
+static TrackerResource *
+miner_files_create_information_element (const gchar *uri,
+                                        const gchar *mime_type,
+                                        gboolean     is_directory)
 {
+	TrackerResource *resource, *file_resource;
 	GStrv rdf_types;
 	gint i = 0;
 
 	rdf_types = tracker_extract_module_manager_get_rdf_types (mime_type);
 
 	if (!rdf_types)
-		return;
+		return NULL;
+
+	resource = tracker_resource_new (NULL);
+	tracker_resource_set_string (resource, "nie:mimeType", mime_type);
+	tracker_resource_add_uri (resource, "rdf:type", "nie:InformationElement");
+
+	if (is_directory)
+		tracker_resource_add_uri (resource, "rdf:type", "nfo:Folder");
+
+	file_resource = tracker_resource_new (uri);
+	tracker_resource_add_uri (file_resource, "rdf:type", "nfo:FileDataObject");
+
+	/* Laying the link between the IE and the DO */
+	tracker_resource_add_relation (resource, "nie:isStoredAs", file_resource);
+	tracker_resource_add_relation (file_resource, "nie:interpretedAs", resource);
 
 	while (rdf_types[i]) {
 		tracker_resource_add_uri (resource, "rdf:type", rdf_types[i]);
@@ -2370,6 +2383,8 @@ miner_files_add_rdf_types (TrackerResource *resource,
 	}
 
 	g_strfreev (rdf_types);
+
+	return resource;
 }
 
 static void
@@ -2401,17 +2416,15 @@ update_mount_point_sparql (ProcessFileData *data)
 		queries = g_string_new ("");
 
 		g_string_append_printf (queries,
-		                        "WITH <" TRACKER_OWN_GRAPH_URN "> "
 		                        "DELETE { "
 		                        "  <%s> tracker:mountPoint ?unknown "
-		                        "} } WHERE { "
+		                        "} WHERE { "
 		                        "  <%s> a tracker:Volume; "
 		                        "       tracker:mountPoint ?unknown "
 		                        "} ",
 		                        removable_device_urn, removable_device_urn);
 
 		g_string_append_printf (queries,
-		                        "WITH <" TRACKER_OWN_GRAPH_URN "> "
 		                        "INSERT { "
 		                        "  <%s> a tracker:Volume; "
 		                        "       tracker:mountPoint ?u "
@@ -2444,7 +2457,7 @@ process_file_cb (GObject      *object,
 	GFileInfo *file_info;
 	guint64 time_;
 	GFile *file, *parent;
-	gchar *uri, *sparql_str, *sparql_update_str, *time_str;
+	gchar *uri, *sparql_str, *sparql_update_str, *time_str, *ie_update_str = NULL;
 	GError *error = NULL;
 	gboolean is_special;
 	gboolean is_directory;
@@ -2484,29 +2497,27 @@ process_file_cb (GObject      *object,
 		 * and delete dataSources, so we ensure the file is extracted again.
 		 */
 		delete_properties_sparql =
-			g_strdup_printf ("WITH <" TRACKER_OWN_GRAPH_URN "> "
-			                 "DELETE {"
-			                 "  <%s> nie:interpretedAs ?ie ; "
-			                 "       nie:dataSource ?ds . "
-			                 "  ?ie a rdfs:Resource . "
+			g_strdup_printf ("DELETE {"
+			                 "  GRAPH ?g {"
+			                 "    <%s> nie:interpretedAs ?ie ; "
+			                 "         nie:dataSource ?ds . "
+			                 "    ?ie a rdfs:Resource . "
+			                 "  }"
 			                 "} WHERE {"
-			                 "  <%s> nie:interpretedAs ?ie ."
-			                 "  OPTIONAL { <%s> nie:dataSource ?ds } "
+			                 "  GRAPH ?g {"
+			                 "    <%s> nie:interpretedAs ?ie ."
+			                 "    OPTIONAL { <%s> nie:dataSource ?ds } "
+			                 "  }"
 			                 "} ",
 			                 uri, uri, uri);
 	}
 
 	resource = tracker_resource_new (uri);
-	element_resource = tracker_resource_new (NULL);
 
 	tracker_resource_add_uri (resource, "rdf:type", "nfo:FileDataObject");
-	tracker_resource_add_uri (element_resource, "rdf:type", "nie:InformationElement");
 
 	is_directory = (g_file_info_get_file_type (file_info) == G_FILE_TYPE_DIRECTORY ?
 	                TRUE : FALSE);
-	if (is_directory) {
-		tracker_resource_add_uri (element_resource, "rdf:type", "nfo:Folder");
-	}
 
 	parent = g_file_get_parent (file);
 	parent_urn = tracker_miner_fs_query_urn (TRACKER_MINER_FS (data->miner), parent);
@@ -2532,25 +2543,35 @@ process_file_cb (GObject      *object,
 	tracker_resource_set_string (resource, "nfo:fileLastAccessed", time_str);
 	g_free (time_str);
 
-	/* Laying the link between the IE and the DO. We use IE = DO */
-	tracker_resource_add_relation (element_resource, "nie:isStoredAs", resource);
-	tracker_resource_add_relation (resource, "nie:interpretedAs", element_resource);
-
 	/* The URL of the DataObject (because IE = DO, this is correct) */
 	tracker_resource_set_string (resource, "nie:url", uri);
 
-	tracker_resource_set_string (element_resource, "nie:mimeType", mime_type);
-
 	miner_files_add_to_datasource (data->miner, file, resource);
 
-	miner_files_add_rdf_types (element_resource, file, mime_type);
+	element_resource = miner_files_create_information_element (uri,
+	                                                           mime_type,
+	                                                           is_directory);
 
 	mount_point_sparql = update_mount_point_sparql (data);
-	sparql_update_str = tracker_resource_print_sparql_update (resource, NULL, TRACKER_OWN_GRAPH_URN),
-	sparql_str = g_strdup_printf ("%s %s %s",
+	sparql_update_str = tracker_resource_print_sparql_update (resource, NULL, DEFAULT_GRAPH);
+
+	if (element_resource) {
+		const gchar *graph;
+
+		graph = tracker_extract_module_manager_get_graph (mime_type);
+		ie_update_str = tracker_resource_print_sparql_update (element_resource,
+		                                                      NULL,
+		                                                      graph ?
+		                                                      graph :
+		                                                      DEFAULT_GRAPH);
+	}
+
+	sparql_str = g_strdup_printf ("%s %s %s %s",
 	                              delete_properties_sparql ? delete_properties_sparql : "",
 	                              sparql_update_str,
+	                              ie_update_str ? ie_update_str : "",
 	                              mount_point_sparql ? mount_point_sparql : "");
+	g_free (ie_update_str);
 	g_free (delete_properties_sparql);
 	g_free (mount_point_sparql);
 
@@ -2647,7 +2668,7 @@ process_file_attributes_cb (GObject      *object,
 	g_free (uri);
 
 	/* Notify about the success */
-	sparql_str = tracker_resource_print_sparql_update (resource, NULL, TRACKER_OWN_GRAPH_URN);
+	sparql_str = tracker_resource_print_sparql_update (resource, NULL, DEFAULT_GRAPH);
 	tracker_miner_fs_notify_finish (TRACKER_MINER_FS (data->miner), data->task,
 	                                sparql_str, NULL);
 
@@ -2714,14 +2735,18 @@ create_delete_sparql (GFile    *file,
 	g_return_val_if_fail (delete_self || delete_children, NULL);
 
 	uri = g_file_get_uri (file);
-	sparql = g_string_new ("WITH <" TRACKER_OWN_GRAPH_URN "> "
-	                       "DELETE { "
+	sparql = g_string_new ("DELETE { "
 	                       "  ?f a rdfs:Resource . "
-	                       "  ?ie a rdfs:Resource "
+	                       "  GRAPH ?g {"
+	                       "    ?f a rdfs:Resource . "
+	                       "    ?ie a rdfs:Resource . "
+	                       "  }"
 	                       "} WHERE {"
 	                       "  ?f a rdfs:Resource ; "
 	                       "     nie:url ?u . "
-	                       "  ?ie nie:isStoredAs ?f . "
+	                       "  GRAPH ?g {"
+	                       "    ?ie nie:isStoredAs ?f . "
+	                       "  }"
 	                       "  FILTER (");
 
 	if (delete_self)
@@ -2869,43 +2894,61 @@ miner_files_move_file (TrackerMinerFS *fs,
 		container_clause = g_strdup_printf ("; nfo:belongsToContainer <%s>", new_parent_iri);
 
 	g_string_append_printf (sparql,
-	                        "WITH <" TRACKER_OWN_GRAPH_URN "> "
+	                        "DELETE { "
+	                        "  GRAPH ?g {"
+	                        "    ?ie nie:isStoredAs <%s> "
+	                        "  }"
+	                        "} INSERT {"
+	                        "  GRAPH ?g {"
+	                        "    ?ie nie:isStoredAs <%s> "
+	                        "  }"
+	                        "} WHERE {"
+	                        "  GRAPH ?g {"
+	                        "    ?ie nie:isStoredAs <%s> "
+	                        "  }"
+	                        "} "
 	                        "DELETE { "
 	                        "  <%s> a rdfs:Resource . "
-	                        "  ?ie nie:isStoredAs <%s> "
 	                        "} INSERT { "
 	                        "  <%s> a nfo:FileDataObject ; "
 	                        "       nfo:fileName \"%s\" ; "
 	                        "       nie:url \"%s\" "
 	                        "       %s ; "
 	                        "       ?p ?o . "
-	                        "  ?ie nie:isStoredAs <%s> "
 	                        "} WHERE { "
 	                        "  <%s> ?p ?o ; "
-	                        "       nie:interpretedAs ?ie . "
 	                        "  FILTER (?p != nfo:fileName && ?p != nie:url && ?p != nfo:belongsToContainer) . "
 	                        "} ",
-	                        source_uri, source_uri,
-	                        uri, display_name, uri, container_clause, uri,
+	                        source_uri, uri, source_uri,
+	                        source_uri,
+	                        uri, display_name, uri, container_clause,
 	                        source_uri);
 	g_free (container_clause);
 
 	if (recursive) {
 		g_string_append_printf (sparql,
-		                        "WITH <" TRACKER_OWN_GRAPH_URN "> "
 		                        " DELETE { "
 		                        "  ?u a rdfs:Resource . "
-		                        "  ?ie nie:isStoredAs ?u "
+		                        "  ?ie1 nie:isStoredAs ?u "
+		                        "  GRAPH ?g {"
+		                        "    ?ie2 nie:isStoredAs ?u "
+		                        "  }"
 		                        "} INSERT { "
 		                        "  ?new_url a nfo:FileDataObject ; "
 		                        "           nie:url ?new_url ; "
 		                        "           ?p ?o ."
-		                        "  ?ie nie:isStoredAs ?new_url . "
+		                        "  ?ie1 nie:isStoredAs ?new_url . "
+		                        "  GRAPH ?g {"
+		                        "    ?ie2 nie:isStoredAs ?new_url . "
+		                        "  }"
 		                        "} WHERE { "
 		                        "  ?u a rdfs:Resource; "
 		                        "     nie:url ?url ; "
-		                        "     nie:interpretedAs ?ie ; "
 		                        "     ?p ?o . "
+		                        "  OPTIONAL { ?u nie:interpretedAs ?ie1 } "
+		                        "  OPTIONAL { GRAPH ?g {"
+		                        "    ?u nie:interpretedAs ?ie2 "
+		                        "  }}"
 		                        "  BIND (CONCAT (\"%s/\", SUBSTR (?url, STRLEN (\"%s/\") + 1)) AS ?new_url) ."
 		                        "  FILTER (STRSTARTS (?url, \"%s/\")) . "
 		                        "  FILTER (?p != nie:url) . "
@@ -3160,16 +3203,19 @@ miner_files_in_removable_media_remove_by_type (TrackerMinerFiles  *miner,
 		/* Delete all resources where nie:dataSource is a volume
 		 * of the given type */
 		g_string_append_printf (queries,
-		                        "WITH <" TRACKER_OWN_GRAPH_URN "> "
 		                        "DELETE { "
 		                        "  ?f a rdfs:Resource . "
-		                        "  ?ie a rdfs:Resource "
+		                        "  GRAPH ?g {"
+		                        "    ?ie a rdfs:Resource "
+		                        "  }"
 		                        "} WHERE { "
 		                        "  ?v a tracker:Volume ; "
 		                        "     tracker:isRemovable %s ; "
 		                        "     tracker:isOptical %s . "
 		                        "  ?f nie:dataSource ?v . "
-		                        "  ?ie nie:isStoredAs ?f "
+		                        "  GRAPH ?g {"
+		                        "    ?ie nie:isStoredAs ?f "
+		                        "  }"
 		                        "}",
 		                        removable ? "true" : "false",
 		                        optical ? "true" : "false");
@@ -3204,17 +3250,20 @@ miner_files_in_removable_media_remove_by_date (TrackerMinerFiles  *miner,
 	/* Delete all resources where nie:dataSource is a volume
 	 * which was last unmounted before the given date */
 	g_string_append_printf (queries,
-	                        "WITH <" TRACKER_OWN_GRAPH_URN "> "
 	                        "DELETE { "
 	                        "  ?f a rdfs:Resource . "
-	                        "  ?ie a rdfs:Resource "
+	                        "  GRAPH ?g {"
+	                        "    ?ie a rdfs:Resource "
+	                        "  }"
 	                        "} WHERE { "
 	                        "  ?v a tracker:Volume ; "
 	                        "     tracker:isRemovable true ; "
 	                        "     tracker:isMounted false ; "
 	                        "     tracker:unmountDate ?d . "
 	                        "  ?f nie:dataSource ?v . "
-	                        "  ?ie nie:isStoredAs ?f "
+	                        "  GRAPH ?g {"
+	                        "    ?ie nie:isStoredAs ?f "
+	                        "  }"
 	                        "  FILTER ( ?d < \"%s\") "
 	                        "}",
 	                        date);
