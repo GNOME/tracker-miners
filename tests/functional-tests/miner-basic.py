@@ -48,7 +48,7 @@ class MinerCrawlTest(fixtures.TrackerMinerTest):
 
     def __get_text_documents(self):
         return self.tracker.query("""
-          SELECT ?url WHERE {
+          SELECT DISTINCT ?url WHERE {
               ?u a nfo:TextDocument ;
                  nie:isStoredAs/nie:url ?url.
           }
@@ -56,9 +56,10 @@ class MinerCrawlTest(fixtures.TrackerMinerTest):
 
     def __get_parent_urn(self, filepath):
         result = self.tracker.query("""
-          SELECT nfo:belongsToContainer(?u) WHERE {
+          SELECT DISTINCT ?p WHERE {
               ?u a nfo:FileDataObject ;
-                 nie:url \"%s\" .
+                 nie:url \"%s\" ;
+                 nfo:belongsToContainer ?p
           }
           """ % (self.uri(filepath)))
         self.assertEqual(len(result), 1)
