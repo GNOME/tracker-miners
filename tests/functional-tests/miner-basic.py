@@ -56,9 +56,10 @@ class MinerCrawlTest(fixtures.TrackerMinerTest):
 
     def __get_parent_urn(self, filepath):
         result = self.tracker.query("""
-          SELECT nfo:belongsToContainer(?u) WHERE {
+          SELECT DISTINCT ?p WHERE {
               ?u a nfo:FileDataObject ;
-                 nie:url \"%s\" .
+                 nie:url \"%s\" ;
+                 nfo:belongsToContainer ?p
           }
           """ % (self.uri(filepath)))
         self.assertEqual(len(result), 1)
