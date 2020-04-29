@@ -92,27 +92,31 @@ static GOptionEntry entries[] = {
 };
 
 static void
-sanity_check_option_values (TrackerConfig *config)
+log_option_values (TrackerConfig *config)
 {
-	g_message ("General options:");
-	g_message ("  Initial Sleep  ........................  %d",
-	           tracker_config_get_initial_sleep (config));
-	g_message ("  Writeback  ............................  %s",
-	           tracker_config_get_enable_writeback (config) ? "yes" : "no");
+#ifdef G_ENABLE_DEBUG
+	if (TRACKER_DEBUG_CHECK (CONFIG)) {
+		g_message ("General options:");
+		g_message ("  Initial Sleep  ........................  %d",
+		           tracker_config_get_initial_sleep (config));
+		g_message ("  Writeback  ............................  %s",
+		           tracker_config_get_enable_writeback (config) ? "yes" : "no");
 
-	g_message ("Indexer options:");
-	g_message ("  Throttle level  .......................  %d",
-	           tracker_config_get_throttle (config));
-	g_message ("  Indexing while on battery  ............  %s (first time only = %s)",
-	           tracker_config_get_index_on_battery (config) ? "yes" : "no",
-	           tracker_config_get_index_on_battery_first_time (config) ? "yes" : "no");
+		g_message ("Indexer options:");
+		g_message ("  Throttle level  .......................  %d",
+		           tracker_config_get_throttle (config));
+		g_message ("  Indexing while on battery  ............  %s (first time only = %s)",
+		           tracker_config_get_index_on_battery (config) ? "yes" : "no",
+		           tracker_config_get_index_on_battery_first_time (config) ? "yes" : "no");
 
-	if (tracker_config_get_low_disk_space_limit (config) == -1) {
-		g_message ("  Low disk space limit  .................  Disabled");
-	} else {
-		g_message ("  Low disk space limit  .................  %d%%",
-		           tracker_config_get_low_disk_space_limit (config));
+		if (tracker_config_get_low_disk_space_limit (config) == -1) {
+			g_message ("  Low disk space limit  .................  Disabled");
+		} else {
+			g_message ("  Low disk space limit  .................  %d%%",
+			           tracker_config_get_low_disk_space_limit (config));
+		}
 	}
+#endif
 }
 
 static void
@@ -162,8 +166,8 @@ save_current_locale (TrackerDomainOntology *domain_ontology)
 	locale_file = g_build_filename (cache_path, LOCALE_FILENAME, NULL);
 	g_free (cache_path);
 
-	g_message ("Saving locale used to index applications");
-	g_message ("  Creating locale file '%s'", locale_file);
+	TRACKER_NOTE (CONFIG, g_message ("Saving locale used to index applications"));
+	TRACKER_NOTE (CONFIG, g_message ("  Creating locale file '%s'", locale_file));
 
 	if (locale == NULL) {
 		locale = g_strdup ("");
@@ -212,7 +216,7 @@ detect_locale_changed (TrackerMiner          *miner,
 			g_critical ("  Could not get content of file '%s'", locale_file);
 		}
 	} else {
-		g_message ("  Could not find locale file:'%s'", locale_file);
+		TRACKER_NOTE (CONFIG, g_message ("  Could not find locale file:'%s'", locale_file));
 	}
 
 	g_free (locale_file);
@@ -222,11 +226,11 @@ detect_locale_changed (TrackerMiner          *miner,
 	/* Note that having both to NULL is actually valid, they would default
 	 * to the unicode collation without locale-specific stuff. */
 	if (g_strcmp0 (previous_locale, current_locale) != 0) {
-		g_message ("Locale change detected from '%s' to '%s'...",
-		           previous_locale, current_locale);
+		TRACKER_NOTE (CONFIG, g_message ("Locale change detected from '%s' to '%s'...",
+		                      previous_locale, current_locale));
 		changed = TRUE;
 	} else {
-		g_message ("Current and previous locales match: '%s'", previous_locale);
+		TRACKER_NOTE (CONFIG, g_message ("Current and previous locales match: '%s'", previous_locale));
 		changed = FALSE;
 	}
 
@@ -234,7 +238,7 @@ detect_locale_changed (TrackerMiner          *miner,
 	g_free (previous_locale);
 
 	if (changed) {
-		g_message ("Resetting nfo:Software due to locale change...");
+		TRACKER_NOTE (CONFIG, g_message ("Resetting nfo:Software due to locale change..."));
 		miner_reset_applications (miner);
 	}
 
@@ -298,7 +302,7 @@ initialize_priority_and_scheduling (void)
 	 * Stupid...
 	 */
 
-	g_message ("Setting priority nice level to 19");
+	TRACKER_NOTE (CONFIG, g_message ("Setting priority nice level to 19"));
 
 	errno = 0;
 	if (nice (19) == -1 && errno != 0) {
@@ -318,16 +322,16 @@ should_crawl (TrackerMinerFiles *miner_files,
 
 	crawling_interval = tracker_config_get_crawling_interval (config);
 
-	g_message ("Checking whether to crawl file system based on configured crawling interval:");
+	TRACKER_NOTE (CONFIG, g_message ("Checking whether to crawl file system based on configured crawling interval:"));
 
 	if (crawling_interval == -2) {
-		g_message ("  Disabled");
+		TRACKER_NOTE (CONFIG, g_message ("  Disabled"));
 		return FALSE;
 	} else if (crawling_interval == -1) {
-		g_message ("  Maybe (depends on a clean last shutdown)");
+		TRACKER_NOTE (CONFIG, g_message ("  Maybe (depends on a clean last shutdown)"));
 		return TRUE;
 	} else if (crawling_interval == 0) {
-		g_message ("  Forced");
+		TRACKER_NOTE (CONFIG, g_message ("  Forced"));
 
 		if (forced) {
 			*forced = TRUE;
@@ -346,10 +350,10 @@ should_crawl (TrackerMinerFiles *miner_files,
 		now = (guint64) time (NULL);
 
 		if (now < then + (crawling_interval * SECONDS_PER_DAY)) {
-			g_message ("  Postponed");
+			TRACKER_NOTE (CONFIG, g_message ("  Postponed"));
 			return FALSE;
 		} else {
-			g_message ("  (More than) %d days after last crawling, enabled", crawling_interval);
+			TRACKER_NOTE (CONFIG, g_message ("  (More than) %d days after last crawling, enabled", crawling_interval));
 			return TRUE;
 		}
 	}
@@ -359,7 +363,7 @@ static void
 miner_do_start (TrackerMiner *miner)
 {
 	if (!tracker_miner_is_started (miner)) {
-		g_message ("Starting filesystem miner...");
+		g_debug ("Starting filesystem miner...");
 		tracker_miner_start (miner);
 	}
 }
@@ -853,7 +857,7 @@ main (gint argc, gchar *argv[])
 		tracker_config_set_initial_sleep (config, initial_sleep);
 	}
 
-	sanity_check_option_values (config);
+	log_option_values (config);
 
 	main_loop = g_main_loop_new (NULL, FALSE);
 
@@ -871,10 +875,10 @@ main (gint argc, gchar *argv[])
 		g_free (domain_name);
 	}
 
-	g_message ("Checking if we're running as a daemon:");
-	g_message ("  %s %s",
-	           no_daemon ? "No" : "Yes",
-	           no_daemon ? "(forced by command line)" : "");
+	TRACKER_NOTE (CONFIG, g_message ("Checking if we're running as a daemon:"));
+	TRACKER_NOTE (CONFIG, g_message ("  %s %s",
+	                      no_daemon ? "No" : "Yes",
+	                      no_daemon ? "(forced by command line)" : ""));
 
 	if (!setup_connection_and_endpoint (domain_ontology,
 	                                    connection,
@@ -957,7 +961,7 @@ main (gint argc, gchar *argv[])
 	 * Set to TRUE here in case we crash and miss file system
 	 * events.
 	 */
-	g_message ("Checking whether to force mtime checking during crawling (based on last clean shutdown):");
+	TRACKER_NOTE (CONFIG, g_message ("Checking whether to force mtime checking during crawling (based on last clean shutdown):"));
 
 	/* Override the shutdown state decision based on the config */
 	if (force_mtime_checking) {
@@ -966,9 +970,9 @@ main (gint argc, gchar *argv[])
 		do_mtime_checking = tracker_miner_files_get_need_mtime_check (TRACKER_MINER_FILES (miner_files));
 	}
 
-	g_message ("  %s %s",
-	           do_mtime_checking ? "Yes" : "No",
-	           force_mtime_checking ? "(forced from config)" : "");
+	TRACKER_NOTE (CONFIG, g_message ("  %s %s",
+	                      do_mtime_checking ? "Yes" : "No",
+	                      force_mtime_checking ? "(forced from config)" : ""));
 
 	/* Set the need for an mtime check to TRUE so we check in the
 	 * event of a crash, this is changed back on shutdown if
@@ -990,7 +994,7 @@ main (gint argc, gchar *argv[])
 	/* Go, go, go! */
 	g_main_loop_run (main_loop);
 
-	g_message ("Shutdown started");
+	g_debug ("Shutdown started");
 
 	if (miners_timeout_id == 0 && !miner_needs_check (miner_files)) {
 		tracker_miner_files_set_need_mtime_check (TRACKER_MINER_FILES (miner_files), FALSE);

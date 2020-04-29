@@ -984,8 +984,6 @@ miner_started (TrackerMiner *miner)
 
 	fs->priv->been_started = TRUE;
 
-	g_info ("Initializing");
-
 	g_object_set (miner,
 	              "progress", 0.0,
 	              "status", "Initializing",
@@ -998,8 +996,6 @@ miner_started (TrackerMiner *miner)
 static void
 miner_stopped (TrackerMiner *miner)
 {
-	g_info ("Idle");
-
 	g_object_set (miner,
 	              "progress", 1.0,
 	              "status", "Idle",
@@ -1090,47 +1086,46 @@ notify_roots_finished (TrackerMinerFS *fs,
 }
 
 static void
-process_print_stats (TrackerMinerFS *fs)
+log_stats (TrackerMinerFS *fs)
 {
-	/* Only do this the first time, otherwise the results are
-	 * likely to be inaccurate. Devices can be added or removed so
-	 * we can't assume stats are correct.
-	 */
-	if (!fs->priv->shown_totals) {
-		fs->priv->shown_totals = TRUE;
+#ifdef G_ENABLE_DEBUG
+	if (TRACKER_DEBUG_CHECK (STATISTICS)) {
+		/* Only do this the first time, otherwise the results are
+		 * likely to be inaccurate. Devices can be added or removed so
+		 * we can't assume stats are correct.
+		 */
+		if (!fs->priv->shown_totals) {
+			fs->priv->shown_totals = TRUE;
 
-		g_info ("--------------------------------------------------");
-		g_info ("Total directories : %d (%d ignored)",
-		        fs->priv->total_directories_found,
-		        fs->priv->total_directories_ignored);
-		g_info ("Total files       : %d (%d ignored)",
-		        fs->priv->total_files_found,
-		        fs->priv->total_files_ignored);
-#if 0
-		g_info ("Total monitors    : %d",
-		        tracker_monitor_get_count (fs->priv->monitor));
-#endif
-		g_info ("Total processed   : %d (%d notified, %d with error)",
-		        fs->priv->total_files_processed,
-		        fs->priv->total_files_notified,
-		        fs->priv->total_files_notified_error);
-		g_info ("--------------------------------------------------\n");
+			g_info ("--------------------------------------------------");
+			g_info ("Total directories : %d (%d ignored)",
+			        fs->priv->total_directories_found,
+			        fs->priv->total_directories_ignored);
+			g_info ("Total files       : %d (%d ignored)",
+			        fs->priv->total_files_found,
+			        fs->priv->total_files_ignored);
+			g_info ("Total processed   : %d (%d notified, %d with error)",
+			        fs->priv->total_files_processed,
+			        fs->priv->total_files_notified,
+			        fs->priv->total_files_notified_error);
+			g_info ("--------------------------------------------------\n");
+		}
 	}
+#endif
 }
 
 static void
 process_stop (TrackerMinerFS *fs)
 {
-	/* Now we have finished crawling, print stats and enable monitor events */
-	process_print_stats (fs);
+	/* Now we have finished crawling, we enable monitor events */
+
+	log_stats (fs);
 
 	g_timer_stop (fs->priv->timer);
 	g_timer_stop (fs->priv->extraction_timer);
 
 	fs->priv->timer_stopped = TRUE;
 	fs->priv->extraction_timer_stopped = TRUE;
-
-	g_info ("Idle");
 
 	g_object_set (fs,
 	              "progress", 1.0,
@@ -1290,11 +1285,10 @@ on_signal_gtask_complete (GObject      *source,
 		if (ctxt->urn) {
 			/* The SPARQL builder will already contain the necessary
 			 * DELETE statements for the properties being updated */
-			g_debug ("Updating item '%s' with urn '%s'",
-			         uri,
-			         ctxt->urn);
+			TRACKER_NOTE (MINER_FS_EVENTS, g_message ("Updating item '%s' with urn '%s'",
+			                                          uri, ctxt->urn));
 		} else {
-			g_debug ("Creating new item '%s'", uri);
+			TRACKER_NOTE (MINER_FS_EVENTS, g_message ("Creating new item '%s'", uri));
 		}
 
 		sparql_task = tracker_sparql_task_new_take_sparql_str (file, sparql);
@@ -1390,12 +1384,12 @@ item_add_or_update (TrackerMinerFS *fs,
 	gtask = g_task_new (fs, ctxt->cancellable, on_signal_gtask_complete, file);
 
 	if (!attributes_update) {
-		g_debug ("Processing file '%s'...", uri);
+		TRACKER_NOTE (MINER_FS_EVENTS, g_message ("Processing file '%s'...", uri));
 		g_signal_emit (fs, signals[PROCESS_FILE], 0,
 		               file, gtask,
 		               &processing);
 	} else {
-		g_debug ("Processing attributes in file '%s'...", uri);
+		TRACKER_NOTE (MINER_FS_EVENTS, g_message ("Processing attributes in file '%s'...", uri));
 		g_signal_emit (fs, signals[PROCESS_FILE_ATTRIBUTES], 0,
 		               file, gtask,
 		               &processing);
@@ -1430,8 +1424,8 @@ item_remove (TrackerMinerFS *fs,
 
 	uri = g_file_get_uri (file);
 
-	g_debug ("Removing item: '%s' (Deleted from filesystem or no longer monitored)",
-	         uri);
+	TRACKER_NOTE (MINER_FS_EVENTS,
+	              g_message ("Removing item: '%s' (Deleted from filesystem or no longer monitored)", uri));
 
 	g_object_set_qdata (G_OBJECT (file),
 	                    fs->priv->quark_recursive_removal,
@@ -1502,8 +1496,9 @@ item_move (TrackerMinerFS *fs,
 		 * files that are immediately renamed to the definitive path).
 		 * Deal with those as newly added items.
 		 */
-		g_debug ("Source file '%s' not yet in store, indexing '%s' "
-		         "from scratch", source_uri, uri);
+		TRACKER_NOTE (MINER_FS_EVENTS,
+		              g_message ("Source file '%s' not yet in store, indexing '%s' "
+		                         "from scratch", source_uri, uri));
 
 		retval = item_add_or_update (fs, dest_file, G_PRIORITY_DEFAULT, FALSE);
 
@@ -1514,9 +1509,9 @@ item_move (TrackerMinerFS *fs,
 		return retval;
 	}
 
-	g_debug ("Moving item from '%s' to '%s'",
-	         source_uri,
-	         uri);
+	TRACKER_NOTE (MINER_FS_EVENTS,
+	              g_message ("Moving item from '%s' to '%s'",
+	                         source_uri, uri));
 
 	tracker_indexing_tree_get_root (fs->priv->indexing_tree, source_file, &source_flags);
 	tracker_indexing_tree_get_root (fs->priv->indexing_tree, dest_file, &flags);
@@ -1772,7 +1767,6 @@ miner_handle_next_item (TrackerMinerFS *fs)
 			 */
 			if (g_strcmp0 (status, "Processing…") != 0) {
 				/* Don't spam this */
-				g_info ("Processing…");
 				g_object_set (fs,
 				              "status", "Processing…",
 				              "progress", CLAMP (progress_now, 0.02, 1.00),
@@ -1998,7 +1992,6 @@ item_queue_handlers_set_up (TrackerMinerFS *fs)
 
 		/* Don't spam this */
 		if (progress > 0.01 && g_strcmp0 (status, "Processing…") != 0) {
-			g_info ("Processing…");
 			g_object_set (fs, "status", "Processing…", NULL);
 		}
 
@@ -2314,7 +2307,7 @@ indexing_tree_directory_removed (TrackerIndexingTree *indexing_tree,
 	                           task_pool_cancel_foreach,
 	                           directory);
 
-	g_debug ("  Cancelled processing pool tasks at %f\n", g_timer_elapsed (timer, NULL));
+	TRACKER_NOTE (MINER_FS_EVENTS, g_message ("  Cancelled processing pool tasks at %f\n", g_timer_elapsed (timer, NULL)));
 
 	/* Remove anything contained in the removed directory
 	 * from all relevant processing queues.
@@ -2324,7 +2317,7 @@ indexing_tree_directory_removed (TrackerIndexingTree *indexing_tree,
 					       directory,
 					       (GDestroyNotify) queue_event_free);
 
-	g_debug ("  Removed files at %f\n", g_timer_elapsed (timer, NULL));
+	TRACKER_NOTE (MINER_FS_EVENTS, g_message ("  Removed files at %f\n", g_timer_elapsed (timer, NULL)));
 	g_timer_destroy (timer);
 }
 
@@ -2405,9 +2398,10 @@ tracker_miner_fs_check_file (TrackerMinerFS *fs,
 
 	uri = g_file_get_uri (file);
 
-	g_debug ("%s:'%s' (FILE) (requested by application)",
-	         should_process ? "Found " : "Ignored",
-	         uri);
+	TRACKER_NOTE (MINER_FS_EVENTS,
+	              g_message ("%s:'%s' (FILE) (requested by application)",
+	                         should_process ? "Found " : "Ignored",
+	                         uri));
 
 	if (should_process) {
 		if (check_parents && !check_file_parents (fs, file)) {

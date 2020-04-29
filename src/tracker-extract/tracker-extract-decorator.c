@@ -349,8 +349,8 @@ tracker_extract_decorator_items_available (TrackerDecorator *decorator)
 	TrackerExtractDecoratorPrivate *priv;
 
 	priv = tracker_extract_decorator_get_instance_private (TRACKER_EXTRACT_DECORATOR (decorator));
-	g_message ("Starting to process %d items",
-	           tracker_decorator_get_n_items (decorator));
+	g_debug ("Starting to process %d items",
+	         tracker_decorator_get_n_items (decorator));
 
 	priv->timer = g_timer_new ();
 	if (tracker_miner_is_paused (TRACKER_MINER (decorator)))
@@ -373,7 +373,7 @@ tracker_extract_decorator_finished (TrackerDecorator *decorator)
 	}
 
 	time_str = tracker_seconds_to_string (elapsed, TRUE);
-	g_message ("Extraction finished in %s", time_str);
+	g_debug ("Extraction finished in %s", time_str);
 	g_free (time_str);
 }
 

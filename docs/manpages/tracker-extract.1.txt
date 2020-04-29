@@ -41,6 +41,11 @@ $ tracker extract /path/to/some/file.mp3
   Controls verbose log output from GLib-based code. Use
   `G_MESSAGES_DEBUG=Tracker` to see only Tracker-related
   logs, or `G_MESSAGES_DEBUG=all` to see everything.
+*TRACKER_DEBUG*::
+  Enables more specialized debug output. Pass a comma-separated
+  list of one or more keywords:
+    config::: extractor configuration
+    statistics::: show statistics about how many files were processed
 
 == SEE ALSO
 

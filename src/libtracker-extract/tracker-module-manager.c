@@ -23,6 +23,8 @@
 
 #include "tracker-module-manager.h"
 
+#include "libtracker-miners-common/tracker-debug.h"
+
 #define EXTRACTOR_FUNCTION "tracker_extract_get_metadata"
 #define INIT_FUNCTION      "tracker_extract_module_init"
 #define SHUTDOWN_FUNCTION  "tracker_extract_module_shutdown"
@@ -181,7 +183,7 @@ tracker_extract_module_manager_init (void)
 		files = g_list_insert_sorted (files, (gpointer) name, (GCompareFunc) g_strcmp0);
 	}
 
-	g_message ("Loading extractor rules... (%s)", extractors_dir);
+	TRACKER_NOTE (CONFIG, g_message ("Loading extractor rules... (%s)", extractors_dir));
 
 	rules = g_array_new (FALSE, TRUE, sizeof (RuleInfo));
 
@@ -193,7 +195,7 @@ tracker_extract_module_manager_init (void)
 		name = l->data;
 
 		if (!g_str_has_suffix (l->data, ".rule")) {
-			g_message ("  Skipping file '%s', no '.rule' suffix", name);
+			TRACKER_NOTE (CONFIG, g_message ("  Skipping file '%s', no '.rule' suffix", name));
 			continue;
 		}
 
@@ -205,14 +207,14 @@ tracker_extract_module_manager_init (void)
 			g_warning ("  Could not load extractor rule file '%s': %s", name, error->message);
 			g_clear_error (&error);
 		} else {
-			g_debug ("  Loaded rule '%s'", name);
+			TRACKER_NOTE (CONFIG, g_message ("  Loaded rule '%s'", name));
 		}
 
 		g_key_file_free (key_file);
 		g_free (path);
 	}
 
-	g_message ("Extractor rules loaded");
+	TRACKER_NOTE (CONFIG, g_message ("Extractor rules loaded"));
 	g_list_free (files);
 	g_dir_close (dir);
 

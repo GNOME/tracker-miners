@@ -29,7 +29,10 @@
 G_BEGIN_DECLS
 
 typedef enum {
-  TRACKER_DEBUG_MINER_FS_EVENTS     = 1 <<  1,
+  TRACKER_DEBUG_CONFIG              = 1 <<  1,
+  TRACKER_DEBUG_MINER_FS_EVENTS     = 1 <<  2,
+  TRACKER_DEBUG_MONITORS            = 1 <<  3,
+  TRACKER_DEBUG_STATISTICS          = 1 <<  4,
 } TrackerDebugFlag;
 
 #ifdef G_ENABLE_DEBUG

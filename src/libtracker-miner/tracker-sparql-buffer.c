@@ -22,6 +22,7 @@
 #include "config-miners.h"
 
 #include <libtracker-sparql/tracker-sparql.h>
+#include "libtracker-miners-common/tracker-debug.h"
 
 #include "tracker-sparql-buffer.h"
 
@@ -229,8 +230,9 @@ tracker_sparql_buffer_update_array_cb (GObject      *object,
 	priv = tracker_sparql_buffer_get_instance_private (buffer);
 	priv->n_updates--;
 
-	g_debug ("(Sparql buffer) Finished array-update with %u tasks",
-	         update_data->tasks->len);
+	TRACKER_NOTE (MINER_FS_EVENTS,
+	              g_message ("(Sparql buffer) Finished array-update with %u tasks",
+	                         update_data->tasks->len));
 
 	if (!tracker_sparql_connection_update_array_finish (priv->connection,
 							    result,
@@ -295,7 +297,7 @@ tracker_sparql_buffer_flush (TrackerSparqlBuffer *buffer,
 		return FALSE;
 	}
 
-	g_debug ("Flushing SPARQL buffer, reason: %s", reason);
+	TRACKER_NOTE (MINER_FS_EVENTS, g_message ("Flushing SPARQL buffer, reason: %s", reason));
 
 	if (priv->flush_timeout_id != 0) {
 		g_source_remove (priv->flush_timeout_id);
