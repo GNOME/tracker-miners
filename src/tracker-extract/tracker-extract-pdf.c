@@ -399,8 +399,25 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 
 	keywords = g_ptr_array_new_with_free_func ((GDestroyNotify) g_free);
 
-	if (xml && *xml &&
-	    (xd = tracker_xmp_new (xml, strlen (xml), uri)) != NULL) {
+	if (xml && *xml) {
+		xd = tracker_xmp_new (xml, strlen (xml), uri);
+	} else {
+		gchar *sidecar = NULL;
+
+		xd = tracker_xmp_new_from_sidecar (file, &sidecar);
+
+		if (sidecar) {
+			TrackerResource *sidecar_resource;
+
+			sidecar_resource = tracker_resource_new (sidecar);
+			tracker_resource_add_uri (sidecar_resource, "rdf:type", "nfo:FileDataObject");
+			tracker_resource_add_relation (sidecar_resource, "nie:interpretedAs", metadata);
+
+			tracker_resource_add_take_relation (metadata, "nie:isStoredAs", sidecar_resource);
+		}
+	}
+
+	if (xd) {
 		/* The casts here are well understood and known */
 		md.title = (gchar *) tracker_coalesce_strip (4, pd.title, xd->title, xd->title2, xd->pdf_title);
 		md.subject = (gchar *) tracker_coalesce_strip (2, pd.subject, xd->subject);

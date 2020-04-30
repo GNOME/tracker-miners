@@ -106,10 +106,6 @@ if libvorbis.found()
   modules += [['extract-vorbis', 'tracker-extract-vorbis.c', ['10-vorbis.rule'], [libvorbis, tracker_miners_common_dep]]]
 endif
 
-if exempi.found()
-  modules += [['extract-xmp', 'tracker-extract-xmp.c', ['10-xmp.rule'], []]]
-endif
-
 if libgxps.found()
   modules += [['extract-xps', 'tracker-extract-xps.c', ['10-xps.rule'], [libgxps, tracker_miners_common_dep]]]
 endif

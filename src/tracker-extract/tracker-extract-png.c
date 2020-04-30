@@ -187,6 +187,7 @@ read_metadata (TrackerResource      *metadata,
                png_structp           png_ptr,
                png_infop             info_ptr,
                png_infop             end_ptr,
+               GFile                *file,
                const gchar          *uri)
 {
 	MergeData md = { 0 };
@@ -333,6 +334,22 @@ read_metadata (TrackerResource      *metadata,
 
 	if (!ed) {
 		ed = g_new0 (TrackerExifData, 1);
+	}
+
+	if (!xd) {
+		gchar *sidecar = NULL;
+
+		xd = tracker_xmp_new_from_sidecar (file, &sidecar);
+
+		if (sidecar) {
+			TrackerResource *sidecar_resource;
+
+			sidecar_resource = tracker_resource_new (sidecar);
+			tracker_resource_add_uri (sidecar_resource, "rdf:type", "nfo:FileDataObject");
+			tracker_resource_add_relation (sidecar_resource, "nie:interpretedAs", metadata);
+
+			tracker_resource_add_take_relation (metadata, "nie:isStoredAs", sidecar_resource);
+		}
 	}
 
 	if (!xd) {
@@ -716,7 +733,7 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 
 	uri = g_file_get_uri (file);
 
-	read_metadata (metadata, png_ptr, info_ptr, end_ptr, uri);
+	read_metadata (metadata, png_ptr, info_ptr, end_ptr, file, uri);
 	g_free (uri);
 
 	tracker_resource_set_int64 (metadata, "nfo:width", width);
