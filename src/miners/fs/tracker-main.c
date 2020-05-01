@@ -721,6 +721,7 @@ on_domain_vanished (GDBusConnection *connection,
                     gpointer         user_data)
 {
 	GMainLoop *loop = user_data;
+	g_message ("Domain %s vanished: quitting now.", name);
 	g_main_loop_quit (loop);
 }
 
