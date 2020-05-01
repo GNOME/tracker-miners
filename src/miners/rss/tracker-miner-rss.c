@@ -489,7 +489,7 @@ feed_channel_changed_timeout_cb (gpointer user_data)
 	g_free (time_str);
 
 	tracker_sparql_connection_update_async (tracker_miner_get_connection (TRACKER_MINER (fcud->miner)),
-	                                        tracker_resource_print_sparql_update (resource, NULL, TRACKER_OWN_GRAPH_URN),
+	                                        tracker_resource_print_sparql_update (resource, NULL, NULL),
 	                                        G_PRIORITY_DEFAULT,
 	                                        fcud->cancellable,
 	                                        feed_channel_change_updated_time_cb,
@@ -844,7 +844,7 @@ check_feed_items_cb (GObject      *source_object,
 
 			resource = feed_message_create_resource (data->miner,
 			                                       item, urn);
-			str = tracker_resource_print_sparql_update (resource, NULL, TRACKER_OWN_GRAPH_URN);
+			str = tracker_resource_print_sparql_update (resource, NULL, NULL);
 			g_ptr_array_add (array, g_strdup (str));
 			g_object_unref (resource);
 		}
@@ -870,7 +870,7 @@ check_feed_items_cb (GObject      *source_object,
 	while (g_hash_table_iter_next (&iter, NULL, (gpointer *) &item)) {
 		resource = feed_message_create_resource (data->miner,
 		                                       item, NULL);
-		str = tracker_resource_print_sparql_update (resource, NULL, TRACKER_OWN_GRAPH_URN);
+		str = tracker_resource_print_sparql_update (resource, NULL, NULL);
 		g_ptr_array_add (array, g_strdup (str));
 		g_object_unref (resource);
 	}

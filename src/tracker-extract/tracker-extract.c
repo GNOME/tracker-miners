@@ -82,12 +82,10 @@ typedef struct {
 	GAsyncResult *res;
 	gchar *file;
 	gchar *mimetype;
+	const gchar *graph;
 
-	TrackerMimetypeInfo *mimetype_handlers;
-
-	/* to be fed from mimetype_handlers */
-	TrackerExtractMetadataFunc cur_func;
-	GModule *cur_module;
+	TrackerExtractMetadataFunc func;
+	GModule *module;
 
 	guint signal_id;
 	guint success : 1;
@@ -251,14 +249,14 @@ notify_task_finish (TrackerExtractTask *task,
 
 #ifdef G_ENABLE_DEBUG
 	if (TRACKER_DEBUG_CHECK (STATISTICS)) {
-		if (task->cur_module) {
+		if (task->module) {
 			stats_data = g_hash_table_lookup (priv->statistics_data,
-			                                  task->cur_module);
+			                                  task->module);
 
 			if (!stats_data) {
 				stats_data = g_slice_new0 (StatisticsData);
 				g_hash_table_insert (priv->statistics_data,
-				                     task->cur_module,
+				                     task->module,
 				                     stats_data);
 			}
 
@@ -289,7 +287,7 @@ get_file_metadata (TrackerExtractTask  *task,
 	*info_out = NULL;
 
 	file = g_file_new_for_uri (task->file);
-	info = tracker_extract_info_new (file, task->mimetype);
+	info = tracker_extract_info_new (file, task->mimetype, task->graph);
 	g_object_unref (file);
 
 	if (task->mimetype && *task->mimetype) {
@@ -304,13 +302,13 @@ get_file_metadata (TrackerExtractTask  *task,
 	 * data we need from the extractors.
 	 */
 	if (mime_used) {
-		if (task->cur_func) {
+		if (task->func) {
 			g_debug ("Using %s...",
-				 task->cur_module ?
-				 g_module_name (task->cur_module) :
+				 task->module ?
+				 g_module_name (task->module) :
 				 "Dummy extraction");
 
-			task->success = (task->cur_func) (info);
+			task->success = (task->func) (info);
 		}
 
 		g_free (mime_used);
@@ -420,10 +418,6 @@ extract_task_free (TrackerExtractTask *task)
 		g_object_unref (task->cancellable);
 	}
 
-	if (task->mimetype_handlers) {
-		tracker_mimetype_info_free (task->mimetype_handlers);
-	}
-
 	g_free (task->mimetype);
 	g_free (task->file);
 
@@ -493,16 +487,18 @@ get_metadata (TrackerExtractTask *task)
 		return FALSE;
 	}
 
-	if (!filter_module (task->extract, task->cur_module) &&
+	if (!filter_module (task->extract, task->module) &&
 	    get_file_metadata (task, &info)) {
 		g_task_return_pointer (G_TASK (task->res), info,
 		                       (GDestroyNotify) tracker_extract_info_unref);
 		extract_task_free (task);
 	} else {
-		/* Reinject the task into the main thread
-		 * queue, so the next module kicks in.
-		 */
-		g_idle_add ((GSourceFunc) dispatch_task_cb, task);
+		g_task_return_new_error (G_TASK (task->res),
+		                         tracker_extract_error_quark (),
+		                         TRACKER_EXTRACT_ERROR_NO_EXTRACTOR,
+		                         "Could not get any metadata for uri:'%s' and mime:'%s'",
+		                         task->file, task->mimetype);
+		extract_task_free (task);
 	}
 
 	return FALSE;
@@ -538,7 +534,6 @@ dispatch_task_cb (TrackerExtractTask *task)
 	TrackerExtractPrivate *priv;
 	GError *error = NULL;
 	GAsyncQueue *async_queue;
-	GModule *module;
 
 #ifdef THREAD_ENABLE_TRACE
 	g_debug ("Thread:%p (Main) <-- '%s': Handling task...\n",
@@ -553,30 +548,14 @@ dispatch_task_cb (TrackerExtractTask *task)
 		                     TRACKER_EXTRACT_ERROR_NO_MIMETYPE,
 		                     "No mimetype for '%s'", task->file);
 	} else {
-		if (!task->mimetype_handlers) {
-			/* First iteration for task, get the mimetype handlers */
-			task->mimetype_handlers = tracker_extract_module_manager_get_mimetype_handlers (task->mimetype);
-
-			if (!task->mimetype_handlers) {
-				error = g_error_new (tracker_extract_error_quark (),
-				                     TRACKER_EXTRACT_ERROR_NO_EXTRACTOR,
-				                     "No mimetype extractor handlers for uri:'%s' and mime:'%s'",
-				                     task->file, task->mimetype);
-			}
-		} else {
-			/* Any further iteration, should happen rarely if
-			 * most specific handlers know nothing about the file
-			 */
-			if (!tracker_mimetype_info_iter_next (task->mimetype_handlers)) {
-				g_message ("There's no next extractor");
-
-				error = g_error_new (tracker_extract_error_quark (),
-				                     TRACKER_EXTRACT_ERROR_NO_EXTRACTOR,
-				                     "Could not get any metadata for uri:'%s' and mime:'%s'",
-				                     task->file, task->mimetype);
-			} else {
-				g_message ("Trying next extractor for '%s'", task->file);
-			}
+		task->module = tracker_extract_module_manager_get_module (task->mimetype,
+		                                                          NULL,
+		                                                          &task->func);
+		if (!task->module) {
+			error = g_error_new (tracker_extract_error_quark (),
+			                     TRACKER_EXTRACT_ERROR_NO_EXTRACTOR,
+			                     "No mimetype extractor handlers for uri:'%s' and mime:'%s'",
+			                     task->file, task->mimetype);
 		}
 	}
 
@@ -587,16 +566,10 @@ dispatch_task_cb (TrackerExtractTask *task)
 		return FALSE;
 	}
 
-	task->cur_module = module = tracker_mimetype_info_get_module (task->mimetype_handlers, &task->cur_func);
+	task->graph = tracker_extract_module_manager_get_graph (task->mimetype);
 
-	if (!task->cur_func) {
-		g_warning ("Discarding task, no module able to handle '%s'", task->file);
-		priv->unhandled_count++;
-		extract_task_free (task);
-		return FALSE;
-	}
-
-	async_queue = g_hash_table_lookup (priv->single_thread_extractors, module);
+	async_queue = g_hash_table_lookup (priv->single_thread_extractors,
+	                                   task->module);
 
 	if (!async_queue) {
 		GThread *thread;
@@ -618,7 +591,7 @@ dispatch_task_cb (TrackerExtractTask *task)
 		/* We won't join the thread, so just unref it here */
 		g_thread_unref (thread);
 
-		g_hash_table_insert (priv->single_thread_extractors, module, async_queue);
+		g_hash_table_insert (priv->single_thread_extractors, task->module, async_queue);
 	}
 
 	g_async_queue_push (async_queue, task);
@@ -682,7 +655,7 @@ tracker_extract_get_metadata_by_cmdline (TrackerExtract             *object,
 	GError *error = NULL;
 	TrackerExtractTask *task;
 	TrackerExtractInfo *info;
-	gboolean no_data_or_modules = TRUE;
+	TrackerResource *resource = NULL;
 
 	g_return_if_fail (uri != NULL);
 
@@ -697,77 +670,59 @@ tracker_extract_get_metadata_by_cmdline (TrackerExtract             *object,
 		return;
 	}
 
-	task->mimetype_handlers = tracker_extract_module_manager_get_mimetype_handlers (task->mimetype);
-	if (task->mimetype_handlers) {
-		task->cur_module = tracker_mimetype_info_get_module (task->mimetype_handlers, &task->cur_func);
+	task->module = tracker_extract_module_manager_get_module (task->mimetype,
+	                                                          NULL,
+	                                                          &task->func);
+
+	if (!filter_module (object, task->module) &&
+	    get_file_metadata (task, &info)) {
+		resource = tracker_extract_info_get_resource (info);
 	}
 
-	while (task->cur_func) {
-		if (!filter_module (object, task->cur_module) &&
-		    get_file_metadata (task, &info)) {
-			TrackerResource *resource = tracker_extract_info_get_resource (info);
+	if (resource) {
+		if (output_format == TRACKER_SERIALIZATION_FORMAT_SPARQL) {
+			char *text;
 
-			if (resource == NULL)
-				break;
+			/* If this was going into the tracker-store we'd generate a unique ID
+			 * here, so that the data persisted across file renames.
+			 */
+			tracker_resource_set_identifier (resource, uri);
 
-			no_data_or_modules = FALSE;
+			text = tracker_resource_print_sparql_update (resource, NULL, NULL);
 
-			if (output_format == TRACKER_SERIALIZATION_FORMAT_SPARQL) {
-				char *text;
+			g_print ("%s\n", text);
 
-				/* If this was going into the tracker-store we'd generate a unique ID
-				 * here, so that the data persisted across file renames.
-				 */
-				tracker_resource_set_identifier (resource, uri);
+			g_free (text);
+		} else if (output_format == TRACKER_SERIALIZATION_FORMAT_TURTLE) {
+			char *turtle;
 
-				text = tracker_resource_print_sparql_update (resource, NULL, NULL);
+			/* If this was going into the tracker-store we'd generate a unique ID
+			 * here, so that the data persisted across file renames.
+			 */
+			tracker_resource_set_identifier (resource, uri);
 
-				g_print ("%s\n", text);
+			turtle = tracker_resource_print_turtle (resource, NULL);
 
-				g_free (text);
-			} else if (output_format == TRACKER_SERIALIZATION_FORMAT_TURTLE) {
-				char *turtle;
-
-				/* If this was going into the tracker-store we'd generate a unique ID
-				 * here, so that the data persisted across file renames.
-				 */
-				tracker_resource_set_identifier (resource, uri);
-
-				turtle = tracker_resource_print_turtle (resource, NULL);
-
-				if (turtle) {
-					g_print ("%s\n", turtle);
-					g_free (turtle);
-				}
-			} else {
-				/* JSON-LD extraction */
-				char *json;
-
-				/* If this was going into the tracker-store we'd generate a unique ID
-				 * here, so that the data persisted across file renames.
-				 */
-				tracker_resource_set_identifier (resource, uri);
-
-				json = tracker_resource_print_jsonld (resource, NULL);
-				if (json) {
-					g_print ("%s\n", json);
-					g_free (json);
-				}
+			if (turtle) {
+				g_print ("%s\n", turtle);
+				g_free (turtle);
 			}
-
-			tracker_extract_info_unref (info);
-			break;
 		} else {
-			if (!tracker_mimetype_info_iter_next (task->mimetype_handlers)) {
-				break;
+			/* JSON-LD extraction */
+			char *json;
+
+			/* If this was going into the tracker-store we'd generate a unique ID
+			 * here, so that the data persisted across file renames.
+			 */
+			tracker_resource_set_identifier (resource, uri);
+
+			json = tracker_resource_print_jsonld (resource, NULL);
+			if (json) {
+				g_print ("%s\n", json);
+				g_free (json);
 			}
-
-			task->cur_module = tracker_mimetype_info_get_module (task->mimetype_handlers,
-			                                                     &task->cur_func);
 		}
-	}
-
-	if (no_data_or_modules) {
+	} else {
 		g_printerr ("%s: %s\n",
 		         uri,
 		         _("No metadata or extractor modules found to handle this file"));

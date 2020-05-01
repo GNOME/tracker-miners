@@ -29,7 +29,7 @@ test_extract_info_setters (void)
 
         file = g_file_new_for_path ("./imaginary-file-2");
 
-        info = tracker_extract_info_new (file, "imaginary/mime");
+        info = tracker_extract_info_new (file, "imaginary/mime", NULL);
         info_ref = tracker_extract_info_ref (info);
 
         g_assert (g_file_equal (file, tracker_extract_info_get_file (info)));
@@ -50,7 +50,7 @@ test_extract_info_empty_objects (void)
 
         file = g_file_new_for_path ("./imaginary-file");
 
-        info = tracker_extract_info_new (file, "imaginary/mime");
+        info = tracker_extract_info_new (file, "imaginary/mime", NULL);
         info_ref = tracker_extract_info_ref (info);
 
         tracker_extract_info_unref (info_ref);

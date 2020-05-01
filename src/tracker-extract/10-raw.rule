@@ -2,3 +2,4 @@
 ModulePath=libextract-raw.so
 MimeTypes=image/x-dcraw;image/x-adobe-dng;image/x-canon-cr2;image/x-canon-crw;image/x-epson-erf;image/x-fuji-raf;image/x-minolta-mrw;image/x-nikon-nef;image/x-olympus-orf;image/x-panasonic-rw;image/x-pentax-pef;image/x-raw;image/x-samsung-raw;image/x-sigma-x3f;image/x-sony-arw;image/x-sony-srf;image/x-sony-sr2;
 FallbackRdfTypes=nfo:Image;nmm:Photo;
+Graph=tracker:Pictures

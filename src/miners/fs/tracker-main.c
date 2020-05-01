@@ -126,10 +126,10 @@ miner_reset_applications (TrackerMiner *miner)
 	GError *error = NULL;
 
 	sparql =
-		"DELETE { GRAPH <" TRACKER_OWN_GRAPH_URN "> { ?icon a rdfs:Resource } } "
-		"WHERE { GRAPH <" TRACKER_OWN_GRAPH_URN "> { ?app a nfo:SoftwareApplication; nfo:softwareIcon ?icon } } "
-		"DELETE { GRAPH <" TRACKER_OWN_GRAPH_URN "> { ?app nie:dataSource <" TRACKER_PREFIX_TRACKER "extractor-data-source> } } "
-		"WHERE { GRAPH <" TRACKER_OWN_GRAPH_URN "> { ?app a nfo:SoftwareApplication } }";
+		"DELETE { ?icon a rdfs:Resource } "
+		"WHERE { ?app a nfo:SoftwareApplication; nfo:softwareIcon ?icon } "
+		"DELETE { ?app nie:dataSource <" TRACKER_PREFIX_TRACKER "extractor-data-source> } "
+		"WHERE { ?app a nfo:SoftwareApplication } ";
 
 	/* Execute a sync update, we don't want the apps miner to start before
 	 * we finish this. */

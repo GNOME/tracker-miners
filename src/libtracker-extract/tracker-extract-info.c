@@ -43,6 +43,7 @@ struct _TrackerExtractInfo
 
 	GFile *file;
 	gchar *mimetype;
+	gchar *graph;
 
 	gint ref_count;
 };
@@ -64,7 +65,8 @@ G_DEFINE_BOXED_TYPE (TrackerExtractInfo, tracker_extract_info,
  **/
 TrackerExtractInfo *
 tracker_extract_info_new (GFile       *file,
-                          const gchar *mimetype)
+                          const gchar *mimetype,
+                          const gchar *graph)
 {
 	TrackerExtractInfo *info;
 
@@ -73,6 +75,7 @@ tracker_extract_info_new (GFile       *file,
 	info = g_slice_new0 (TrackerExtractInfo);
 	info->file = g_object_ref (file);
 	info->mimetype = g_strdup (mimetype);
+	info->graph = g_strdup (graph);
 
 	info->resource = NULL;
 
@@ -118,6 +121,7 @@ tracker_extract_info_unref (TrackerExtractInfo *info)
 	if (g_atomic_int_dec_and_test (&info->ref_count)) {
 		g_object_unref (info->file);
 		g_free (info->mimetype);
+		g_free (info->graph);
 
 		if (info->resource)
 			g_object_unref (info->resource);
@@ -165,6 +169,13 @@ tracker_extract_info_get_mimetype (TrackerExtractInfo *info)
 	return info->mimetype;
 }
 
+const gchar *
+tracker_extract_info_get_graph (TrackerExtractInfo *info)
+{
+	g_return_val_if_fail (info != NULL, NULL);
+
+	return info->graph;
+}
 
 /**
  * tracker_extract_info_get_resource:

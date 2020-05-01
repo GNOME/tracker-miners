@@ -2,3 +2,4 @@
 ModulePath=libextract-mp3.so
 MimeTypes=audio/mpeg;audio/x-mp3;
 FallbackRdfTypes=nmm:MusicPiece;nfo:Audio;
+Graph=tracker:Audio

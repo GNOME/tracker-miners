@@ -42,17 +42,16 @@ typedef gboolean (* TrackerExtractMetadataFunc) (TrackerExtractInfo *info);
 
 gboolean  tracker_extract_module_manager_init                (void) G_GNUC_CONST;
 
-GStrv tracker_extract_module_manager_get_rdf_types (void);
+GStrv tracker_extract_module_manager_get_all_rdf_types (void);
 
-TrackerMimetypeInfo * tracker_extract_module_manager_get_mimetype_handlers  (const gchar *mimetype);
-GStrv                 tracker_extract_module_manager_get_fallback_rdf_types (const gchar *mimetype);
+GStrv     tracker_extract_module_manager_get_rdf_types (const gchar *mimetype);
+const gchar * tracker_extract_module_manager_get_graph (const gchar *mimetype);
 
-GList *tracker_extract_module_manager_get_matching_rules (const gchar *mimetype);
+GModule * tracker_extract_module_manager_get_module (const gchar                 *mimetype,
+                                                     const gchar                **rule_out,
+                                                     TrackerExtractMetadataFunc  *extract_func_out);
 
-GModule * tracker_mimetype_info_get_module (TrackerMimetypeInfo          *info,
-                                            TrackerExtractMetadataFunc   *extract_func);
-gboolean  tracker_mimetype_info_iter_next  (TrackerMimetypeInfo          *info);
-void      tracker_mimetype_info_free       (TrackerMimetypeInfo          *info);
+GList * tracker_extract_module_manager_get_matching_rules (const gchar *mimetype);
 
 void tracker_module_manager_load_modules (void);
 
