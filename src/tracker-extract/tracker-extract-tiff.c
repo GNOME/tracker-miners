@@ -326,6 +326,20 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 #ifdef HAVE_EXEMPI
 	if (TIFFGetField (image, TIFFTAG_XMLPACKET, &size, &xmp_offset)) {
 		xd = tracker_xmp_new (xmp_offset, size, uri);
+	} else {
+		gchar *sidecar = NULL;
+
+		xd = tracker_xmp_new_from_sidecar (file, &sidecar);
+
+		if (sidecar) {
+			TrackerResource *sidecar_resource;
+
+			sidecar_resource = tracker_resource_new (sidecar);
+			tracker_resource_add_uri (sidecar_resource, "rdf:type", "nfo:FileDataObject");
+			tracker_resource_add_relation (sidecar_resource, "nie:interpretedAs", metadata);
+
+			tracker_resource_add_take_relation (metadata, "nie:isStoredAs", sidecar_resource);
+		}
 	}
 #endif /* HAVE_EXEMPI */
 

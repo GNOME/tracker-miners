@@ -272,7 +272,7 @@ tracker_miner_files_index_reindex_mime_types (TrackerMinerFilesIndex *miner,
 	query = g_string_new ("SELECT ?url "
 	                      "WHERE {"
 	                      "  ?resource nie:url ?url ;"
-	                      "  nie:mimeType ?mime ."
+	                      "  nie:interpretedAs/nie:mimeType ?mime ."
 	                      "  FILTER(");
 
 	for (i = 0; i < len; i++) {

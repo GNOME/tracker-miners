@@ -170,7 +170,10 @@ typedef struct {
 TrackerXmpData *tracker_xmp_new           (const gchar          *buffer,
                                            gsize                 len,
                                            const gchar          *uri);
+TrackerXmpData *tracker_xmp_new_from_sidecar (GFile             *orig_file,
+                                              gchar            **sidecar_uri);
 void            tracker_xmp_free          (TrackerXmpData       *data);
+
 
 gboolean        tracker_xmp_apply_to_resource         (TrackerResource *resource,
                                                        TrackerXmpData  *data);

@@ -148,7 +148,7 @@ decorator_save_info (TrackerExtractDecorator *decorator,
                      TrackerExtractInfo      *info)
 {
 	const gchar *urn;
-	TrackerResource *resource = NULL;
+	TrackerResource *resource = NULL, *file_resource;
 
 	g_set_object (&resource, tracker_extract_info_get_resource (info));
 
@@ -163,10 +163,12 @@ decorator_save_info (TrackerExtractDecorator *decorator,
 	}
 
 	urn = tracker_decorator_info_get_urn (decorator_info);
-
 	tracker_resource_set_identifier (resource, urn);
-	tracker_resource_add_uri (resource, "nie:dataSource",
+
+	file_resource = tracker_resource_new (tracker_decorator_info_get_url (decorator_info));
+	tracker_resource_add_uri (file_resource, "nie:dataSource",
 	        tracker_decorator_get_data_source (TRACKER_DECORATOR (decorator)));
+	tracker_resource_add_take_relation (resource, "nie:isStoredAs", file_resource);
 
 	return resource;
 }
@@ -195,7 +197,7 @@ get_metadata_cb (TrackerExtract *extract,
 		sparql = g_strdup_printf ("INSERT DATA { GRAPH <" TRACKER_OWN_GRAPH_URN "> {"
 		                          "  <%s> nie:dataSource <" TRACKER_EXTRACT_DATA_SOURCE ">;"
 		                          "       nie:dataSource <" TRACKER_EXTRACT_FAILURE_DATA_SOURCE ">."
-		                          "}}", tracker_decorator_info_get_urn (data->decorator_info));
+		                          "}}", tracker_decorator_info_get_url (data->decorator_info));
 
 		tracker_decorator_info_complete (data->decorator_info, sparql);
 	} else {
@@ -587,12 +589,10 @@ decorator_ignore_file (GFile    *file,
 	g_message ("Extraction on file '%s' has been attempted too many times, ignoring", uri);
 
 	conn = tracker_miner_get_connection (TRACKER_MINER (decorator));
-	query = g_strdup_printf ("INSERT { GRAPH <" TRACKER_OWN_GRAPH_URN "> {"
-	                         "  ?urn nie:dataSource <" TRACKER_EXTRACT_DATA_SOURCE ">;"
+	query = g_strdup_printf ("INSERT DATA { GRAPH <" TRACKER_OWN_GRAPH_URN "> {"
+	                         "  <%s> nie:dataSource <" TRACKER_EXTRACT_DATA_SOURCE ">;"
 	                         "       nie:dataSource <" TRACKER_EXTRACT_FAILURE_DATA_SOURCE ">."
-	                         "} } WHERE {"
-	                         "  ?urn nie:url \"%s\""
-	                         "}", uri);
+	                         "}}", uri);
 
 	tracker_sparql_connection_update (conn, query, G_PRIORITY_DEFAULT, NULL, &error);
 

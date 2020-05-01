@@ -59,6 +59,9 @@ test_miner_process_file (TrackerMinerFS *miner,
 	}
 
 	tracker_resource_add_uri (resource, "rdf:type", "nfo:FileDataObject");
+	tracker_resource_add_uri (resource, "rdf:type", "nie:InformationElement");
+	tracker_resource_add_relation (resource, "nie:interpretedAs", resource);
+	tracker_resource_add_relation (resource, "nie:isStoredAs", resource);
 
 	modification_time = g_file_info_get_modification_date_time (info);
 	if (modification_time) {
