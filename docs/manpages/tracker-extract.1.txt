@@ -46,6 +46,7 @@ $ tracker extract /path/to/some/file.mp3
   list of one or more keywords:
     config::: extractor configuration
     statistics::: show statistics about how many files were processed
+    status:: log the status messages that are published over D-Bus
 
 == SEE ALSO
 
