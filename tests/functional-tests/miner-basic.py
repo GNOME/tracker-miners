@@ -34,6 +34,7 @@ import shutil
 import time
 import unittest as ut
 
+import configuration as cfg
 import fixtures
 
 
@@ -59,10 +60,13 @@ class MinerCrawlTest(fixtures.TrackerMinerTest):
 
             for tf in monitored_files:
                 url = self.uri(tf)
-                self.tracker.ensure_resource(f"a nfo:Document ; nie:url <{url}>")
+                self.tracker.ensure_resource(fixtures.DOCUMENTS_GRAPH,
+                                             f"a nfo:Document ; nie:isStoredAs <{url}>")
         except Exception:
             cfg.remove_monitored_test_dir(self.workdir)
             raise
+
+        logging.info("%s.setUp(): complete", self)
 
     def create_test_data(self):
         # It's important that this directory exists BEFORE we start Tracker:
@@ -164,7 +168,7 @@ class MinerCrawlTest(fixtures.TrackerMinerTest):
         self.assertIn(self.uri("test-monitored/file0.txt"), unpacked_result)
 
         # Clean the new file so the test directory is as before
-        with self.tracker.await_delete(dest_id):
+        with self.tracker.await_delete(fixtures.DOCUMENTS_GRAPH, dest_id):
             os.remove(dest)
 
     def test_03_copy_from_monitored_to_unmonitored(self):
@@ -209,7 +213,7 @@ class MinerCrawlTest(fixtures.TrackerMinerTest):
         self.assertIn(self.uri("test-monitored/dir1/dir2/file3.txt"), unpacked_result)
         self.assertIn(self.uri("test-monitored/dir1/dir2/file-test04.txt"), unpacked_result)
 
-        with self.tracker.await_delete(dest_id):
+        with self.tracker.await_delete(fixtures.DOCUMENTS_GRAPH, dest_id):
             os.remove(dest)
 
         self.assertEqual(3, self.tracker.count_instances("nfo:TextDocument"))
@@ -234,7 +238,7 @@ class MinerCrawlTest(fixtures.TrackerMinerTest):
         self.assertIn(self.uri("test-monitored/dir1/dir2/file3.txt"), unpacked_result)
         self.assertIn(self.uri("test-monitored/dir1/file-test05.txt"), unpacked_result)
 
-        with self.tracker.await_delete(dest_id):
+        with self.tracker.await_delete(fixtures.DOCUMENTS_GRAPH, dest_id):
             os.remove(dest)
 
         self.assertEqual(3, self.tracker.count_instances("nfo:TextDocument"))
@@ -248,8 +252,8 @@ class MinerCrawlTest(fixtures.TrackerMinerTest):
         """
         source = self.path("test-monitored/dir1/file2.txt")
         dest = self.path("test-no-monitored/file2.txt")
-        source_id = self.tracker.get_resource_id(self.uri(source))
-        with self.tracker.await_delete(source_id):
+        source_id = self.tracker.get_content_resource_id(self.uri(source))
+        with self.tracker.await_delete(fixtures.DOCUMENTS_GRAPH, source_id):
             shutil.move(source, dest)
 
         result = self.__get_text_documents()
@@ -274,7 +278,7 @@ class MinerCrawlTest(fixtures.TrackerMinerTest):
         parent_before = self.__get_parent_urn(source)
         self.assertEqual(source_dir_urn, parent_before)
 
-        resource_id = self.tracker.get_resource_id(url=self.uri(source))
+        resource_id = self.tracker.get_content_resource_id(url=self.uri(source))
         with self.await_document_uri_change(resource_id, source, dest):
             shutil.move(source, dest)
 
@@ -306,8 +310,8 @@ class MinerCrawlTest(fixtures.TrackerMinerTest):
         Delete one of the files
         """
         victim = self.path("test-monitored/dir1/file2.txt")
-        victim_id = self.tracker.get_resource_id(self.uri(victim))
-        with self.tracker.await_delete(victim_id):
+        victim_id = self.tracker.get_content_resource_id(self.uri(victim))
+        with self.tracker.await_delete(fixtures.DOCUMENTS_GRAPH, victim_id):
             os.remove(victim)
 
         result = self.__get_text_documents()
@@ -328,9 +332,9 @@ class MinerCrawlTest(fixtures.TrackerMinerTest):
         victim = self.path("test-monitored/dir1")
 
         file_inside_victim_url = self.uri(os.path.join(victim, "file2.txt"))
-        file_inside_victim_id = self.tracker.get_resource_id(file_inside_victim_url)
+        file_inside_victim_id = self.tracker.get_content_resource_id(file_inside_victim_url)
 
-        with self.tracker.await_delete(file_inside_victim_id):
+        with self.tracker.await_delete(fixtures.DOCUMENTS_GRAPH, file_inside_victim_id):
             shutil.rmtree(victim)
 
         result = self.__get_text_documents()

@@ -55,7 +55,7 @@ class MinerFTSFileOperationsTest(fixtures.TrackerMinerFTSTest):
         self.basic_test(TEXT, "automobile")
 
         id = self._query_id(self.uri(self.testfile))
-        with self.tracker.await_delete(id):
+        with self.tracker.await_delete(fixtures.DOCUMENTS_GRAPH, id):
             os.remove(self.path(self.testfile))
 
         results = self.search_word("automobile")

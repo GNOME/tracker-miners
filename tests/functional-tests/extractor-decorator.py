@@ -44,7 +44,7 @@ class ExtractorDecoratorTest(fixtures.TrackerMinerTest):
         # Insert a valid file and wait extraction of its metadata.
         file_path = os.path.join(self.indexed_dir, os.path.basename(VALID_FILE))
         expected = f'a nmm:MusicPiece ; nie:title "{VALID_FILE_TITLE}"'
-        with self.tracker.await_insert(expected) as resource:
+        with self.tracker.await_insert(fixtures.AUDIO_GRAPH, expected) as resource:
             shutil.copy(VALID_FILE, file_path)
         file_urn = resource.urn
 
@@ -62,7 +62,7 @@ class ExtractorDecoratorTest(fixtures.TrackerMinerTest):
             # Request re-indexing (same as `tracker index --file ...`)
             # The extractor should reindex the file and re-add the metadata that we
             # deleted, so we should see the nie:title property change.
-            with self.tracker.await_insert(f'nie:title "{VALID_FILE_TITLE}"'):
+            with self.tracker.await_insert(fixtures.AUDIO_GRAPH, f'nie:title "{VALID_FILE_TITLE}"'):
                 miner_fs.index_file(file_uri)
 
             title_result = store.query('SELECT ?title { <%s> nie:interpretedAs/nie:title ?title }' % file_uri)

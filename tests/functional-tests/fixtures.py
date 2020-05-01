@@ -46,6 +46,10 @@ from minerfshelper import MinerFsHelper
 
 log = logging.getLogger(__name__)
 
+AUDIO_GRAPH = "http://tracker.api.gnome.org/ontology/v3/tracker#Audio"
+DOCUMENTS_GRAPH = "http://tracker.api.gnome.org/ontology/v3/tracker#Documents"
+PICTURES_GRAPH = "http://tracker.api.gnome.org/ontology/v3/tracker#Pictures"
+
 
 def tracker_test_main():
     """Entry point which must be called by all functional test modules."""
@@ -144,13 +148,14 @@ class TrackerMinerTest(ut.TestCase):
             content_escaped = Tracker.sparql_escape_string(content)
             expected += [f'nie:plainTextContent "{content_escaped}"']
 
-        return self.tracker.await_insert('; '.join(expected))
+        return self.tracker.await_insert(DOCUMENTS_GRAPH, '; '.join(expected))
 
     def await_document_uri_change(self, resource_id, from_path, to_path):
         """Wraps await_update() context manager."""
         from_url = self.uri(from_path)
         to_url = self.uri(to_path)
-        return self.tracker.await_update(resource_id,
+        return self.tracker.await_update(DOCUMENTS_GRAPH,
+                                         resource_id,
                                          f'nie:isStoredAs <{from_url}>',
                                          f'nie:isStoredAs <{to_url}>')
 
@@ -162,7 +167,7 @@ class TrackerMinerTest(ut.TestCase):
             f'nie:isStoredAs <{url}>',
         ]
 
-        return self.tracker.await_insert('; '.join(expected))
+        return self.tracker.await_insert(PICTURES_GRAPH, '; '.join(expected))
 
 
 class TrackerMinerFTSTest (TrackerMinerTest):
@@ -186,15 +191,16 @@ class TrackerMinerFTSTest (TrackerMinerTest):
 
         if path.exists():
             old_text_escaped = Tracker.sparql_escape_string(path.read_text())
-            resource_id = self.tracker.get_resource_id(self.uri(self.testfile))
-            with self.tracker.await_update(resource_id,
+            resource_id = self.tracker.get_content_resource_id(self.uri(self.testfile))
+            with self.tracker.await_update(DOCUMENTS_GRAPH,
+                                           resource_id,
                                            f'nie:plainTextContent "{old_text_escaped}"',
                                            f'nie:plainTextContent "{text_escaped}"'):
                 path.write_text(text)
         else:
             url = self.uri(self.testfile)
             expected = f'a nfo:Document; nie:isStoredAs <{url}>; nie:plainTextContent "{text_escaped}"'
-            with self.tracker.await_insert(expected):
+            with self.tracker.await_insert(DOCUMENTS_GRAPH, expected):
                 path.write_text(text)
 
     def search_word(self, word):
@@ -408,7 +414,7 @@ class TrackerWritebackTest (TrackerMinerTest):
 
         # Copy and wait. The extractor adds the nfo:duration property.
         expected = f'a nfo:Audio ; nie:isStoredAs <{url}> ; nfo:duration ?duration'
-        with self.tracker.await_insert(expected):
+        with self.tracker.await_insert(AUDIO_GRAPH, expected):
             shutil.copy(path, self.indexed_dir)
         return path
 
@@ -418,7 +424,7 @@ class TrackerWritebackTest (TrackerMinerTest):
 
         # Copy and wait. The extractor adds the nfo:width property.
         expected = f'a nfo:Image ; nie:isStoredAs <{url}> ; nfo:width ?width'
-        with self.tracker.await_insert(expected):
+        with self.tracker.await_insert(PICTURES_GRAPH, expected):
             shutil.copy(source_path, self.indexed_dir)
         return dest_path
 
