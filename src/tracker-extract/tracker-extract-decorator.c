@@ -166,6 +166,7 @@ decorator_save_info (TrackerExtractDecorator *decorator,
 	tracker_resource_set_identifier (resource, urn);
 
 	file_resource = tracker_resource_new (tracker_decorator_info_get_url (decorator_info));
+	tracker_resource_add_uri (file_resource, "rdf:type", "nfo:FileDataObject");
 	tracker_resource_add_uri (file_resource, "nie:dataSource",
 	        tracker_decorator_get_data_source (TRACKER_DECORATOR (decorator)));
 	tracker_resource_add_take_relation (resource, "nie:isStoredAs", file_resource);
