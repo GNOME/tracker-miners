@@ -154,10 +154,10 @@ class TrackerMinerTest(ut.TestCase):
         """Wraps await_update() context manager."""
         from_url = self.uri(from_path)
         to_url = self.uri(to_path)
-        return self.tracker.await_update(DOCUMENTS_GRAPH,
-                                         resource_id,
-                                         f'nie:isStoredAs <{from_url}>',
-                                         f'nie:isStoredAs <{to_url}>')
+        return self.tracker.await_property_update(DOCUMENTS_GRAPH,
+                                                  resource_id,
+                                                  f'nie:isStoredAs <{from_url}>',
+                                                  f'nie:isStoredAs <{to_url}>')
 
     def await_photo_inserted(self, path):
         url = self.uri(path)
@@ -192,10 +192,10 @@ class TrackerMinerFTSTest (TrackerMinerTest):
         if path.exists():
             old_text_escaped = Tracker.sparql_escape_string(path.read_text())
             resource_id = self.tracker.get_content_resource_id(self.uri(self.testfile))
-            with self.tracker.await_update(DOCUMENTS_GRAPH,
-                                           resource_id,
-                                           f'nie:plainTextContent "{old_text_escaped}"',
-                                           f'nie:plainTextContent "{text_escaped}"'):
+            with self.tracker.await_content_update(DOCUMENTS_GRAPH,
+                                                   resource_id,
+                                                   f'nie:plainTextContent "{old_text_escaped}"',
+                                                   f'nie:plainTextContent "{text_escaped}"'):
                 path.write_text(text)
         else:
             url = self.uri(self.testfile)
