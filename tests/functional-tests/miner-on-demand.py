@@ -95,8 +95,10 @@ class MinerOnDemandTest(fixtures.TrackerMinerTest):
         # its extension, but it's not a valid MP3.
         testfile = self.create_test_file('test-not-monitored/invalid.mp3')
 
-        with self.extractor.await_file_processed(testfile, False, timeout=5000):
-            self.miner_fs.index_file(testfile.as_uri())
+        # The extractor should record the file in the store as a failure.
+        with self.await_failsafe_marker_inserted(fixtures.AUDIO_GRAPH, testfile):
+            with self.extractor.await_file_processed(testfile, False, timeout=5000):
+                self.miner_fs.index_file(testfile.as_uri())
 
     def test_index_directory_basic(self):
         """
