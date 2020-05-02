@@ -35,9 +35,9 @@ import os
 import pathlib
 import shutil
 import subprocess
+import sys
 import time
 import unittest as ut
-from itertools import chain
 
 import trackertestutils.dconf
 import trackertestutils.helpers
@@ -46,16 +46,38 @@ from minerfshelper import MinerFsHelper
 
 log = logging.getLogger(__name__)
 
+AUDIO_GRAPH = "http://tracker.api.gnome.org/ontology/v3/tracker#Audio"
+DOCUMENTS_GRAPH = "http://tracker.api.gnome.org/ontology/v3/tracker#Documents"
+PICTURES_GRAPH = "http://tracker.api.gnome.org/ontology/v3/tracker#Pictures"
 
-DEFAULT_TEXT = "Some stupid content, to have a test file"
 
+def tracker_test_main():
+    """Entry point which must be called by all functional test modules."""
+    if cfg.tests_verbose():
+        # Output all logs to stderr
+        logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+    else:
+        # Output some messages from D-Bus daemon to stderr by default. In practice,
+        # only errors and warnings should be output here unless the environment
+        # contains G_MESSAGES_DEBUG= and/or TRACKER_VERBOSITY=1 or more.
+        handler_stderr = logging.StreamHandler(stream=sys.stderr)
+        handler_stderr.addFilter(logging.Filter('trackertestutils.dbusdaemon.stderr'))
+        handler_stdout = logging.StreamHandler(stream=sys.stderr)
+        handler_stdout.addFilter(logging.Filter('trackertestutils.dbusdaemon.stdout'))
+        logging.basicConfig(level=logging.INFO,
+                            handlers=[handler_stderr, handler_stdout],
+                            format='%(message)s')
 
-def ensure_dir_exists(dirname):
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
+    ut.main(failfast=True, verbosity=2)
 
 
 class TrackerMinerTest(ut.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(TrackerMinerTest, self).__init__(*args, **kwargs)
+
+        self.workdir = cfg.create_monitored_test_dir()
+        self.indexed_dir = os.path.join(self.workdir, 'test-monitored')
+
     def config(self):
         settings = {
             'org.freedesktop.Tracker3.Miner.Files': {
@@ -71,57 +93,38 @@ class TrackerMinerTest(ut.TestCase):
         return settings
 
     def setUp(self):
-        self.workdir = cfg.create_monitored_test_dir()
+        extra_env = cfg.test_environment(self.workdir)
+        extra_env['LANG'] = 'en_GB.utf8'
 
-        self.indexed_dir = os.path.join(self.workdir, 'test-monitored')
+        self.sandbox = trackertestutils.helpers.TrackerDBusSandbox(
+            dbus_daemon_config_file=cfg.TEST_DBUS_DAEMON_CONFIG_FILE, extra_env=extra_env)
 
-        # It's important that this directory exists BEFORE we start Tracker:
-        # it won't monitor an indexing root for changes if it doesn't exist,
-        # it'll silently ignore it instead. See the tracker_crawler_start()
-        # function.
-        ensure_dir_exists(self.indexed_dir)
+        self.sandbox.start()
 
         try:
-            extra_env = cfg.test_environment(self.workdir)
-            extra_env['LANG'] = 'en_GB.utf8'
+            # It's important that this directory exists BEFORE we start Tracker:
+            # it won't monitor an indexing root for changes if it doesn't exist,
+            # it'll silently ignore it instead. See the tracker_crawler_start()
+            # function.
+            os.makedirs(self.indexed_dir, exist_ok=True)
 
-            self.sandbox = trackertestutils.helpers.TrackerDBusSandbox(
-                dbus_daemon_config_file=cfg.TEST_DBUS_DAEMON_CONFIG_FILE, extra_env=extra_env)
+            for schema_name, contents in self.config().items():
+                dconf = trackertestutils.dconf.DConfClient(self.sandbox)
+                for key, value in contents.items():
+                    dconf.write(schema_name, key, value)
 
-            self.sandbox.start()
+            self.miner_fs = MinerFsHelper(self.sandbox.get_connection())
+            self.miner_fs.start()
+            self.miner_fs.start_watching_progress()
 
-            try:
-                for schema_name, contents in self.config().items():
-                    dconf = trackertestutils.dconf.DConfClient(self.sandbox)
-                    for key, value in contents.items():
-                        dconf.write(schema_name, key, value)
-
-                # We must create the test data before the miner does its
-                # initial crawl, or it may miss some files due
-                # https://gitlab.gnome.org/GNOME/tracker-miners/issues/79.
-                monitored_files = self.create_test_data()
-
-                self.miner_fs = MinerFsHelper(self.sandbox.get_connection())
-                self.miner_fs.start()
-                self.miner_fs.start_watching_progress()
-
-                self.tracker = trackertestutils.helpers.StoreHelper(
-                    self.miner_fs.get_sparql_connection())
-
-                for tf in monitored_files:
-                    url = self.uri(tf)
-                    self.tracker.ensure_resource(f"a nfo:Document ; nie:isStoredAs <{url}>")
-            except Exception:
-                self.sandbox.stop()
-                raise
+            self.tracker = trackertestutils.helpers.StoreHelper(
+                self.miner_fs.get_sparql_connection())
         except Exception:
-            self.remove_test_data()
-            cfg.remove_monitored_test_dir(self.workdir)
+            self.sandbox.stop()
             raise
 
     def tearDown(self):
         self.sandbox.stop()
-        self.remove_test_data()
         cfg.remove_monitored_test_dir(self.workdir)
 
     def path(self, filename):
@@ -129,32 +132,6 @@ class TrackerMinerTest(ut.TestCase):
 
     def uri(self, filename):
         return "file://" + os.path.join(self.workdir, filename)
-
-    def create_test_data(self):
-        monitored_files = [
-            'test-monitored/file1.txt',
-            'test-monitored/dir1/file2.txt',
-            'test-monitored/dir1/dir2/file3.txt'
-        ]
-
-        unmonitored_files = [
-            'test-no-monitored/file0.txt'
-        ]
-
-        for tf in chain(monitored_files, unmonitored_files):
-            testfile = self.path(tf)
-            ensure_dir_exists(os.path.dirname(testfile))
-            with open(testfile, 'w') as f:
-                f.write(DEFAULT_TEXT)
-
-        return monitored_files
-
-    def remove_test_data(self):
-        try:
-            shutil.rmtree(os.path.join(self.workdir, 'test-monitored'))
-            shutil.rmtree(os.path.join(self.workdir, 'test-no-monitored'))
-        except Exception as e:
-            log.warning("Failed to remove temporary data dir: %s", e)
 
     def assertResourceExists(self, urn):
         if self.tracker.ask("ASK { <%s> a rdfs:Resource }" % urn) == False:
@@ -177,15 +154,16 @@ class TrackerMinerTest(ut.TestCase):
             content_escaped = Tracker.sparql_escape_string(content)
             expected += [f'nie:plainTextContent "{content_escaped}"']
 
-        return self.tracker.await_insert('; '.join(expected))
+        return self.tracker.await_insert(DOCUMENTS_GRAPH, '; '.join(expected))
 
     def await_document_uri_change(self, resource_id, from_path, to_path):
         """Wraps await_update() context manager."""
         from_url = self.uri(from_path)
         to_url = self.uri(to_path)
-        return self.tracker.await_update(resource_id,
-                                         f'nie:isStoredAs <{from_url}>',
-                                         f'nie:isStoredAs <{to_url}>')
+        return self.tracker.await_property_update(DOCUMENTS_GRAPH,
+                                                  resource_id,
+                                                  f'nie:isStoredAs <{from_url}>',
+                                                  f'nie:isStoredAs <{to_url}>')
 
     def await_photo_inserted(self, path):
         url = self.uri(path)
@@ -195,7 +173,7 @@ class TrackerMinerTest(ut.TestCase):
             f'nie:isStoredAs <{url}>',
         ]
 
-        return self.tracker.await_insert('; '.join(expected))
+        return self.tracker.await_insert(PICTURES_GRAPH, '; '.join(expected))
 
 
 class TrackerMinerFTSTest (TrackerMinerTest):
@@ -203,11 +181,12 @@ class TrackerMinerFTSTest (TrackerMinerTest):
     Superclass to share methods. Shouldn't be run by itself.
     """
 
-    def prepare_directories(self):
-        # Override content from the base class
-        pass
-
     def setUp(self):
+        # It's very important to make this directory BEFORE the miner starts.
+        # If a configured root doesn't exist when the miner starts up, it will
+        # be ignored even after it's created.
+        os.makedirs(self.indexed_dir, exist_ok=True)
+
         super(TrackerMinerFTSTest, self).setUp()
 
         self.testfile = "test-monitored/miner-fts-test.txt"
@@ -218,15 +197,16 @@ class TrackerMinerFTSTest (TrackerMinerTest):
 
         if path.exists():
             old_text_escaped = Tracker.sparql_escape_string(path.read_text())
-            resource_id = self.tracker.get_resource_id(self.uri(self.testfile))
-            with self.tracker.await_update(resource_id,
-                                           f'nie:plainTextContent "{old_text_escaped}"',
-                                           f'nie:plainTextContent "{text_escaped}"'):
+            resource_id = self.tracker.get_content_resource_id(self.uri(self.testfile))
+            with self.tracker.await_content_update(DOCUMENTS_GRAPH,
+                                                   resource_id,
+                                                   f'nie:plainTextContent "{old_text_escaped}"',
+                                                   f'nie:plainTextContent "{text_escaped}"'):
                 path.write_text(text)
         else:
             url = self.uri(self.testfile)
             expected = f'a nfo:Document; nie:isStoredAs <{url}>; nie:plainTextContent "{text_escaped}"'
-            with self.tracker.await_insert(expected):
+            with self.tracker.await_insert(DOCUMENTS_GRAPH, expected):
                 path.write_text(text)
 
     def search_word(self, word):
@@ -429,13 +409,6 @@ class TrackerWritebackTest (TrackerMinerTest):
         values['org.freedesktop.Tracker3.Miner.Files']['enable-writeback'] = GLib.Variant.new_boolean(True)
         return values
 
-    def create_test_data(self):
-        return []
-
-    def remove_test_data(self):
-        for test_file in pathlib.Path(self.indexed_dir).iterdir():
-            test_file.unlink()
-
     def datadir_path(self, filename):
         """Returns the full path to a writeback test file."""
         datadir = os.path.join(os.path.dirname(__file__), 'test-writeback-data')
@@ -447,7 +420,7 @@ class TrackerWritebackTest (TrackerMinerTest):
 
         # Copy and wait. The extractor adds the nfo:duration property.
         expected = f'a nfo:Audio ; nie:isStoredAs <{url}> ; nfo:duration ?duration'
-        with self.tracker.await_insert(expected):
+        with self.tracker.await_insert(AUDIO_GRAPH, expected):
             shutil.copy(path, self.indexed_dir)
         return path
 
@@ -457,7 +430,7 @@ class TrackerWritebackTest (TrackerMinerTest):
 
         # Copy and wait. The extractor adds the nfo:width property.
         expected = f'a nfo:Image ; nie:isStoredAs <{url}> ; nfo:width ?width'
-        with self.tracker.await_insert(expected):
+        with self.tracker.await_insert(PICTURES_GRAPH, expected):
             shutil.copy(source_path, self.indexed_dir)
         return dest_path
 

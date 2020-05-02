@@ -41,6 +41,12 @@ class MinerFTSFileOperationsTest(fixtures.TrackerMinerFTSTest):
     Move, update, delete the files and check the text indexes are updated accordingly.
     """
 
+    def setUp(self):
+        fixtures.TrackerMinerFTSTest.setUp(self)
+
+        no_monitored_dir = self.path('test-no-monitored')
+        os.makedirs(no_monitored_dir, exist_ok=True)
+
     def test_01_removal_of_file(self):
         """
         When removing the file, its text contents disappear from the index
@@ -49,7 +55,7 @@ class MinerFTSFileOperationsTest(fixtures.TrackerMinerFTSTest):
         self.basic_test(TEXT, "automobile")
 
         id = self._query_id(self.uri(self.testfile))
-        with self.tracker.await_delete(id):
+        with self.tracker.await_delete(fixtures.DOCUMENTS_GRAPH, id):
             os.remove(self.path(self.testfile))
 
         results = self.search_word("automobile")
@@ -135,4 +141,4 @@ class MinerFTSFileOperationsTest(fixtures.TrackerMinerFTSTest):
 
 
 if __name__ == "__main__":
-    ut.main(failfast=True, verbosity=2)
+    fixtures.tracker_test_main()

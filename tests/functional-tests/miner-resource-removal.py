@@ -25,29 +25,27 @@ import os
 import pathlib
 import unittest as ut
 
-# We must import this to set up logging.
-import configuration
-from fixtures import TrackerMinerTest
+import fixtures
 
-TRACKER_TEST_GRAPH = "tracker:Documents"
 
-class MinerResourceRemovalTest(TrackerMinerTest):
+class MinerResourceRemovalTest(fixtures.TrackerMinerTest):
 
     def prepare_directories(self):
         # Override content from the base class
         pass
 
-    def create_test_content(self, file_urn, title):
-        sparql = "WITH %s INSERT { \
+    def create_extra_audio_content(self, file_urn, url, title):
+        sparql = "WITH <%s> INSERT { \
                     <%s> a nmm:MusicPiece ; \
                          nie:title \"%s\" ; \
-                  } " % (TRACKER_TEST_GRAPH, file_urn, title)
+                         nie:isStoredAs <%s> . \
+                  } " % (fixtures.AUDIO_GRAPH, file_urn, title, url)
 
-        with self.tracker.await_insert(f'a nmm:MusicPiece; nie:title "{title}"') as resource:
+        with self.tracker.await_insert(fixtures.AUDIO_GRAPH, f'a nmm:MusicPiece; nie:title "{title}"') as resource:
             self.tracker.update(sparql)
         return resource
 
-    def create_test_file(self, file_name):
+    def create_text_file(self, file_name):
         path = pathlib.Path(self.path(file_name))
         text = "Test"
 
@@ -61,12 +59,18 @@ class MinerResourceRemovalTest(TrackerMinerTest):
         in a file is deleted when the file is deleted.
         """
 
-        file_1 = self.create_test_file("test-monitored/test_1.txt")
-        file_2 = self.create_test_file("test-monitored/test_2.txt")
-        ie_1 = self.create_test_content(file_1.urn, "Test resource 1")
-        ie_2 = self.create_test_content(file_2.urn, "Test resource 2")
+        file_1_name = "test-monitored/test_1.txt"
+        file_2_name = "test-monitored/test_2.txt"
 
-        with self.tracker.await_delete(file_1.id):
+        file_1 = self.create_text_file(self.path(file_1_name))
+        file_2 = self.create_text_file(self.path(file_2_name))
+        # This creates an unrealistic situation, in which a text data-object
+        # has audio content. Because nie:isStoredAs links it to the text file,
+        # it should nevertheless be removed when the text file is deleted.
+        ie_1 = self.create_extra_audio_content(file_1.urn, self.uri(file_1_name), "Test resource 1")
+        ie_2 = self.create_extra_audio_content(file_2.urn, self.uri(file_2_name), "Test resource 2")
+
+        with self.tracker.await_delete(fixtures.DOCUMENTS_GRAPH, file_1.id):
             os.unlink(self.path("test-monitored/test_1.txt"))
 
         self.assertResourceMissing(file_1.urn)
@@ -103,4 +107,4 @@ class MinerResourceRemovalTest(TrackerMinerTest):
 
 
 if __name__ == "__main__":
-    ut.main(failfast=True, verbosity=2)
+    fixtures.tracker_test_main()

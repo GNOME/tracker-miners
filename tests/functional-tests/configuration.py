@@ -19,6 +19,8 @@
 #
 
 
+from gi.repository import GLib
+
 import errno
 import json
 import logging
@@ -83,16 +85,19 @@ def create_monitored_test_dir():
 
 
 def remove_monitored_test_dir(path):
-    shutil.rmtree(path)
+    if tests_no_cleanup():
+        print("\nTRACKER_DEBUG=tests-no-cleanup: Test data kept in %s" % path)
+    else:
+        shutil.rmtree(path)
 
-    # We delete the parent directory if possible, to avoid cluttering the user's
-    # home dir, but there may be other tests running in parallel so we ignore
-    # an error if there are still files present in it.
-    try:
-        os.rmdir(_TEST_MONITORED_TMP_DIR)
-    except OSError as e:
-        if e.errno == errno.ENOTEMPTY:
-            pass
+        # We delete the parent directory if possible, to avoid cluttering the user's
+        # home dir, but there may be other tests running in parallel so we ignore
+        # an error if there are still files present in it.
+        try:
+            os.rmdir(_TEST_MONITORED_TMP_DIR)
+        except OSError as e:
+            if e.errno == errno.ENOTEMPTY:
+                pass
 
 
 def get_environment_boolean(variable):
@@ -115,17 +120,28 @@ def get_environment_int(variable, default=0):
         return default
 
 
-if get_environment_boolean('TRACKER_TESTS_VERBOSE'):
-    # Output all logs to stderr
-    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
-else:
-    # Output some messages from D-Bus daemon to stderr by default. In practice,
-    # only errors and warnings should be output here unless the environment
-    # contains G_MESSAGES_DEBUG= and/or TRACKER_VERBOSITY=1 or more.
-    handler_stderr = logging.StreamHandler(stream=sys.stderr)
-    handler_stderr.addFilter(logging.Filter('trackertestutils.dbusdaemon.stderr'))
-    handler_stdout = logging.StreamHandler(stream=sys.stderr)
-    handler_stdout.addFilter(logging.Filter('trackertestutils.dbusdaemon.stdout'))
-    logging.basicConfig(level=logging.INFO,
-                        handlers=[handler_stderr, handler_stdout],
-                        format='%(message)s')
+def tests_verbose():
+    return get_environment_boolean('TRACKER_TESTS_VERBOSE')
+
+
+DEBUG_TESTS_NO_CLEANUP = 1
+
+_debug_flags = None
+def get_debug_flags():
+    """Parse the TRACKER_DEBUG environment variable and return flags."""
+    global _debug_flags
+    if _debug_flags is None:
+        flag_tests_no_cleanup = GLib.DebugKey()
+        flag_tests_no_cleanup.key = 'tests-no-cleanup'
+        flag_tests_no_cleanup.value = DEBUG_TESTS_NO_CLEANUP
+
+        flags = [flag_tests_no_cleanup]
+        flags_str = os.environ.get('TRACKER_DEBUG', '')
+
+        _debug_flags = GLib.parse_debug_string(flags_str, flags)
+    return _debug_flags
+
+
+def tests_no_cleanup():
+    """True if TRACKER_DEBUG=tests-no-cleanup"""
+    return(get_debug_flags() & DEBUG_TESTS_NO_CLEANUP)

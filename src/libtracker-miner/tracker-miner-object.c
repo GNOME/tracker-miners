@@ -24,6 +24,7 @@
 #include <glib/gi18n.h>
 
 #include <libtracker-miners-common/tracker-dbus.h>
+#include <libtracker-miners-common/tracker-debug.h>
 #include <libtracker-miners-common/tracker-type-utils.h>
 
 #include "tracker-miner-object.h"
@@ -37,9 +38,8 @@
  */
 #define PROGRESS_ROUNDED(x) ((x) < 0.01 ? 0.00 : (ceil (((x) * 100) - 0.49) / 100))
 
-#ifdef MINER_STATUS_ENABLE_TRACE
-#warning Miner status traces are enabled
-#define trace(message, ...) g_debug (message, ##__VA_ARGS__)
+#ifdef G_ENABLE_DEBUG
+#define trace(message, ...) TRACKER_NOTE (STATUS, g_message (message, ##__VA_ARGS__))
 #else
 #define trace(...)
 #endif /* MINER_STATUS_ENABLE_TRACE */
@@ -318,8 +318,6 @@ miner_update_progress_cb (gpointer data)
 {
 	TrackerMiner *miner = data;
 
-	trace ("(Miner:'%s') UPDATE PROGRESS SIGNAL", G_OBJECT_TYPE_NAME (miner));
-
 	g_signal_emit (miner, signals[PROGRESS], 0,
 	               miner->priv->status,
 	               miner->priv->progress,
@@ -353,7 +351,7 @@ miner_set_property (GObject      *object,
 
 		new_status = g_value_get_string (value);
 
-		trace ("(Miner:'%s') Set property:'status' to '%s'",
+		trace ("(Miner:'%s') set property:'status' to '%s'",
 		       G_OBJECT_TYPE_NAME (miner),
 		       new_status);
 
