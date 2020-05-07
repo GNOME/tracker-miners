@@ -43,7 +43,7 @@ if generic_media_handler_name == 'gstreamer'
   dependencies = [gstreamer, gstreamer_pbutils, libcue, tracker_miners_common_dep]
 
   if gstreamer_backend_name == 'GUPnP-DLNA'
-    dependencies += gupnp_dlna
+    dependencies += [gupnp_dlna, gupnp_dlna_gst]
   elif gstreamer_backend_name == 'discoverer'
     dependencies += gstreamer_pbutils
   endif
