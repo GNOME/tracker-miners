@@ -64,7 +64,7 @@ struct MinerData {
 	guint progress_signal;
 	guint paused_signal;
 	guint resumed_signal;
-	guint file_processed_signal;
+	guint files_processed_signal;
 	guint watch_name_id;
 	GObject *manager; /* weak */
 };
@@ -424,22 +424,29 @@ miner_resumed (GDBusConnection *connection,
 }
 
 static void
-miner_file_processed (GDBusConnection *connection,
-                      const gchar     *sender_name,
-                      const gchar     *object_path,
-                      const gchar     *interface_name,
-                      const gchar     *signal_name,
-                      GVariant        *parameters,
-                      gpointer         user_data)
+miner_files_processed (GDBusConnection *connection,
+                       const gchar     *sender_name,
+                       const gchar     *object_path,
+                       const gchar     *interface_name,
+                       const gchar     *signal_name,
+                       GVariant        *parameters,
+                       gpointer         user_data)
 {
 	MinerData *data = user_data;
+	GVariantIter iter;
+	GVariant *files, *file_info;
 	const gchar *url = NULL;
 	gboolean status = FALSE;
 	const gchar *message = NULL;
 
-	g_variant_get (parameters, "(&sbs)", &url, &status, &message);
-	if (data->manager) {
-		g_signal_emit (data->manager, signals[MINER_FILE_PROCESSED], 0, data->dbus_name, url, status, message);
+	files = g_variant_get_child_value (parameters, 0);
+	g_variant_iter_init (&iter, files);
+	while ((file_info = g_variant_iter_next_value (&iter))) {
+		g_variant_get (file_info, "(&sbs)", &url, &status, &message);
+
+		if (data->manager) {
+			g_signal_emit (data->manager, signals[MINER_FILE_PROCESSED], 0, data->dbus_name, url, status, message);
+		}
 	}
 }
 
@@ -551,16 +558,16 @@ miner_manager_initable_init (GInitable     *initable,
 		                                                           data,
 		                                                           NULL);
 
-		data->file_processed_signal = g_dbus_connection_signal_subscribe (priv->connection,
-		                                                                  data->dbus_name,
-		                                                                  TRACKER_MINER_DBUS_INTERFACE,
-		                                                                  "FileProcessed",
-		                                                                  data->dbus_path,
-		                                                                  NULL,
-		                                                                  G_DBUS_SIGNAL_FLAGS_NONE,
-		                                                                  miner_file_processed,
-		                                                                  data,
-		                                                                  NULL);
+		data->files_processed_signal = g_dbus_connection_signal_subscribe (priv->connection,
+		                                                                   data->dbus_name,
+		                                                                   TRACKER_MINER_DBUS_INTERFACE,
+		                                                                   "FilesProcessed",
+		                                                                   data->dbus_path,
+		                                                                   NULL,
+		                                                                   G_DBUS_SIGNAL_FLAGS_NONE,
+		                                                                   miner_files_processed,
+		                                                                   data,
+		                                                                   NULL);
 
 		g_hash_table_insert (priv->miner_proxies, proxy, g_strdup (data->dbus_name));
 
