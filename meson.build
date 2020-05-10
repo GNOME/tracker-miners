@@ -14,7 +14,7 @@ tracker_versioned_name = 'tracker-miners-@0@'.format(tracker_api_major)
 libdir = join_paths(get_option('prefix'), get_option('libdir'))
 datadir = join_paths(get_option('prefix'), get_option('datadir'))
 
-glib_required = '2.40.0'
+glib_required = '2.62.0'
 
 if get_option('tracker_core') == 'system'
   tracker_sparql = dependency('tracker-sparql-3.0', required: false)
