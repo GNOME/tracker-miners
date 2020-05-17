@@ -44,7 +44,6 @@
 #include "tracker-config.h"
 #include "tracker-storage.h"
 #include "tracker-extract-watchdog.h"
-#include "tracker-thumbnailer.h"
 
 #define DISK_SPACE_CHECK_FREQUENCY 10
 #define SECONDS_PER_DAY 86400
@@ -120,16 +119,9 @@ struct TrackerMinerFilesPrivate {
 
 	GList *extraction_queue;
 
-	TrackerThumbnailer *thumbnailer;
-
 	GHashTable *writeback_tasks;
 	gboolean paused_for_writeback;
 };
-
-typedef struct {
-	GMainLoop *main_loop;
-	TrackerMiner *miner;
-} ThumbnailMoveData;
 
 enum {
 	VOLUME_MOUNTED_IN_STORE = 1 << 0,
@@ -837,8 +829,6 @@ miner_files_initable_init (GInitable     *initable,
 	g_signal_connect (mf->private->extract_watchdog, "lost",
 	                  G_CALLBACK (on_extractor_lost), mf);
 
-	mf->private->thumbnailer = tracker_thumbnailer_new ();
-
 	return TRUE;
 }
 
@@ -958,10 +948,6 @@ miner_files_finalize (GObject *object)
 	if (priv->stale_volumes_check_id) {
 		g_source_remove (priv->stale_volumes_check_id);
 		priv->stale_volumes_check_id = 0;
-	}
-
-	if (priv->thumbnailer) {
-		g_object_unref (priv->thumbnailer);
 	}
 
 	g_list_free (priv->extraction_queue);
@@ -2714,11 +2700,6 @@ miner_files_finished (TrackerMinerFS *fs,
                       gint            files_found,
                       gint            files_ignored)
 {
-	TrackerMinerFilesPrivate *priv = TRACKER_MINER_FILES (fs)->private;
-
-	if (priv->thumbnailer)
-		tracker_thumbnailer_send (priv->thumbnailer);
-
 	tracker_miner_files_set_last_crawl_done (TRACKER_MINER_FILES (fs), TRUE);
 
 	tracker_miner_files_check_unextracted (TRACKER_MINER_FILES (fs));
@@ -2776,50 +2757,7 @@ static gchar *
 miner_files_remove_file (TrackerMinerFS *fs,
                          GFile          *file)
 {
-	TrackerMinerFilesPrivate *priv = TRACKER_MINER_FILES (fs)->private;
-
-	if (priv->thumbnailer) {
-		gchar *uri;
-
-		uri = g_file_get_uri (file);
-		tracker_thumbnailer_remove_add (priv->thumbnailer, uri, NULL);
-		g_free (uri);
-	}
-
 	return create_delete_sparql (file, TRUE, TRUE);
-}
-
-static void
-move_thumbnails_cb (GObject      *object,
-                    GAsyncResult *result,
-                    gpointer      user_data)
-{
-	ThumbnailMoveData *data = user_data;
-	TrackerMinerFilesPrivate *priv = TRACKER_MINER_FILES (data->miner)->private;
-	GError *error = NULL;
-
-	TrackerSparqlCursor *cursor = tracker_sparql_connection_query_finish (TRACKER_SPARQL_CONNECTION (object), result, &error);
-
-	if (error) {
-		g_critical ("Could move thumbnails: %s", error->message);
-		g_error_free (error);
-	} else {
-		while (tracker_sparql_cursor_next (cursor, NULL, NULL)) {
-			const gchar *src, *dst, *mimetype;
-
-			src = tracker_sparql_cursor_get_string (cursor, 0, NULL);
-			dst = tracker_sparql_cursor_get_string (cursor, 1, NULL);
-			mimetype = tracker_sparql_cursor_get_string (cursor, 2, NULL);
-
-			if (priv->thumbnailer) {
-				tracker_thumbnailer_move_add (priv->thumbnailer,
-				                              src, mimetype, dst);
-			}
-		}
-	}
-
-	g_object_unref (cursor);
-	g_main_loop_quit (data->main_loop);
 }
 
 static gchar *
@@ -2828,7 +2766,6 @@ miner_files_move_file (TrackerMinerFS *fs,
                        GFile          *source_file,
                        gboolean        recursive)
 {
-	TrackerMinerFilesPrivate *priv = TRACKER_MINER_FILES (fs)->private;
 	GString *sparql = g_string_new (NULL);
 	const gchar *new_parent_iri = NULL;
 	gchar *uri, *source_uri, *display_name, *container_clause = NULL;
@@ -2837,48 +2774,6 @@ miner_files_move_file (TrackerMinerFS *fs,
 
 	uri = g_file_get_uri (file);
 	source_uri = g_file_get_uri (source_file);
-
-	if (priv->thumbnailer) {
-		GFileInfo *file_info;
-
-		file_info = g_file_query_info (file,
-		                               G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
-		                               G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
-		                               NULL, NULL);
-		tracker_thumbnailer_move_add (priv->thumbnailer, source_uri,
-		                              g_file_info_get_content_type (file_info),
-					      uri);
-		g_object_unref (file_info);
-
-		if (recursive) {
-			ThumbnailMoveData move_data;
-			gchar *query;
-
-			g_debug ("Moving thumbnails within '%s'", uri);
-
-			/* Push all moved files to thumbnailer */
-			move_data.main_loop = g_main_loop_new (NULL, FALSE);
-			move_data.miner = TRACKER_MINER (fs);
-
-			query = g_strdup_printf ("SELECT ?url ?new_url nie:mimeType(?u) {"
-			                         "  ?u a rdfs:Resource ;"
-			                         "     nie:url ?url ."
-			                         "  BIND (CONCAT (\"%s/\", SUBSTR (?url, STRLEN (\"%s/\") + 1)) AS ?new_url) ."
-			                         "  FILTER (STRSTARTS (?url, \"%s/\"))"
-			                         "}",
-			                         uri, source_uri, source_uri);
-
-			tracker_sparql_connection_query_async (tracker_miner_get_connection (TRACKER_MINER (fs)),
-			                                       query,
-			                                       NULL,
-			                                       move_thumbnails_cb,
-			                                       &move_data);
-
-			g_main_loop_run (move_data.main_loop);
-			g_main_loop_unref (move_data.main_loop);
-			g_free (query);
-		}
-	}
 
 	path = g_file_get_path (file);
 	basename = g_filename_display_basename (path);
