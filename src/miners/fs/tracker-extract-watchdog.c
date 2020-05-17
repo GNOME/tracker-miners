@@ -35,7 +35,8 @@ struct _TrackerExtractWatchdog {
 	GObject parent_class;
 	gchar *domain;
 	guint extractor_watchdog_id;
-	gboolean initializing;
+	guint initializing : 1;
+	guint name_visible : 1;
 };
 
 static void extract_watchdog_start (TrackerExtractWatchdog *watchdog,
@@ -62,6 +63,8 @@ extract_watchdog_name_appeared (GDBusConnection *conn,
 
 	if (watchdog->initializing)
 		watchdog->initializing = FALSE;
+
+	watchdog->name_visible = TRUE;
 }
 
 static void
@@ -70,6 +73,11 @@ extract_watchdog_name_vanished (GDBusConnection *conn,
 				gpointer         user_data)
 {
 	TrackerExtractWatchdog *watchdog = user_data;
+
+	if (!watchdog->name_visible)
+		return;
+
+	watchdog->name_visible = FALSE;
 
 	/* If connection is lost, there's not much we can startup */
 	if (conn == NULL)
