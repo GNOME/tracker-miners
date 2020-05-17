@@ -45,8 +45,11 @@ const gchar *         tracker_extract_info_get_mimetype           (TrackerExtrac
 const gchar *         tracker_extract_info_get_graph              (TrackerExtractInfo *info);
 
 TrackerResource *     tracker_extract_info_get_resource           (TrackerExtractInfo *info);
+GError          *     tracker_extract_info_get_error              (TrackerExtractInfo *info);
 void                  tracker_extract_info_set_resource           (TrackerExtractInfo *info,
                                                                    TrackerResource    *resource);
+void                  tracker_extract_info_set_error              (TrackerExtractInfo *info,
+                                                                   GError             *error);
 
 G_END_DECLS
 

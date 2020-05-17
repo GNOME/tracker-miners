@@ -39,6 +39,7 @@
 #include <libtracker-miners-common/tracker-common.h>
 
 #include <libtracker-extract/tracker-extract.h>
+#include <tracker-extract/tracker-extract.h>
 
 #ifdef FRAME_ENABLE_TRACE
 #warning Frame traces enabled
@@ -2925,6 +2926,13 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 
 	g_free (filename);
 	g_free (uri);
+
+	if (!parsed) {
+		GError *error = g_error_new (TRACKER_EXTRACT_ERROR,
+		                             TRACKER_EXTRACT_ERROR_PARSE_ERROR,
+		                             "Could not parse file as MP3.");
+		tracker_extract_info_set_error (info, error);
+	}
 
 	return parsed;
 }

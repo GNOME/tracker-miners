@@ -131,7 +131,8 @@ GTask       * tracker_decorator_info_get_task     (TrackerDecoratorInfo *info);
 void          tracker_decorator_info_complete     (TrackerDecoratorInfo *info,
                                                    gchar                *sparql);
 void          tracker_decorator_info_complete_error (TrackerDecoratorInfo *info,
-                                                     GError               *error);
+                                                     GError               *error,
+                                                     gchar                *failsafe_sparql);
 
 G_END_DECLS
 

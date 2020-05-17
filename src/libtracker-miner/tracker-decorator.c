@@ -54,6 +54,7 @@ struct _TrackerDecoratorInfo {
 	gchar *mimetype;
 	gint id;
 	gint ref_count;
+	gchar *failsafe_sparql;
 };
 
 struct _ClassInfo {
@@ -64,6 +65,8 @@ struct _ClassInfo {
 struct _SparqlUpdate {
 	gchar *sparql;
 	gint id;
+	GFile *file;
+	gboolean is_failsafe;
 };
 
 struct _TrackerDecoratorPrivate {
@@ -198,6 +201,7 @@ tracker_decorator_info_unref (TrackerDecoratorInfo *info)
 
 	if (info->task)
 		g_object_unref (info->task);
+	g_clear_pointer (&info->failsafe_sparql, g_free);
 	g_free (info->urn);
 	g_free (info->url);
 	g_free (info->mimetype);
@@ -354,8 +358,23 @@ decorator_commit_cb (GObject      *object,
 			SparqlUpdate *update;
 
 			update = &g_array_index (priv->commit_buffer, SparqlUpdate, i);
-			decorator_blacklist_add (decorator, update->id);
-			item_warn (conn, update->id, update->sparql, error);
+
+			if (!update->is_failsafe) {
+				tracker_miner_file_processed (TRACKER_MINER (decorator), update->file, FALSE, error->message);
+				decorator_blacklist_add (decorator, update->id);
+				item_warn (conn, update->id, update->sparql, error);
+			}
+		}
+	} else {
+		/* Notify success */
+		for (i = 0; i < priv->commit_buffer->len; i++) {
+			SparqlUpdate *update;
+
+			update = &g_array_index (priv->commit_buffer, SparqlUpdate, i);
+
+			if (!update->is_failsafe) {
+				tracker_miner_file_processed (TRACKER_MINER (decorator), update->file, TRUE, "");
+			}
 		}
 	}
 
@@ -369,6 +388,7 @@ static void
 sparql_update_clear (SparqlUpdate *update)
 {
 	g_free (update->sparql);
+	g_object_unref (update->file);
 }
 
 static GArray *
@@ -517,26 +537,44 @@ decorator_task_done (GObject      *object,
 	TrackerDecoratorInfo *info = user_data;
 	TrackerDecoratorPrivate *priv;
 	GError *error = NULL;
+	GFile *file;
 	gchar *sparql;
+	gboolean failed = FALSE;
 
 	priv = decorator->priv;
 	sparql = g_task_propagate_pointer (G_TASK (result), &error);
 
 	if (!sparql) {
+		failed = TRUE;
+		file = g_file_new_for_uri (info->url);
+
 		/* Blacklist item */
 		decorator_blacklist_add (decorator, info->id);
 
 		if (error) {
-			g_warning ("Task for '%s' finished with error: %s\n",
-			           info->url, error->message);
+			tracker_miner_file_processed (TRACKER_MINER (object), file, FALSE, error->message);
+
+			g_debug ("Task for '%s' finished with error: %s\n",
+			         info->url, error->message);
 			g_error_free (error);
+		} else {
+			tracker_miner_file_processed (TRACKER_MINER (object), file, FALSE, "no SPARQL was generated for this item");
 		}
-	} else {
+
+		g_object_unref (file);
+
+		sparql = g_strdup (info->failsafe_sparql);
+	}
+
+	if (sparql) {
 		SparqlUpdate update;
 
 		/* Add resulting sparql to buffer and check whether flushing */
 		update.sparql = sparql;
 		update.id = info->id;
+		update.file = g_file_new_for_uri (info->url);
+
+		update.is_failsafe = failed;
 
 		if (!priv->sparql_buffer)
 			priv->sparql_buffer = sparql_buffer_new ();
@@ -1648,17 +1686,32 @@ tracker_decorator_info_complete (TrackerDecoratorInfo *info,
 /**
  * tracker_decorator_info_complete_error:
  * @info: a #TrackerDecoratorInfo
- * @error: (transfer full): An error occurred during SPARQL generation
+ * @error: (transfer full): Error which occurred during processing
+ * @failsafe_sparql: (transfer full): (allow-none): Data to insert to mark the failure
  *
  * Completes the task associated to this #TrackerDecoratorInfo,
  * returning the given @error happened during SPARQL generation.
+ *
+ * It's usually a good idea to record failed tasks, to avoid repeatedly
+ * processing the same task. You can do this using the @failsafe_sparql
+ * parameter. You might pass something like this:
+ *
+ * |[<!-- language="SPARQL" -->
+ *     INSERT DATA { GRAPH <urn:graph:my-graph> {
+ *          <file://bad-file> nie:dataSource <urn:data-source:my-decorator>;
+ *              nie:dataSource <urn:data-source:my-decorator-failures>.
+ *     } }
+ * ]|
  *
  * Since: 2.0
  **/
 void
 tracker_decorator_info_complete_error (TrackerDecoratorInfo *info,
-                                       GError               *error)
+                                       GError               *error,
+                                       gchar                *failsafe_sparql)
 {
+	info->failsafe_sparql = failsafe_sparql;
+
 	g_task_return_error (info->task, error);
 }
 

@@ -33,6 +33,7 @@
 #include <libtracker-miners-common/tracker-common.h>
 
 #include <libtracker-extract/tracker-extract.h>
+#include <libtracker-miner/tracker-miner.h>
 
 #include "tracker-extract.h"
 #include "tracker-main.h"
@@ -278,7 +279,8 @@ notify_task_finish (TrackerExtractTask *task,
 
 static gboolean
 get_file_metadata (TrackerExtractTask  *task,
-                   TrackerExtractInfo **info_out)
+                   TrackerExtractInfo **info_out,
+                   GError             **error)
 {
 	TrackerExtractInfo *info;
 	GFile *file;
@@ -294,6 +296,8 @@ get_file_metadata (TrackerExtractTask  *task,
 		/* We know the mime */
 		mime_used = g_strdup (task->mimetype);
 	} else {
+		g_set_error (error, TRACKER_EXTRACT_ERROR, TRACKER_EXTRACT_ERROR_NO_MIMETYPE,
+		             "Could not detect the MIME type of %s", task->file);
 		tracker_extract_info_unref (info);
 		return FALSE;
 	}
@@ -315,6 +319,14 @@ get_file_metadata (TrackerExtractTask  *task,
 	}
 
 	if (!task->success) {
+		GError *task_error;
+
+		task_error = tracker_extract_info_get_error (info);
+
+		if (task_error && error) {
+			*error = g_error_copy (task_error);
+		}
+
 		tracker_extract_info_unref (info);
 		info = NULL;
 	}
@@ -475,6 +487,8 @@ static gboolean
 get_metadata (TrackerExtractTask *task)
 {
 	TrackerExtractInfo *info;
+	GError *error = NULL;
+	gboolean success;
 
 #ifdef THREAD_ENABLE_TRACE
 	g_debug ("Thread:%p --> '%s': Collected metadata",
@@ -487,19 +501,24 @@ get_metadata (TrackerExtractTask *task)
 		return FALSE;
 	}
 
-	if (!filter_module (task->extract, task->module) &&
-	    get_file_metadata (task, &info)) {
-		g_task_return_pointer (G_TASK (task->res), info,
-		                       (GDestroyNotify) tracker_extract_info_unref);
-		extract_task_free (task);
-	} else {
+	if (filter_module (task->extract, task->module)) {
 		g_task_return_new_error (G_TASK (task->res),
 		                         tracker_extract_error_quark (),
 		                         TRACKER_EXTRACT_ERROR_NO_EXTRACTOR,
 		                         "Could not get any metadata for uri:'%s' and mime:'%s'",
 		                         task->file, task->mimetype);
-		extract_task_free (task);
+	} else {
+		success = get_file_metadata (task, &info, &error);
+
+		if (success) {
+			g_task_return_pointer (G_TASK (task->res), info,
+		                           (GDestroyNotify) tracker_extract_info_unref);
+		} else {
+			g_task_return_error (G_TASK (task->res), error);
+		}
 	}
+
+	extract_task_free (task);
 
 	return FALSE;
 }
@@ -560,6 +579,7 @@ dispatch_task_cb (TrackerExtractTask *task)
 	}
 
 	if (error) {
+		/* Report the failure to the caller. */
 		g_task_return_error (G_TASK (task->res), error);
 		extract_task_free (task);
 
@@ -675,7 +695,7 @@ tracker_extract_get_metadata_by_cmdline (TrackerExtract             *object,
 	                                                          &task->func);
 
 	if (!filter_module (object, task->module) &&
-	    get_file_metadata (task, &info)) {
+	    get_file_metadata (task, &info, &error)) {
 		resource = tracker_extract_info_get_resource (info);
 	}
 
@@ -723,9 +743,9 @@ tracker_extract_get_metadata_by_cmdline (TrackerExtract             *object,
 			}
 		}
 	} else {
-		g_printerr ("%s: %s\n",
-		         uri,
-		         _("No metadata or extractor modules found to handle this file"));
+		/* Extraction failed */
+		g_printerr ("%s: %s: %s\n",
+		            uri, g_module_name (task->module), error->message);
 	}
 
 	extract_task_free (task);

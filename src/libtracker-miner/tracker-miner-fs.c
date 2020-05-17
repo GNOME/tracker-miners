@@ -176,7 +176,6 @@ enum {
 	PROCESS_FILE,
 	PROCESS_FILE_ATTRIBUTES,
 	FINISHED,
-	FINISHED_ROOT,
 	REMOVE_FILE,
 	REMOVE_CHILDREN,
 	MOVE_FILE,
@@ -227,6 +226,9 @@ static void           file_notifier_file_moved            (TrackerFileNotifier  
                                                            GFile                *source,
                                                            GFile                *dest,
                                                            gpointer              user_data);
+static void           file_notifier_file_ignored_during_crawl (TrackerFileNotifier  *notifier,
+                                                               GFile                *file,
+                                                               gpointer              user_data);
 static void           file_notifier_directory_started     (TrackerFileNotifier *notifier,
                                                            GFile               *directory,
                                                            gpointer             user_data);
@@ -458,31 +460,6 @@ tracker_miner_fs_class_init (TrackerMinerFSClass *klass)
 		              G_TYPE_UINT);
 
 	/**
-	 * TrackerMinerFS::finished-root:
-	 * @miner_fs: the #TrackerMinerFS
-	 * @file: a #GFile
-	 *
-	 * The ::finished-crawl signal is emitted when @miner_fs has
-	 * finished finding all resources that need to be indexed
-	 * with the root location of @file. At this point, it's likely
-	 * many are still in the queue to be added to the database,
-	 * but this gives some indication that a location is
-	 * processed.
-	 *
-	 * Since: 1.2
-	 **/
-	signals[FINISHED_ROOT] =
-		g_signal_new ("finished-root",
-		              G_TYPE_FROM_CLASS (object_class),
-		              G_SIGNAL_RUN_LAST,
-		              G_STRUCT_OFFSET (TrackerMinerFSClass, finished_root),
-		              NULL, NULL,
-		              NULL,
-		              G_TYPE_NONE,
-		              1,
-		              G_TYPE_FILE);
-
-	/**
 	 * TrackerMinerFS::remove-file:
 	 * @miner_fs: the #TrackerMinerFS
 	 * @file: a #GFile
@@ -643,6 +620,9 @@ miner_fs_initable_init (GInitable     *initable,
 	                  initable);
 	g_signal_connect (priv->file_notifier, "file-moved",
 	                  G_CALLBACK (file_notifier_file_moved),
+	                  initable);
+	g_signal_connect (priv->file_notifier, "file-ignored-during-crawl",
+	                  G_CALLBACK (file_notifier_file_ignored_during_crawl),
 	                  initable);
 	g_signal_connect (priv->file_notifier, "directory-started",
 	                  G_CALLBACK (file_notifier_directory_started),
@@ -1049,12 +1029,10 @@ notify_roots_finished (TrackerMinerFS *fs,
 	if (check_queues &&
 	    fs->priv->roots_to_notify &&
 	    g_hash_table_size (fs->priv->roots_to_notify) < 2) {
-		/* Technically, if there is only one root, it's
-		 * pointless to do anything before the FINISHED (not
-		 * FINISHED_ROOT) signal is emitted. In that
-		 * situation we calls function first anyway with
-		 * check_queues=FALSE so we still notify roots. This
-		 * is really just for efficiency.
+		/* Technically, if there is only one root, it's pointless to do
+		 * anything before the FINISHED signal is emitted. In that situation we
+		 * calls function first anyway with check_queues=FALSE so we still
+		 * notify roots. This is really just for efficiency.
 		 */
 		return;
 	} else if (fs->priv->roots_to_notify == NULL ||
@@ -1077,8 +1055,8 @@ notify_roots_finished (TrackerMinerFS *fs,
 			continue;
 		}
 
-		/* Signal root is finished */
-		g_signal_emit (fs, signals[FINISHED_ROOT], 0, root);
+		/* Notify completion of the index root */
+		tracker_miner_file_processed (TRACKER_MINER (fs), root, TRUE, NULL);
 
 		/* Remove from hash table */
 		g_hash_table_iter_remove (&iter);
@@ -1189,13 +1167,14 @@ sparql_buffer_task_finished_cb (GObject      *object,
 	task = tracker_sparql_buffer_push_finish (TRACKER_SPARQL_BUFFER (object),
 	                                          result, &error);
 
+	task_file = tracker_task_get_file (task);
+
 	if (error) {
 		g_critical ("Could not execute sparql: %s", error->message);
+		tracker_miner_file_processed (TRACKER_MINER (fs), task_file, FALSE, error->message);
 		priv->total_files_notified_error++;
 		g_error_free (error);
 	}
-
-	task_file = tracker_task_get_file (task);
 
 	recursive = GPOINTER_TO_INT (g_object_steal_qdata (G_OBJECT (task_file),
 	                                                     priv->quark_recursive_removal));
@@ -1216,6 +1195,14 @@ sparql_buffer_task_finished_cb (GObject      *object,
 		}
 	} else {
 		item_queue_handlers_set_up (fs);
+	}
+
+	/* Notify completion unless this the root, in which case we wait til
+	 * notify_roots_finished() so we know we already notified for all its
+	 * children.
+	 */
+	if (! tracker_indexing_tree_file_is_root (priv->indexing_tree, task_file)) {
+		tracker_miner_file_processed (TRACKER_MINER (fs), task_file, TRUE, NULL);
 	}
 
 	tracker_task_unref (task);
@@ -1275,7 +1262,7 @@ on_signal_gtask_complete (GObject      *source,
 	uri = g_file_get_uri (file);
 
 	if (error) {
-		g_message ("Could not process '%s': %s", uri, error->message);
+		tracker_miner_file_processed (TRACKER_MINER (fs), file, FALSE, error->message);
 		g_error_free (error);
 
 		fs->priv->total_files_notified_error++;
@@ -2175,6 +2162,16 @@ file_notifier_file_moved (TrackerFileNotifier *notifier,
 }
 
 static void
+file_notifier_file_ignored_during_crawl (TrackerFileNotifier *notifier,
+                                         GFile               *file,
+                                         gpointer             user_data)
+{
+	TrackerMinerFS *fs = user_data;
+
+	tracker_miner_file_processed (TRACKER_MINER (fs), file, FALSE, "ignored by configuration");
+}
+
+static void
 file_notifier_directory_started (TrackerFileNotifier *notifier,
                                  GFile               *directory,
                                  gpointer             user_data)
@@ -2248,7 +2245,7 @@ file_notifier_directory_finished (TrackerFileNotifier *notifier,
 	if (directories_found == 0 &&
 	    files_found == 0) {
 		/* Signal now because we have nothing to index */
-		g_signal_emit (fs, signals[FINISHED_ROOT], 0, directory);
+		tracker_miner_file_processed (TRACKER_MINER (fs), directory, TRUE, NULL);
 	} else {
 		/* Add root to list we want to be notified about when
 		 * finished indexing! */
@@ -2387,7 +2384,6 @@ tracker_miner_fs_check_file (TrackerMinerFS *fs,
 {
 	gboolean should_process = TRUE;
 	QueueEvent *event;
-	gchar *uri;
 
 	g_return_if_fail (TRACKER_IS_MINER_FS (fs));
 	g_return_if_fail (G_IS_FILE (file));
@@ -2396,15 +2392,11 @@ tracker_miner_fs_check_file (TrackerMinerFS *fs,
 		should_process = should_check_file (fs, file, FALSE);
 	}
 
-	uri = g_file_get_uri (file);
-
-	TRACKER_NOTE (MINER_FS_EVENTS,
-	              g_message ("%s:'%s' (FILE) (requested by application)",
-	                         should_process ? "Found " : "Ignored",
-	                         uri));
-
 	if (should_process) {
 		if (check_parents && !check_file_parents (fs, file)) {
+			tracker_miner_file_processed (TRACKER_MINER (fs), file, FALSE,
+			                              "parent directory not eligible for indexing");
+
 			return;
 		}
 
@@ -2414,9 +2406,10 @@ tracker_miner_fs_check_file (TrackerMinerFS *fs,
 		event = queue_event_new (TRACKER_MINER_FS_EVENT_UPDATED, file);
 		trace_eq_event (event);
 		miner_fs_queue_event (fs, event, priority);
+	} else {
+		tracker_miner_file_processed (TRACKER_MINER (file), file, FALSE,
+		                              "file is ignored by configuration");
 	}
-
-	g_free (uri);
 }
 
 /**
