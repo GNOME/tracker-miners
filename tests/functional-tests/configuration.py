@@ -43,7 +43,9 @@ with open(os.environ['TRACKER_FUNCTIONAL_TEST_CONFIG']) as f:
 TEST_DBUS_DAEMON_CONFIG_FILE = config['TEST_DBUS_DAEMON_CONFIG_FILE']
 TRACKER_EXTRACT_PATH = config['TRACKER_EXTRACT_PATH']
 
-LIBS_VERSIONS = {}
+LIBS_VERSIONS = {
+    'GST_VERSION': config['GST_VERSION']
+}
 
 
 def test_environment(tmpdir):

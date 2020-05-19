@@ -18,6 +18,12 @@ testconf.set('TEST_ONTOLOGIES_DIR', tracker_uninstalled_nepomuk_ontologies_dir)
 testconf.set('TEST_WRITEBACK_MODULES_DIR', tracker_uninstalled_writeback_modules_dir)
 testconf.set('TRACKER_EXTRACT_PATH', uninstalled_tracker_extract_path)
 
+if generic_media_handler_name == 'gstreamer'
+  testconf.set('GST_VERSION', gstreamer.version())
+else
+  testconf.set('GST_VERSION', '')
+endif
+
 test_domain_rule = configure_file(
   input: 'test-domain.rule.in',
   output: 'test-domain.rule',
