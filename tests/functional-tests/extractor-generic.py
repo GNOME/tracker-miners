@@ -23,8 +23,11 @@ metadata is extracted. Load dynamically the test information from a data
 directory (containing xxx.expected files)
 """
 
+import distutils.version as dist_version
 import json
+import operator
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -32,6 +35,16 @@ import unittest as ut
 
 import configuration as cfg
 import fixtures
+
+
+OPERATORS = {
+    "<": operator.lt,
+    "<=": operator.le,
+    "==": operator.eq,
+    ">": operator.gt,
+    ">=": operator.ge
+}
+
 
 class GenericExtractionTestCase(fixtures.TrackerExtractTestCase):
     """
@@ -50,6 +63,30 @@ class GenericExtractionTestCase(fixtures.TrackerExtractTestCase):
                 self.spec = json.load(f)
         except ValueError as e:
             self.fail("Error loading %s: %s" % (descfile, e))
+
+        self._skip = ''
+        skip_if = self.spec['test'].get('SkipIf', False)
+        if skip_if:
+            version_regex = re.compile(r'([=><]{1,2})\s?([0-9.]+)')
+            for lib_version in skip_if:
+                current_version = cfg.LIBS_VERSIONS.get(lib_version, '')
+                if not current_version:
+                    self.fail("Error, %s is not defined" % (lib_version))
+
+                comparator, target_version = filter(
+                    None, version_regex.split(skip_if[lib_version]))
+                operator = OPERATORS[comparator]
+                target_version = dist_version.LooseVersion(target_version)
+                current_version = dist_version.LooseVersion(current_version)
+                if not operator(target_version, current_version):
+                    self._skip = "%s: version %s %s requested version %s" % (
+                        lib_version, current_version, comparator,
+                        target_version)
+                    break
+
+        if self._skip:
+            print(self._skip)
+            sys.exit(77)
 
         # Add a method to the class called after the description file
         methodName = descfile.lower()[:-len(".expected")].replace(" ", "_")[-60:]
