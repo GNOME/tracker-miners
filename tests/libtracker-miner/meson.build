@@ -5,7 +5,6 @@ libtracker_miner_tests = [
     'indexing-tree',
     'priority-queue',
     'task-pool',
-    'thumbnailer',
 ]
 
 libtracker_miner_slow_tests = [

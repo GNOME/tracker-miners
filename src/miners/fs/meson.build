@@ -6,7 +6,6 @@ sources = [
     'tracker-miner-files-index.c',
     'tracker-miner-files-peer-listener.c',
     'tracker-storage.c',
-    'tracker-thumbnailer.c',
     'tracker-writeback-listener.c',
     'tracker-writeback-dispatcher.c',
     'tracker-writeback.c',

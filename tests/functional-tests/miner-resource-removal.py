@@ -73,12 +73,12 @@ class MinerResourceRemovalTest(fixtures.TrackerMinerTest):
         with self.tracker.await_delete(fixtures.DOCUMENTS_GRAPH, file_1.id):
             os.unlink(self.path("test-monitored/test_1.txt"))
 
-        self.assertResourceMissing(file_1.urn)
+        self.assertResourceMissing(self.uri(file_1_name))
         # Ensure the logical resource is deleted when the relevant file is
         # removed.
         self.assertResourceMissing(ie_1.urn)
 
-        self.assertResourceExists(file_2.urn)
+        self.assertResourceExists(self.uri(file_2_name))
         self.assertResourceExists(ie_2.urn)
 
     # def test_02_removable_device_data (self):

@@ -350,6 +350,33 @@ class MinerCrawlTest(fixtures.TrackerMinerTest):
         result = self.__get_text_documents()
         self.assertEqual(len(result), 3)
 
+    def test_10_folder_update(self):
+        """
+        Check that updating a folder updates nfo:belongsToContainer on its children
+        """
+
+        directory_uri = self.uri("test-monitored")
+        directory = self.path("test-monitored")
+        document = self.path("test-monitored/unrelated.txt")
+        resource_id = self.tracker.get_content_resource_id(directory_uri)
+        urn = self.__get_file_urn(directory)
+
+        with self.await_document_inserted(document) as resource:
+            # Force an update on the monitored folder, it needs both
+            # a explicit request, and an attribute change (obtained
+            # indirectly by the new file)
+            with open(document, 'w') as f:
+                f.write(DEFAULT_TEXT)
+            self.miner_fs.index_file(directory_uri)
+
+        new_urn = self.__get_file_urn(directory)
+        # After the update, the InformationElement should be brand new
+        assert(urn != new_urn)
+        # Ensure that children remain consistent, old and new ones
+        self.assertEqual(new_urn,
+                         self.__get_parent_urn(self.path("test-monitored/file1.txt")))
+        self.assertEqual(self.__get_parent_urn(document),
+                         self.__get_parent_urn(self.path("test-monitored/file1.txt")))
 
 if __name__ == "__main__":
     fixtures.tracker_test_main()
