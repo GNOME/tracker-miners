@@ -23,11 +23,9 @@ from gi.repository import GLib
 
 import errno
 import json
-import logging
 import os
 import shutil
 import tempfile
-import sys
 
 
 DEFAULT_TIMEOUT = 10
