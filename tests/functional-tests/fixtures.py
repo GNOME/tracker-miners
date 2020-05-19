@@ -49,7 +49,7 @@ log = logging.getLogger(__name__)
 AUDIO_GRAPH = "http://tracker.api.gnome.org/ontology/v3/tracker#Audio"
 DOCUMENTS_GRAPH = "http://tracker.api.gnome.org/ontology/v3/tracker#Documents"
 PICTURES_GRAPH = "http://tracker.api.gnome.org/ontology/v3/tracker#Pictures"
-
+FILESYSTEM_GRAPH = "http://tracker.api.gnome.org/ontology/v3/tracker#FileSystem"
 
 def tracker_test_main():
     """Entry point which must be called by all functional test modules."""
