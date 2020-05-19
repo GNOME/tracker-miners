@@ -530,6 +530,11 @@ extractor_maybe_get_album_disc (MetadataExtractor *extractor,
 	gboolean has_it, has_date;
 	guint volume_number;
 	gchar album_datetime[26];
+	gchar *mb_release_id = NULL;
+
+	#if defined GST_TAG_MUSICBRAINZ_RELEASEGROUPID
+		gchar *mb_release_group_id = NULL;
+	#endif
 
 	gst_tag_list_get_string (tag_list, GST_TAG_ALBUM, &album_title);
 
@@ -554,6 +559,30 @@ extractor_maybe_get_album_disc (MetadataExtractor *extractor,
 	set_property_from_gst_tag (album, "nmm:albumTrackCount", tag_list, GST_TAG_TRACK_COUNT);
 	set_property_from_gst_tag (album, "nmm:albumGain", extractor->tagcache, GST_TAG_ALBUM_GAIN);
 	set_property_from_gst_tag (album, "nmm:albumPeakGain", extractor->tagcache, GST_TAG_ALBUM_PEAK);
+
+	gst_tag_list_get_string (tag_list, GST_TAG_MUSICBRAINZ_ALBUMID, &mb_release_id);
+	if (mb_release_id) {
+		g_autofree char *mb_release_uri = g_strdup_printf("https://musicbrainz.org/release/%s", mb_release_id);
+		TrackerResource *mb_release = tracker_extract_new_external_reference("https://musicbrainz.org/doc/Release",
+		                                                                     mb_release_id,
+		                                                                     mb_release_uri);
+
+		tracker_resource_add_take_relation (album, "tracker:hasExternalReference", mb_release);
+		g_free (mb_release_id);
+	}
+
+	#if defined GST_TAG_MUSICBRAINZ_RELEASEGROUPID
+		gst_tag_list_get_string (tag_list, GST_TAG_MUSICBRAINZ_RELEASEGROUPID, &mb_release_group_id);
+		if (mb_release_group_id) {
+			g_autofree char *mb_release_group_uri = g_strdup_printf("https://musicbrainz.org/release-group/%s", mb_release_group_id);
+			TrackerResource *mb_release_group = tracker_extract_new_external_reference("https://musicbrainz.org/doc/Release_Group",
+			                                                                           mb_release_group_id,
+			                                                                           mb_release_group_uri);
+
+			tracker_resource_add_take_relation (album, "tracker:hasExternalReference", mb_release_group);
+			g_free (mb_release_group_id);
+		}
+	#endif
 
 	g_free (album_artist_name);
 	g_free (track_artist_temp);
@@ -591,13 +620,74 @@ extractor_apply_audio_metadata (MetadataExtractor     *extractor,
                                 TrackerResource       *composer,
                                 TrackerResource       *album_disc)
 {
+	gchar *mb_recording_id = NULL;
+
+	#if defined GST_TAG_MUSICBRAINZ_RELEASETRACKID
+		gchar *mb_track_id = NULL;
+	#endif
+
+	#if defined GST_TAG_ACOUSTID_FINGERPRINT
+		GValue acoustid_fingerprint = G_VALUE_INIT;
+	#endif
+
 	set_property_from_gst_tag (audio, "nmm:trackNumber", tag_list, GST_TAG_TRACK_NUMBER);
 	set_property_from_gst_tag (audio, "nfo:codec", tag_list, GST_TAG_AUDIO_CODEC);
 	set_property_from_gst_tag (audio, "nfo:gain", tag_list, GST_TAG_TRACK_GAIN);
 	set_property_from_gst_tag (audio, "nfo:peakGain", tag_list, GST_TAG_TRACK_PEAK);
 
+	gst_tag_list_get_string (tag_list, GST_TAG_MUSICBRAINZ_TRACKID, &mb_recording_id);
+	if (mb_recording_id) {
+		g_autofree char *mb_recording_uri = g_strdup_printf("https://musicbrainz.org/recording/%s", mb_recording_id);
+		TrackerResource *mb_recording = tracker_extract_new_external_reference("https://musicbrainz.org/doc/Recording",
+		                                                                       mb_recording_id,
+		                                                                       mb_recording_uri);
+
+		tracker_resource_add_take_relation (audio, "tracker:hasExternalReference", mb_recording);
+		g_free (mb_recording_id);
+	}
+
+	#if defined GST_TAG_MUSICBRAINZ_RELEASETRACKID
+		gst_tag_list_get_string (tag_list, GST_TAG_MUSICBRAINZ_RELEASETRACKID, &mb_track_id);
+		if (mb_track_id) {
+			g_autofree char *mb_track_uri = g_strdup_printf("https://musicbrainz.org/track/%s", mb_track_id);
+			TrackerResource *mb_track = tracker_extract_new_external_reference("https://musicbrainz.org/doc/Track",
+			                                                                   mb_track_id,
+			                                                                   mb_track_uri);
+
+			tracker_resource_add_take_relation (audio, "tracker:hasExternalReference", mb_track);
+			g_free (mb_track_id);
+		}
+	#endif
+
+	#if defined GST_TAG_ACOUSTID_FINGERPRINT
+		gst_tag_list_copy_value (&acoustid_fingerprint, tag_list, GST_TAG_ACOUSTID_FINGERPRINT);
+		if (acoustid_fingerprint) {
+			TrackerResource *hash_resource = tracker_resource_new (NULL);
+
+			tracker_resource_set_uri (hash_resource, "rdf:type", "nfo:FileHash");
+			tracker_resource_set_string (hash_resource, "nfo:hashValue", acoustid_fingerprint);
+			tracker_resource_set_string (hash_resource, "nfo:hashAlgorithm", "chromaprint");
+
+			tracker_resource_add_take_relation (audio, "nfo:hasHash", hash_resource);
+			g_free (acoustid_fingerprint);
+		}
+	#endif
+
 	if (performer) {
+		gchar *mb_artist_id = NULL;
+
 		tracker_resource_set_relation (audio, "nmm:performer", performer);
+
+		gst_tag_list_get_string (tag_list, GST_TAG_MUSICBRAINZ_ARTISTID, &mb_artist_id);
+		if (mb_artist_id) {
+			g_autofree char *mb_artist_uri = g_strdup_printf("https://musicbrainz.org/artist/%s", mb_artist_id);
+			TrackerResource *mb_artist = tracker_extract_new_external_reference("https://musicbrainz.org/doc/Artist",
+			                                                                    mb_artist_id,
+			                                                                    mb_artist_uri);
+
+			tracker_resource_add_take_relation (performer, "tracker:hasExternalReference", mb_artist);
+			g_free (mb_artist_id);
+		}
 	}
 
 	if (composer) {

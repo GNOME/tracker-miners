@@ -32,6 +32,12 @@
                     "@type": "tracker:ExternalReference",
                     "tracker:referenceSource": "https://musicbrainz.org/doc/Release",
                     "tracker:referenceIdentifier": "524387feg"
+                },
+                {
+                    "@id": "https://musicbrainz.org/release-group/34-458923-kbe",
+                    "@type": "tracker:ExternalReference",
+                    "tracker:referenceSource": "https://musicbrainz.org/doc/Release_Group",
+                    "tracker:referenceIdentifier": "34-458923-kbe"
                 }
             ]
         },
@@ -57,7 +63,18 @@
                 "@type": "tracker:ExternalReference",
                 "tracker:referenceSource": "https://musicbrainz.org/doc/Recording",
                 "tracker:referenceIdentifier": "4-8-15-16-23-42-lost"
+            },
+            {
+                "@id": "https://musicbrainz.org/track/dfgj-432-iu7",
+                "@type": "tracker:ExternalReference",
+                "tracker:referenceSource": "https://musicbrainz.org/doc/Track",
+                "tracker:referenceIdentifier": "dfgj-432-iu7"
             }
-        ]
+        ],
+        "nfo:hasHash": {
+            "@type": "nfo:hasHash",
+            "nfo:hashAlgorithm": "chromaprint",
+            "nfo:hashValue": "123453215"
+        }
     }
 }

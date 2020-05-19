@@ -34,10 +34,17 @@ extractor_tests = [
   'audio/mp3-id3v2.4-1',
   'audio/mp3-id3v2.3-empty-artist-album',
   'audio/mp3-id3v2.4-2',
-  'audio/flac',
   'desktop/application',
   'desktop/link-wikipedia-tracker'
 ]
+
+# Gstreamer 1.18 introduced support for some additionnals
+# MusicBrainz tags
+if gstreamer.found() and gstreamer.version() >= '1.18.0'
+  extractor_tests += 'audio/flac-musicbrainz'
+else
+  extractor_tests += 'audio/flac'
+endif
 
 if libvorbis.found()
   extractor_tests += 'audio/vorbis'
