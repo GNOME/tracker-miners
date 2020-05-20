@@ -41,9 +41,7 @@ typedef struct {
 	GCancellable *cancellable;
 	GDBusMethodInvocation *invocation;
 	TrackerDBusRequest *request;
-	gchar *subject;
-	GPtrArray *results;
-	TrackerSparqlConnection *connection;
+	TrackerResource *resource;
 	GList *writeback_handlers;
 	GError *error;
 } WritebackData;
@@ -80,10 +78,8 @@ typedef struct {
 static const gchar *introspection_xml =
 	"<node>"
 	"  <interface name='org.freedesktop.Tracker3.Writeback'>"
-	"    <method name='PerformWriteback'>"
-	"      <arg type='s' name='subject' direction='in' />"
-	"      <arg type='as' name='rdf_types' direction='in' />"
-	"      <arg type='aas' name='results' direction='in' />"
+	"    <method name='Writeback'>"
+	"      <arg type='a{sv}' name='rdf' direction='in' />"
 	"    </method>"
 	"  </interface>"
 	"</node>";
@@ -200,9 +196,7 @@ tracker_controller_class_init (TrackerControllerClass *klass)
 static WritebackData *
 writeback_data_new (TrackerController       *controller,
                     GList                   *writeback_handlers,
-                    TrackerSparqlConnection *connection,
-                    const gchar             *subject,
-                    GPtrArray               *results,
+                    TrackerResource         *resource,
                     GDBusMethodInvocation   *invocation,
                     TrackerDBusRequest      *request)
 {
@@ -211,10 +205,8 @@ writeback_data_new (TrackerController       *controller,
 	data = g_slice_new (WritebackData);
 	data->cancellable = g_cancellable_new ();
 	data->controller = g_object_ref (controller);
-	data->subject = g_strdup (subject);
-	data->results = g_ptr_array_ref (results);
+	data->resource = g_object_ref (resource);
 	data->invocation = invocation;
-	data->connection = g_object_ref (connection);
 	data->writeback_handlers = writeback_handlers;
 	data->request = request;
 	data->error = NULL;
@@ -228,10 +220,8 @@ writeback_data_free (WritebackData *data)
 	/* We rely on data->invocation being freed through
 	 * the g_dbus_method_invocation_return_* methods
 	 */
-	g_free (data->subject);
-	g_object_unref (data->connection);
-	g_ptr_array_unref (data->results);
 	g_object_unref (data->cancellable);
+	g_object_unref (data->resource);
 
 	g_list_foreach (data->writeback_handlers, (GFunc) g_object_unref, NULL);
 	g_list_free (data->writeback_handlers);
@@ -331,25 +321,6 @@ perform_writeback_cb (gpointer user_data)
 	return FALSE;
 }
 
-static gboolean
-sparql_rdf_types_match (const gchar * const *module_types,
-                        const gchar * const *rdf_types)
-{
-	guint n;
-
-	for (n = 0; rdf_types[n] != NULL; n++) {
-		guint i;
-
-		for (i = 0; module_types[i] != NULL; i++) {
-			if (g_strcmp0 (module_types[i], rdf_types[n]) == 0) {
-				return TRUE;
-			}
-		}
-	}
-
-	return FALSE;
-}
-
 static void
 io_writeback_job (GTask        *task,
                   gpointer      source_object,
@@ -369,11 +340,10 @@ io_writeback_job (GTask        *task,
 	writeback_handlers = data->writeback_handlers;
 
 	while (writeback_handlers) {
-		handled |= tracker_writeback_update_metadata (writeback_handlers->data,
-		                                              data->results,
-		                                              data->connection,
-		                                              data->cancellable,
-		                                              (error) ? NULL : &error);
+		handled |= tracker_writeback_write_metadata (writeback_handlers->data,
+		                                             data->resource,
+		                                             data->cancellable,
+		                                             (error) ? NULL : &error);
 		writeback_handlers = writeback_handlers->next;
 	}
 
@@ -394,69 +364,170 @@ io_writeback_job (GTask        *task,
 	g_idle_add (perform_writeback_cb, data);
 }
 
+static TrackerResource *
+gvariant_to_resource (GVariant  *v,
+                      GError   **error)
+{
+	TrackerResource *res;
+	GVariantIter iter;
+	GVariant *obj;
+	gchar *pred;
+
+	if (!g_variant_is_of_type (v, G_VARIANT_TYPE ("a{sv}"))) {
+		g_set_error (error,
+		             G_IO_ERROR,
+		             G_IO_ERROR_INVALID_DATA,
+		             "Unhandled GVariant signature '%s'",
+		             g_variant_get_type_string (v));
+		return NULL;
+	}
+
+	res = tracker_resource_new (NULL);
+
+	g_variant_iter_init (&iter, v);
+
+	while (g_variant_iter_next (&iter, "{sv}", &pred, &obj)) {
+		if (g_variant_is_of_type (obj, G_VARIANT_TYPE_STRING)) {
+			tracker_resource_set_string (res, pred,
+			                             g_variant_get_string (obj, NULL));
+		} else if (g_variant_is_of_type (obj, G_VARIANT_TYPE_BOOLEAN)) {
+			tracker_resource_set_boolean (res, pred,
+			                              g_variant_get_boolean (obj));
+		} else if (g_variant_is_of_type (obj, G_VARIANT_TYPE_INT16)) {
+			tracker_resource_set_int64 (res, pred,
+			                            (gint64) g_variant_get_int16 (obj));
+		} else if (g_variant_is_of_type (obj, G_VARIANT_TYPE_INT32)) {
+			tracker_resource_set_int64 (res, pred,
+			                            (gint64) g_variant_get_int32 (obj));
+		} else if (g_variant_is_of_type (obj, G_VARIANT_TYPE_INT64)) {
+			tracker_resource_set_int64 (res, pred,
+			                            (gint64) g_variant_get_int16 (obj));
+		} else if (g_variant_is_of_type (obj, G_VARIANT_TYPE_DOUBLE)) {
+			tracker_resource_set_double (res, pred,
+			                             g_variant_get_double (obj));
+		} else if (g_variant_is_of_type (obj, G_VARIANT_TYPE ("a{sv}"))) {
+			TrackerResource *child;
+
+			child = gvariant_to_resource (obj, error);
+			if (!child) {
+				g_object_unref (res);
+				return NULL;
+			}
+
+			tracker_resource_set_relation (res, pred, child);
+		} else if (g_variant_is_of_type (obj, G_VARIANT_TYPE_ARRAY)) {
+			GVariant *elem;
+			GVariantIter iter2;
+
+			/* Other arrays are multi-valued */
+			while ((elem = g_variant_iter_next_value (&iter2)) != NULL) {
+				if (g_variant_is_of_type (elem, G_VARIANT_TYPE_STRING)) {
+					tracker_resource_add_string (res, pred,
+					                             g_variant_get_string (elem, NULL));
+				} else if (g_variant_is_of_type (elem, G_VARIANT_TYPE_BOOLEAN)) {
+					tracker_resource_add_boolean (res, pred,
+					                              g_variant_get_boolean (elem));
+				} else if (g_variant_is_of_type (elem, G_VARIANT_TYPE_INT16)) {
+					tracker_resource_add_int64 (res, pred,
+					                            (gint64) g_variant_get_int16 (elem));
+				} else if (g_variant_is_of_type (elem, G_VARIANT_TYPE_INT32)) {
+					tracker_resource_add_int64 (res, pred,
+					                            (gint64) g_variant_get_int32 (elem));
+				} else if (g_variant_is_of_type (elem, G_VARIANT_TYPE_INT64)) {
+					tracker_resource_add_int64 (res, pred,
+					                            (gint64) g_variant_get_int16 (elem));
+				} else if (g_variant_is_of_type (elem, G_VARIANT_TYPE_DOUBLE)) {
+					tracker_resource_add_double (res, pred,
+					                             g_variant_get_double (elem));
+				} else {
+					g_set_error (error,
+					             G_IO_ERROR,
+					             G_IO_ERROR_INVALID_DATA,
+					             "Unhandled GVariant signature '%s'",
+					             g_variant_get_type_string (elem));
+					g_object_unref (res);
+					return NULL;
+				}
+			}
+		} else {
+			g_set_error (error,
+			             G_IO_ERROR,
+			             G_IO_ERROR_INVALID_DATA,
+			             "Unhandled GVariant signature '%s'",
+			             g_variant_get_type_string (obj));
+			g_object_unref (res);
+			return NULL;
+		}
+	}
+
+	return res;
+}
+
+gboolean
+module_matches_resource (TrackerWritebackModule *module,
+                         TrackerResource        *resource)
+{
+	const gchar * const *module_types;
+	GList *values, *l;
+
+	module_types = tracker_writeback_module_get_rdf_types (module);
+	values = tracker_resource_get_values (resource, TRACKER_PREFIX_RDF "type");
+
+	for (l = values; l; l = l->next) {
+		GValue *value = l->data;
+		const gchar *type;
+
+		if (G_VALUE_HOLDS_STRING (value)) {
+			type = g_value_get_string (value);
+
+			if (g_strv_contains (module_types, type)) {
+				g_list_free (values);
+				return TRUE;
+			}
+		}
+	}
+
+	g_list_free (values);
+	return FALSE;
+}
+
 static void
-handle_method_call_perform_writeback (TrackerController     *controller,
-                                      GDBusMethodInvocation *invocation,
-                                      GVariant              *parameters)
+handle_method_call_writeback (TrackerController     *controller,
+                              GDBusMethodInvocation *invocation,
+                              GVariant              *parameters)
 {
 	TrackerControllerPrivate *priv;
 	TrackerDBusRequest *request;
-	const gchar *subject;
-	GPtrArray *results = NULL;
+	TrackerResource *resource;
 	GHashTableIter iter;
 	gpointer key, value;
-	GVariantIter *iter1, *iter2, *iter3;
-	GArray *rdf_types_array;
-	GStrv rdf_types;
-	gchar *rdf_type = NULL;
 	GList *writeback_handlers = NULL;
+	GError *error = NULL;
 
 	priv = tracker_controller_get_instance_private (controller);
 
-	results = g_ptr_array_new_with_free_func ((GDestroyNotify) g_strfreev);
-	g_variant_get (parameters, "(&sasaas)", &subject, &iter1, &iter2);
-
-	rdf_types_array = g_array_new (TRUE, TRUE, sizeof (gchar *));
-	while (g_variant_iter_loop (iter1, "&s", &rdf_type)) {
-		g_array_append_val (rdf_types_array, rdf_type);
-	}
-
-	rdf_types = (GStrv) rdf_types_array->data;
-	g_array_free (rdf_types_array, FALSE);
-
-	while (g_variant_iter_loop (iter2, "as", &iter3)) {
-		GArray *row_array = g_array_new (TRUE, TRUE, sizeof (gchar *));
-		gchar *cell = NULL;
-
-		while (g_variant_iter_loop (iter3, "&s", &cell)) {
-			g_array_append_val (row_array, cell);
-		}
-
-		g_ptr_array_add (results, row_array->data);
-		g_array_free (row_array, FALSE);
-	}
-
-	g_variant_iter_free (iter1);
-	g_variant_iter_free (iter2);
-
 	reset_shutdown_timeout (controller);
-	request = tracker_dbus_request_begin (NULL, "%s (%s)", __FUNCTION__, subject);
+	request = tracker_dbus_request_begin (NULL, "%s", __FUNCTION__);
+
+	resource = gvariant_to_resource (g_variant_get_child_value (parameters, 0), &error);
+	if (!resource) {
+		g_dbus_method_invocation_return_gerror (invocation,
+		                                        error);
+		return;
+	}
 
 	g_hash_table_iter_init (&iter, priv->modules);
 
 	while (g_hash_table_iter_next (&iter, &key, &value)) {
 		TrackerWritebackModule *module;
-		const gchar * const *module_types;
 
 		module = value;
-		module_types = tracker_writeback_module_get_rdf_types (module);
 
-		if (sparql_rdf_types_match (module_types, (const gchar * const *) rdf_types)) {
+		if (module_matches_resource (module, resource)) {
 			TrackerWriteback *writeback;
 
-			g_message ("  Updating metadata for subject:'%s' using module:'%s'",
-			           subject,
-			           module->name);
+			g_debug ("Using module '%s' as a candidate",
+			         module->name);
 
 			writeback = tracker_writeback_module_create (module);
 			writeback_handlers = g_list_prepend (writeback_handlers, writeback);
@@ -469,9 +540,7 @@ handle_method_call_perform_writeback (TrackerController     *controller,
 
 		data = writeback_data_new (controller,
 		                           writeback_handlers,
-		                           priv->connection,
-		                           subject,
-		                           results,
+		                           resource,
 		                           invocation,
 		                           request);
 		task = g_task_new (controller, data->cancellable, NULL, NULL);
@@ -481,19 +550,13 @@ handle_method_call_perform_writeback (TrackerController     *controller,
 		g_task_run_in_thread (task, io_writeback_job);
 		g_object_unref (task);
 	} else {
-		char *rdf_types_string;
-		rdf_types_string = g_strjoinv (", ", rdf_types);
 		g_dbus_method_invocation_return_error (invocation,
 		                                       TRACKER_DBUS_ERROR,
 		                                       TRACKER_DBUS_ERROR_UNSUPPORTED,
-		                                       "None of %i writeback modules matched any of the "
-		                                       "given RDF types: %s",
-		                                       g_hash_table_size (priv->modules),
-		                                       rdf_types_string);
-		g_free (rdf_types_string);
+		                                       "Resource description does not match any writeback modules");
 	}
 
-	g_free (rdf_types);
+	g_object_unref (resource);
 }
 
 static void
@@ -508,8 +571,8 @@ handle_method_call (GDBusConnection       *connection,
 {
 	TrackerController *controller = user_data;
 
-	if (g_strcmp0 (method_name, "PerformWriteback") == 0) {
-		handle_method_call_perform_writeback (controller, invocation, parameters);
+	if (g_strcmp0 (method_name, "Writeback") == 0) {
+		handle_method_call_writeback (controller, invocation, parameters);
 	} else {
 		g_warning ("Unknown method '%s' called", method_name);
 	}
