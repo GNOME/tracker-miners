@@ -25,7 +25,8 @@ Fixtures used by the tracker-miners functional-tests.
 import gi
 gi.require_version('Gst', '1.0')
 gi.require_version('Tracker', '3.0')
-from gi.repository import GLib
+gi.require_version('Gio', '2.0')
+from gi.repository import GLib, Gio
 from gi.repository import Tracker
 
 import errno
@@ -396,35 +397,47 @@ TEST_FILE_JPEG = "writeback-test-1.jpeg"
 TEST_FILE_TIFF = "writeback-test-2.tif"
 TEST_FILE_PNG = "writeback-test-4.png"
 
-
 class TrackerWritebackTest (TrackerMinerTest):
     """
     Superclass to share methods. Shouldn't be run by itself.
     Start all processes including writeback, miner pointing to WRITEBACK_TMP_DIR
     """
+    WRITEBACK_BUSNAME = "org.freedesktop.Tracker3.Writeback"
+    WRITEBACK_PATH = "/org/freedesktop/Tracker3/Writeback"
+    WRITEBACK_IFACE = "org.freedesktop.Tracker3.Writeback"
+
+    def setUp(self):
+        super(TrackerWritebackTest, self).setUp()
+        self.writeback_proxy = Gio.DBusProxy.new_sync(
+            self.sandbox.get_connection(),
+            Gio.DBusProxyFlags.DO_NOT_AUTO_START_AT_CONSTRUCTION, None,
+            self.WRITEBACK_BUSNAME, self.WRITEBACK_PATH, self.WRITEBACK_IFACE)
 
     def datadir_path(self, filename):
         """Returns the full path to a writeback test file."""
         datadir = os.path.join(os.path.dirname(__file__), 'test-writeback-data')
         return pathlib.Path(os.path.join(datadir, filename))
 
+    def writeback_data(self, variant):
+        self.writeback_proxy.Writeback('(a{sv})', variant)
+
     def prepare_test_audio(self, filename):
         path = pathlib.Path(os.path.join(self.indexed_dir, os.path.basename(filename)))
         url = path.as_uri()
 
-        # Copy and wait. The extractor adds the nfo:duration property.
-        expected = f'a nfo:Audio ; nie:isStoredAs <{url}> ; nfo:duration ?duration'
-        with self.tracker.await_insert(AUDIO_GRAPH, expected):
-            shutil.copy(path, self.indexed_dir)
+        # Copy and wait.
+        expected = f'nie:url <{url}>'
+        with self.tracker.await_insert(FILESYSTEM_GRAPH, expected):
+            shutil.copy(filename, self.indexed_dir)
         return path
 
     def prepare_test_image(self, source_path):
         dest_path = pathlib.Path(os.path.join(self.indexed_dir, os.path.basename(source_path)))
         url = dest_path.as_uri()
 
-        # Copy and wait. The extractor adds the nfo:width property.
-        expected = f'a nfo:Image ; nie:isStoredAs <{url}> ; nfo:width ?width'
-        with self.tracker.await_insert(PICTURES_GRAPH, expected):
+        # Copy and wait.
+        expected = f'nie:url <{url}>'
+        with self.tracker.await_insert(FILESYSTEM_GRAPH, expected):
             shutil.copy(source_path, self.indexed_dir)
         return dest_path
 

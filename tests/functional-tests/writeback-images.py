@@ -26,6 +26,9 @@ import unittest as ut
 import configuration
 import fixtures
 
+import gi
+from gi.repository import GLib
+
 log = logging.getLogger(__name__)
 
 
@@ -50,18 +53,17 @@ class WritebackImagesTest(fixtures.TrackerWritebackTest):
         initial_mtime = path.stat().st_mtime
 
         TEST_VALUE = prop.replace(":", "") + "test"
-        SPARQL_TMPL = """
-           DELETE { ?u %s ?v } WHERE { ?u nie:url '%s' ; %s ?v }
-           INSERT { ?u a nie:InformationElement; %s '%s' }
-           WHERE  { ?u nie:url '%s' }
-        """
-        self.tracker.update(SPARQL_TMPL % (prop, path.as_uri(), prop, prop, TEST_VALUE, path.as_uri()))
+        self.writeback_data({
+            'http://www.w3.org/1999/02/22-rdf-syntax-ns#type': GLib.Variant('s', 'http://tracker.api.gnome.org/ontology/v3/nfo#Image'),
+            'http://tracker.api.gnome.org/ontology/v3/nie#isStoredAs': GLib.Variant('s', path.as_uri()),
+            prop: GLib.Variant('s', TEST_VALUE),
+        })
 
         log.debug("Waiting for change on %s", path)
         self.wait_for_file_change(path, initial_mtime)
         log.debug("Got the change")
 
-        results = fixtures.get_tracker_extract_jsonld_output(self.extra_env, path, mimetype)
+        results = fixtures.get_tracker_extract_jsonld_output({}, path, mimetype)
         keyDict = expectedKey or prop
         self.assertIn(TEST_VALUE, results[keyDict])
 
@@ -91,10 +93,16 @@ class WritebackImagesTest(fixtures.TrackerWritebackTest):
     # JPEG test
 
     def test_001_jpeg_title(self):
-        self.__writeback_test("writeback-test-1.jpeg", "image/jpeg", "nie:title")
+        self.__writeback_test(
+            "writeback-test-1.jpeg", "image/jpeg",
+            "http://tracker.api.gnome.org/ontology/v3/nie#title",
+            "nie:title")
 
     def test_002_jpeg_description(self):
-        self.__writeback_test("writeback-test-1.jpeg", "image/jpeg", "nie:description")
+        self.__writeback_test(
+            "writeback-test-1.jpeg", "image/jpeg",
+            "http://tracker.api.gnome.org/ontology/v3/nie#description",
+            "nie:description")
 
     # def test_003_jpeg_keyword (self):
     #    #FILENAME = "test-writeback-monitored/writeback-test-1.jpeg"
@@ -108,10 +116,16 @@ class WritebackImagesTest(fixtures.TrackerWritebackTest):
     # TIFF tests
 
     def test_011_tiff_title(self):
-        self.__writeback_test("writeback-test-2.tif", "image/tiff", "nie:title")
+        self.__writeback_test(
+            "writeback-test-2.tif", "image/tiff",
+            "http://tracker.api.gnome.org/ontology/v3/nie#title",
+            "nie:title")
 
     def test_012_tiff_description(self):
-        self.__writeback_test("writeback-test-2.tif", "image/tiff", "nie:description")
+        self.__writeback_test(
+            "writeback-test-2.tif", "image/tiff",
+            "http://tracker.api.gnome.org/ontology/v3/nie#description",
+            "nie:description")
 
     # def test_013_tiff_keyword (self):
     #    FILENAME = "test-writeback-monitored/writeback-test-2.tif"
@@ -125,10 +139,16 @@ class WritebackImagesTest(fixtures.TrackerWritebackTest):
     # PNG tests
 
     def test_021_png_title(self):
-        self.__writeback_test("writeback-test-4.png", "image/png", "nie:title")
+        self.__writeback_test(
+            "writeback-test-4.png", "image/png",
+            "http://tracker.api.gnome.org/ontology/v3/nie#title",
+            "nie:title")
 
     def test_022_png_description(self):
-        self.__writeback_test("writeback-test-4.png", "image/png", "nie:description")
+        self.__writeback_test(
+            "writeback-test-4.png", "image/png",
+            "http://tracker.api.gnome.org/ontology/v3/nie#description",
+            "nie:description")
 
     # def test_023_png_keyword (self):
     #    FILENAME = "test-writeback-monitored/writeback-test-4.png"
@@ -140,8 +160,4 @@ class WritebackImagesTest(fixtures.TrackerWritebackTest):
 
 
 if __name__ == "__main__":
-    print("FIXME: This test is skipped as it currently fails. See: https://gitlab.gnome.org/GNOME/tracker-miners/issues/96")
-    import sys
-    sys.exit(77)
-
     ut.main(failfast=True, verbosity=2)
