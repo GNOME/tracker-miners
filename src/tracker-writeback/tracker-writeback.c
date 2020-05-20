@@ -80,9 +80,6 @@ typedef struct {
 static const gchar *introspection_xml =
 	"<node>"
 	"  <interface name='org.freedesktop.Tracker3.Writeback'>"
-	"    <method name='GetPid'>"
-	"      <arg type='i' name='value' direction='out' />"
-	"    </method>"
 	"    <method name='PerformWriteback'>"
 	"      <arg type='s' name='subject' direction='in' />"
 	"      <arg type='as' name='rdf_types' direction='in' />"
@@ -307,30 +304,6 @@ tracker_controller_init (TrackerController *controller)
 	g_mutex_init (&priv->mutex);
 }
 
-static void
-handle_method_call_get_pid (TrackerController     *controller,
-                            GDBusMethodInvocation *invocation,
-                            GVariant              *parameters)
-{
-	TrackerDBusRequest *request;
-	pid_t value;
-
-	request = tracker_g_dbus_request_begin (invocation,
-	                                        "%s()",
-	                                        __FUNCTION__);
-
-	reset_shutdown_timeout (controller);
-	value = getpid ();
-	tracker_dbus_request_debug (request,
-	                            "PID is %d",
-	                            value);
-
-	tracker_dbus_request_end (request, NULL);
-
-	g_dbus_method_invocation_return_value (invocation,
-	                                       g_variant_new ("(i)", (gint) value));
-}
-
 static gboolean
 perform_writeback_cb (gpointer user_data)
 {
@@ -535,9 +508,7 @@ handle_method_call (GDBusConnection       *connection,
 {
 	TrackerController *controller = user_data;
 
-	if (g_strcmp0 (method_name, "GetPid") == 0) {
-		handle_method_call_get_pid (controller, invocation, parameters);
-	} else if (g_strcmp0 (method_name, "PerformWriteback") == 0) {
+	if (g_strcmp0 (method_name, "PerformWriteback") == 0) {
 		handle_method_call_perform_writeback (controller, invocation, parameters);
 	} else {
 		g_warning ("Unknown method '%s' called", method_name);
