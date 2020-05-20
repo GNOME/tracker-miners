@@ -38,7 +38,6 @@
 #include "tracker-config.h"
 #include "tracker-miner-files.h"
 #include "tracker-miner-files-index.h"
-#include "tracker-writeback.h"
 
 #define ABOUT	  \
 	"Tracker " PACKAGE_VERSION "\n"
@@ -99,8 +98,6 @@ log_option_values (TrackerConfig *config)
 		g_message ("General options:");
 		g_message ("  Initial Sleep  ........................  %d",
 		           tracker_config_get_initial_sleep (config));
-		g_message ("  Writeback  ............................  %s",
-		           tracker_config_get_enable_writeback (config) ? "yes" : "no");
 
 		g_message ("Indexer options:");
 		g_message ("  Throttle level  .......................  %d",
@@ -916,23 +913,10 @@ main (gint argc, gchar *argv[])
 		return EXIT_FAILURE;
 	}
 
-	tracker_writeback_init (TRACKER_MINER_FILES (miner_files),
-	                        config,
-	                        &error);
-
-	if (error) {
-		g_critical ("Couldn't create writeback handling: '%s'",
-		            error ? error->message : "unknown error");
-		g_object_unref (config);
-		g_object_unref (miner_files);
-		return EXIT_FAILURE;
-	}
-
 	/* Create new TrackerMinerFilesIndex object */
 	miner_files_index = tracker_miner_files_index_new (TRACKER_MINER_FILES (miner_files));
 	if (!miner_files_index) {
 		g_object_unref (miner_files);
-		tracker_writeback_shutdown ();
 		g_object_unref (config);
 		return EXIT_FAILURE;
 	}
@@ -1011,8 +995,6 @@ main (gint argc, gchar *argv[])
 	g_object_unref (proxy);
 	g_object_unref (connection);
 	tracker_domain_ontology_unref (domain_ontology);
-
-	tracker_writeback_shutdown ();
 
 	g_print ("\nOK\n\n");
 

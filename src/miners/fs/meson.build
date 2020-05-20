@@ -6,9 +6,6 @@ sources = [
     'tracker-miner-files-index.c',
     'tracker-miner-files-peer-listener.c',
     'tracker-storage.c',
-    'tracker-writeback-listener.c',
-    'tracker-writeback-dispatcher.c',
-    'tracker-writeback.c',
 ]
 
 tracker_miner_fs_deps = [
