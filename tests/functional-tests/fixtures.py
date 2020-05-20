@@ -81,7 +81,6 @@ class TrackerMinerTest(ut.TestCase):
     def config(self):
         settings = {
             'org.freedesktop.Tracker3.Miner.Files': {
-                'enable-writeback': GLib.Variant.new_boolean(False),
                 'index-recursive-directories': GLib.Variant.new_strv([self.indexed_dir]),
                 'index-single-directories': GLib.Variant.new_strv([]),
                 'index-optical-discs': GLib.Variant.new_boolean(False),
@@ -403,11 +402,6 @@ class TrackerWritebackTest (TrackerMinerTest):
     Superclass to share methods. Shouldn't be run by itself.
     Start all processes including writeback, miner pointing to WRITEBACK_TMP_DIR
     """
-
-    def config(self):
-        values = super(TrackerWritebackTest, self).config()
-        values['org.freedesktop.Tracker3.Miner.Files']['enable-writeback'] = GLib.Variant.new_boolean(True)
-        return values
 
     def datadir_path(self, filename):
         """Returns the full path to a writeback test file."""
