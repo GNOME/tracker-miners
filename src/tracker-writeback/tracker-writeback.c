@@ -67,7 +67,6 @@ typedef struct {
 	guint initialized : 1;
 
 	GHashTable *modules;
-	TrackerSparqlConnection *connection;
 	WritebackData *current;
 } TrackerControllerPrivate;
 
@@ -643,14 +642,6 @@ tracker_controller_dbus_start (TrackerController   *controller,
 
 	priv = tracker_controller_get_instance_private (controller);
 
-	priv->connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker3.Miner.Files",
-	                                                      NULL, NULL, &err);
-
-	if (!priv->connection) {
-		g_propagate_error (error, err);
-		return FALSE;
-	}
-
 	priv->d_connection = g_bus_get_sync (TRACKER_IPC_BUS, NULL, &err);
 
 	if (!priv->d_connection) {
@@ -724,10 +715,6 @@ tracker_controller_dbus_stop (TrackerController *controller)
 
 	if (priv->d_connection) {
 		g_object_unref (priv->d_connection);
-	}
-
-	if (priv->connection) {
-		g_object_unref (priv->connection);
 	}
 }
 
