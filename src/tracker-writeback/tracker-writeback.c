@@ -45,15 +45,12 @@ typedef struct {
 	GPtrArray *results;
 	TrackerSparqlConnection *connection;
 	GList *writeback_handlers;
-	guint cancel_id;
 	GError *error;
 } WritebackData;
 
 typedef struct {
 	GMainContext *context;
 	GMainLoop *main_loop;
-
-	GVolumeMonitor *volume_monitor;
 
 	GDBusConnection *d_connection;
 	GDBusNodeInfo *introspection_data;
@@ -90,9 +87,6 @@ static const gchar *introspection_xml =
 	"      <arg type='s' name='subject' direction='in' />"
 	"      <arg type='as' name='rdf_types' direction='in' />"
 	"      <arg type='aas' name='results' direction='in' />"
-	"    </method>"
-	"    <method name='CancelTasks'>"
-	"      <arg type='as' name='subjects' direction='in' />"
 	"    </method>"
 	"  </interface>"
 	"</node>";
@@ -144,7 +138,6 @@ tracker_controller_finalize (GObject *object)
 
 	tracker_controller_dbus_stop (controller);
 
-	g_object_unref (priv->volume_monitor);
 	g_hash_table_unref (priv->modules);
 
 	g_main_loop_unref (priv->main_loop);
@@ -207,27 +200,6 @@ tracker_controller_class_init (TrackerControllerClass *klass)
 	                                                    G_PARAM_STATIC_STRINGS));
 }
 
-static void
-task_cancellable_cancelled_cb (GCancellable  *cancellable,
-                               WritebackData *data)
-{
-	TrackerControllerPrivate *priv;
-
-	priv = tracker_controller_get_instance_private (data->controller);
-
-	g_mutex_lock (&priv->mutex);
-
-	if (priv->current == data) {
-		g_message ("Cancelled writeback task for '%s' was currently being "
-		           "processed, _exit()ing immediately",
-		           data->subject);
-		_exit (0);
-	}
-
-	g_mutex_unlock (&priv->mutex);
-}
-
-
 static WritebackData *
 writeback_data_new (TrackerController       *controller,
                     GList                   *writeback_handlers,
@@ -250,10 +222,6 @@ writeback_data_new (TrackerController       *controller,
 	data->request = request;
 	data->error = NULL;
 
-	data->cancel_id = g_cancellable_connect (data->cancellable,
-	                                         G_CALLBACK (task_cancellable_cancelled_cb),
-	                                         data, NULL);
-
 	return data;
 }
 
@@ -263,7 +231,6 @@ writeback_data_free (WritebackData *data)
 	/* We rely on data->invocation being freed through
 	 * the g_dbus_method_invocation_return_* methods
 	 */
-	g_cancellable_disconnect (data->cancellable, data->cancel_id);
 	g_free (data->subject);
 	g_object_unref (data->connection);
 	g_ptr_array_unref (data->results);
@@ -276,57 +243,6 @@ writeback_data_free (WritebackData *data)
 		g_error_free (data->error);
 	}
 	g_slice_free (WritebackData, data);
-}
-
-static void
-cancel_tasks (TrackerController *controller,
-              const gchar       *subject,
-              GFile             *file)
-{
-	TrackerControllerPrivate *priv;
-	GList *elem;
-
-	priv = tracker_controller_get_instance_private (controller);
-
-	for (elem = priv->ongoing_tasks; elem; elem = elem->next) {
-		WritebackData *data = elem->data;
-
-		if (g_strcmp0 (subject, data->subject) == 0) {
-			g_message ("Cancelling not yet processed task ('%s')",
-			           data->subject);
-			g_cancellable_cancel (data->cancellable);
-		}
-
-		if (file) {
-			guint i;
-			for (i = 0; i < data->results->len; i++) {
-				GStrv row = g_ptr_array_index (data->results, i);
-				if (row[0] != NULL) {
-					GFile *task_file;
-					task_file = g_file_new_for_uri (row[0]);
-					if (g_file_equal (task_file, file) ||
-					    g_file_has_prefix (task_file, file)) {
-						/* Mount path contains some file being processed */
-						g_message ("Cancelling task ('%s')", row[0]);
-						g_cancellable_cancel (data->cancellable);
-					}
-					g_object_unref (task_file);
-				}
-			}
-		}
-	}
-}
-
-static void
-mount_point_removed_cb (GVolumeMonitor *monitor,
-                        GMount         *mount,
-                        gpointer        user_data)
-{
-	GFile *mount_file;
-
-	mount_file = g_mount_get_root (mount);
-	cancel_tasks (TRACKER_CONTROLLER (user_data), NULL, mount_file);
-	g_object_unref (mount_file);
 }
 
 static gboolean
@@ -385,10 +301,6 @@ tracker_controller_init (TrackerController *controller)
 
 	priv->context = g_main_context_new ();
 	priv->main_loop = g_main_loop_new (priv->context, FALSE);
-
-	priv->volume_monitor = g_volume_monitor_get ();
-	g_signal_connect_object (priv->volume_monitor, "mount-removed",
-	                         G_CALLBACK (mount_point_removed_cb), controller, 0);
 
 	g_cond_init (&priv->initialization_cond);
 	g_mutex_init (&priv->initialization_mutex);
@@ -612,34 +524,6 @@ handle_method_call_perform_writeback (TrackerController     *controller,
 }
 
 static void
-handle_method_call_cancel_tasks (TrackerController     *controller,
-                                 GDBusMethodInvocation *invocation,
-                                 GVariant              *parameters)
-{
-	TrackerDBusRequest *request;
-	gchar **subjects;
-	gint i;
-
-#ifdef THREAD_ENABLE_TRACE
-	g_debug ("Thread:%p (Controller) --> Got Tasks cancellation request",
-		 g_thread_self ());
-#endif /* THREAD_ENABLE_TRACE */
-
-
-	g_variant_get (parameters, "(^as)", &subjects);
-
-	request = tracker_dbus_request_begin (NULL, "%s (%s, ...)", __FUNCTION__, subjects[0]);
-
-	for (i = 0; subjects[i] != NULL; i++) {
-		cancel_tasks (controller, subjects[i], NULL);
-	}
-
-	g_strfreev (subjects);
-	tracker_dbus_request_end (request, NULL);
-	g_dbus_method_invocation_return_value (invocation, NULL);
-}
-
-static void
 handle_method_call (GDBusConnection       *connection,
                     const gchar           *sender,
                     const gchar           *object_path,
@@ -655,8 +539,6 @@ handle_method_call (GDBusConnection       *connection,
 		handle_method_call_get_pid (controller, invocation, parameters);
 	} else if (g_strcmp0 (method_name, "PerformWriteback") == 0) {
 		handle_method_call_perform_writeback (controller, invocation, parameters);
-	} else if (g_strcmp0 (method_name, "CancelTasks") == 0) {
-		handle_method_call_cancel_tasks (controller, invocation, parameters);
 	} else {
 		g_warning ("Unknown method '%s' called", method_name);
 	}
@@ -861,9 +743,7 @@ tracker_controller_thread_func (gpointer user_data)
 
 	g_object_unref (controller);
 
-	/* This is where we exit, be it
-	 * either through umount events on monitored
-	 * files' volumes or the timeout being reached
+	/* This is where we exit through the timeout being reached
 	 */
 	exit (0);
 	return NULL;
