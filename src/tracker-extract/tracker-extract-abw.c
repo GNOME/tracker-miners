@@ -216,7 +216,7 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 		len = 0;
 	} else {
 		contents = (gchar *) mmap (NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-		if (contents == NULL) {
+		if (contents == MAP_FAILED) {
 			g_warning ("Could not mmap abw file '%s': %s\n",
 			           filename,
 			           g_strerror (errno));
