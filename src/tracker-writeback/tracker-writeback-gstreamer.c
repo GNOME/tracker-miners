@@ -66,25 +66,12 @@ struct TrackerWritebackGstreamerClass {
 };
 
 static GType               tracker_writeback_gstreamer_get_type     (void) G_GNUC_CONST;
-static gboolean            writeback_gstreamer_update_file_metadata (TrackerWritebackFile    *writeback_file,
+static gboolean            writeback_gstreamer_write_file_metadata  (TrackerWritebackFile    *writeback_file,
                                                                      GFile                   *file,
-                                                                     GPtrArray               *values,
-                                                                     TrackerSparqlConnection *connection,
+                                                                     TrackerResource         *resource,
                                                                      GCancellable            *cancellable,
                                                                      GError                 **error);
 static const gchar* const *writeback_gstreamer_content_types        (TrackerWritebackFile    *writeback_file);
-static gchar              *writeback_gstreamer_get_artist_name      (TrackerSparqlConnection *connection,
-                                                                     const gchar             *urn);
-static gchar              *writeback_gstreamer_get_album_name       (TrackerSparqlConnection *connection,
-                                                                     const gchar             *urn);
-static gchar              *writeback_gstreamer_get_album_artist     (TrackerSparqlConnection *connection,
-                                                                     const gchar             *urn);
-static gchar              *writeback_gstreamer_get_disc_number      (TrackerSparqlConnection *connection,
-                                                                     const gchar             *urn);
-static gchar              *writeback_gstreamer_get_publisher_name   (TrackerSparqlConnection *connection,
-                                                                     const gchar             *urn);
-static gchar              *writeback_gstreamer_get_artwork_url      (TrackerSparqlConnection *connection,
-                                                                     const gchar             *urn);
 
 G_DEFINE_DYNAMIC_TYPE (TrackerWritebackGstreamer, tracker_writeback_gstreamer, TRACKER_TYPE_WRITEBACK_FILE);
 
@@ -95,7 +82,7 @@ tracker_writeback_gstreamer_class_init (TrackerWritebackGstreamerClass *klass)
 
 	gst_init (NULL, NULL);
 
-	writeback_file_class->update_file_metadata = writeback_gstreamer_update_file_metadata;
+	writeback_file_class->write_file_metadata = writeback_gstreamer_write_file_metadata;
 	writeback_file_class->content_types = writeback_gstreamer_content_types;
 }
 
@@ -590,16 +577,15 @@ writeback_gstreamer_set (TagElements  *element,
 }
 
 static gboolean
-writeback_gstreamer_update_file_metadata (TrackerWritebackFile    *writeback,
-                                          GFile                   *file,
-                                          GPtrArray               *values,
-                                          TrackerSparqlConnection *connection,
-                                          GCancellable            *cancellable,
-                                          GError                 **error)
+writeback_gstreamer_write_file_metadata (TrackerWritebackFile  *writeback,
+                                         GFile                 *file,
+                                         TrackerResource       *resource,
+                                         GCancellable          *cancellable,
+                                         GError               **error)
 {
-	guint n;
 	gboolean ret = FALSE;
 	TagElements *element = (TagElements *) g_malloc (sizeof (TagElements));
+	GList *l, *properties;
 
 	element->tags = NULL;
 	element->taggers = g_hash_table_new (g_str_hash, g_str_equal);
@@ -635,137 +621,244 @@ writeback_gstreamer_update_file_metadata (TrackerWritebackFile    *writeback,
 		}
 	}
 
-	for (n = 0; n < values->len; n++) {
-		const GStrv row = g_ptr_array_index (values, n);
+	properties = tracker_resource_get_properties (resource);
+
+	for (l = properties; l; l = l->next) {
+		const gchar *prop = l->data;
 		GValue val = G_VALUE_INIT;
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NIE "title") == 0) {
+		if (g_strcmp0 (prop, "nie:title") == 0) {
+			const gchar *title;
+
+			title = tracker_resource_get_first_string (resource, prop);
 			g_value_init (&val, G_TYPE_STRING);
-			g_value_set_string (&val, row[3]);
+			g_value_set_string (&val, title);
 			writeback_gstreamer_set (element, GST_TAG_TITLE, &val);
+			g_value_unset (&val);
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NMM "performer") == 0) {
-			gchar *artist_name = writeback_gstreamer_get_artist_name (connection, row[3]);
+		if (g_strcmp0 (prop, "nmm:performer") == 0) {
+			TrackerResource *performer;
+			const gchar *name = NULL;
 
-			if (artist_name) {
+			performer = tracker_resource_get_first_relation (resource, prop);
+
+			if (performer) {
+				name = tracker_resource_get_first_string (performer,
+				                                          "nmm:artistName");
+			}
+
+			if (name) {
 				g_value_init (&val, G_TYPE_STRING);
-				g_value_set_string (&val, artist_name);
+				g_value_set_string (&val, name);
 				writeback_gstreamer_set (element, GST_TAG_ARTIST, &val);
-				g_free (artist_name);
+				g_value_unset (&val);
 			}
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NMM "musicAlbum") == 0) {
-			gchar *album_name = writeback_gstreamer_get_album_name (connection, row[3]);
-			gchar *album_artist = writeback_gstreamer_get_album_artist (connection, row[3]);
+		if (g_strcmp0 (prop, "nmm:musicAlbum") == 0) {
+			TrackerResource *album, *artist = NULL;
+			const gchar *album_name = NULL, *album_artist = NULL;
+
+			album = tracker_resource_get_first_relation (resource, prop);
+
+			if (album) {
+				album_name = tracker_resource_get_first_string (album, "nie:title");
+				artist = tracker_resource_get_first_relation (album, "nmm:albumArtist");
+			}
+
+			if (artist) {
+				album_artist = tracker_resource_get_first_string (artist, "nmm:artistName");
+			}
 
 			if (album_name) {
 				g_value_init (&val, G_TYPE_STRING);
 				g_value_set_string (&val, album_name);
 				writeback_gstreamer_set (element, GST_TAG_ALBUM, &val);
-				g_free (album_name);
+				g_value_unset(&val);
 			}
-			g_value_unset(&val);
+
 			if (album_artist) {
 				g_value_init (&val, G_TYPE_STRING);
 				g_value_set_string (&val, album_artist);
 				writeback_gstreamer_set (element, GST_TAG_ALBUM_ARTIST, &val);
-				g_free (album_artist);
+				g_value_unset(&val);
 			}
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NIE "comment") == 0) {
+		if (g_strcmp0 (prop, "nie:comment") == 0) {
+			const gchar *comment;
+
+			comment = tracker_resource_get_first_string (resource, prop);
 			g_value_init (&val, G_TYPE_STRING);
-			g_value_set_string (&val, row[3]);
+			g_value_set_string (&val, comment);
 			writeback_gstreamer_set (element, GST_TAG_COMMENT, &val);
+			g_value_unset (&val);
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NMM "genre") == 0) {
+		if (g_strcmp0 (prop, "nmm:genre") == 0) {
+			const gchar *genre;
+
+			genre = tracker_resource_get_first_string (resource, prop);
 			g_value_init (&val, G_TYPE_STRING);
-			g_value_set_string (&val, row[3]);
+			g_value_set_string (&val, genre);
 			writeback_gstreamer_set (element, GST_TAG_GENRE, &val);
+			g_value_unset (&val);
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NMM "trackNumber") == 0) {
+		if (g_strcmp0 (prop, "nmm:trackNumber") == 0) {
+			gint number;
+
+			number = tracker_resource_get_first_int (resource, prop);
 			g_value_init (&val, G_TYPE_INT);
-			g_value_set_int (&val, atoi(row[3]));
+			g_value_set_int (&val, number);
 			writeback_gstreamer_set (element, GST_TAG_TRACK_NUMBER, &val);
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NMM "artwork") == 0) {
-			gchar *artwork_url = writeback_gstreamer_get_artwork_url(connection, row[3]);
+		if (g_strcmp0 (prop, "nmm:artwork") == 0) {
+			TrackerResource *image, *file = NULL;
+			const gchar *artwork_url = NULL;
+
+			image = tracker_resource_get_first_relation (resource, prop);
+
+			if (image)
+				file = tracker_resource_get_first_relation (image, "nie:isStoredAs");
+
+			if (file)
+				artwork_url = tracker_resource_get_first_string (image, "nie:url");
 
 			if (artwork_url) {
 				g_value_init (&val, G_TYPE_STRING);
 				g_value_set_string (&val, artwork_url);
 				writeback_gstreamer_set (element, GST_TAG_IMAGE, &val);
-				g_free (artwork_url);
+				g_value_unset (&val);
 			}
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NIE "contentCreated") == 0) {
+		if (g_strcmp0 (prop, "nie:contentCreated") == 0) {
+			const gchar *created;
+
+			created = tracker_resource_get_first_string (resource, prop);
 			g_value_init (&val, G_TYPE_STRING);
-			g_value_set_string (&val, row[3]);
+			g_value_set_string (&val, created);
 			writeback_gstreamer_set (element, GST_TAG_DATE_TIME, &val);
+			g_value_unset (&val);
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NMM "internationalStandardRecordingCode") == 0) {
+		if (g_strcmp0 (prop, "nmm:internationalStandardRecordingCode") == 0) {
+			const gchar *isrc;
+
+			isrc = tracker_resource_get_first_string (resource, prop);
 			g_value_init (&val, G_TYPE_STRING);
-			g_value_set_string (&val, row[3]);
+			g_value_set_string (&val, isrc);
 			writeback_gstreamer_set (element, GST_TAG_ISRC, &val);
+			g_value_unset (&val);
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NMM "lyrics") == 0) {
+		if (g_strcmp0 (prop, "nmm:lyrics") == 0) {
+			const gchar *lyrics;
+
+			lyrics = tracker_resource_get_first_string (resource, prop);
 			g_value_init (&val, G_TYPE_STRING);
-			g_value_set_string (&val, row[3]);
+			g_value_set_string (&val, lyrics);
 			writeback_gstreamer_set (element, GST_TAG_LYRICS, &val);
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NMM "composer") == 0) {
-			gchar *composer_name = writeback_gstreamer_get_artist_name (connection, row[3]);
+		if (g_strcmp0 (prop, "nmm:composer") == 0) {
+			TrackerResource *composer;
+			const gchar *name = NULL;
 
-			if (composer_name) {
+			composer = tracker_resource_get_first_relation (resource, prop);
+
+			if (composer) {
+				name = tracker_resource_get_first_string (composer,
+				                                          "nmm:artistName");
+			}
+
+			if (name) {
 				g_value_init (&val, G_TYPE_STRING);
-				g_value_set_string (&val, composer_name);
+				g_value_set_string (&val, name);
 				writeback_gstreamer_set (element, GST_TAG_COMPOSER, &val);
-				g_free (composer_name);
+				g_value_unset (&val);
 			}
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NMM "musicAlbumDisc") == 0) {
-			gchar *disc_number = writeback_gstreamer_get_disc_number (connection, row[3]);
+		if (g_strcmp0 (prop, "nmm:musicAlbumDisc") == 0) {
+			TrackerResource *disc;
+			gint number;
 
-			if (disc_number) {
+			disc = tracker_resource_get_first_relation (resource, prop);
+
+			if (disc) {
+				number = tracker_resource_get_first_int (disc,
+				                                         "nmm:setNumber");
 				g_value_init (&val, G_TYPE_INT);
-				g_value_set_int (&val, atoi(disc_number));
+				g_value_set_int (&val, number);
 				writeback_gstreamer_set (element, GST_TAG_ALBUM_VOLUME_NUMBER, &val);
+				g_value_unset (&val);
 			}
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NCO "publisher") == 0) {
-			gchar *publisher = writeback_gstreamer_get_publisher_name (connection, row[3]);
+		if (g_strcmp0 (prop, "nco:publisher") == 0) {
+			TrackerResource *publisher;
+			const gchar *name = NULL;
+
+			publisher = tracker_resource_get_first_relation (resource, prop);
 
 			if (publisher) {
+				name = tracker_resource_get_first_string (publisher,
+				                                          "nco:fullname");
+			}
+
+			if (name) {
 				g_value_init (&val, G_TYPE_STRING);
-				g_value_set_string (&val, publisher);
+				g_value_set_string (&val, name);
 				writeback_gstreamer_set (element, GST_TAG_PUBLISHER, &val);
+				g_value_unset (&val);
 			}
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NIE "description") == 0) {
+		if (g_strcmp0 (prop, "nie:description") == 0) {
+			const gchar *description;
+
+			description = tracker_resource_get_first_string (resource, prop);
 			g_value_init (&val, G_TYPE_STRING);
-			g_value_set_string (&val, row[3]);
+			g_value_set_string (&val, description);
 			writeback_gstreamer_set (element, GST_TAG_DESCRIPTION, &val);
+			g_value_unset (&val);
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NIE "keyword") == 0) {
-			g_value_init (&val, G_TYPE_STRING);
-			g_value_set_string (&val, row[3]);
-			writeback_gstreamer_set (element, GST_TAG_KEYWORDS, &val);
-		}
+		if (g_strcmp0 (prop, "nie:keyword") == 0) {
+			GList *keywords, *k;
+			GString *keyword_str = NULL;
 
-		g_value_unset (&val);
+			keywords = tracker_resource_get_values (resource, prop);
+
+			for (k = keywords; k; k = k->next) {
+				GValue *value;
+
+				value = k->data;
+
+				if (G_VALUE_HOLDS_STRING (value)) {
+					const gchar *str = g_value_get_string (value);
+
+					if (!keywords)
+						keyword_str = g_string_new (str);
+					else
+						g_string_append_printf (keyword_str, ",%s", str);
+				}
+			}
+
+			if (keyword_str->len > 0) {
+				g_value_init (&val, G_TYPE_STRING);
+				g_value_set_string (&val, keyword_str->str);
+				writeback_gstreamer_set (element, GST_TAG_KEYWORDS, &val);
+				g_value_unset (&val);
+			}
+
+			g_string_free (keyword_str, TRUE);
+			g_list_free (keywords);
+		}
 	}
 
 	writeback_gstreamer_save (element, file, error);
@@ -780,119 +873,10 @@ writeback_gstreamer_update_file_metadata (TrackerWritebackFile    *writeback,
 		gst_tag_list_unref (element->tags);
 	if (element->taggers != NULL)
 		g_hash_table_unref (element->taggers);
+	g_list_free (properties);
 	g_free (element);
 
 	return ret;
-}
-
-static gchar *
-writeback_gstreamer_get_from_query (TrackerSparqlConnection *connection,
-                                    const gchar             *urn,
-                                    const gchar             *query,
-                                    const gchar             *field)
-{
-	TrackerSparqlCursor *cursor;
-	GError *error = NULL;
-	gchar *value = NULL;
-
-	cursor = tracker_sparql_connection_query (connection, query, NULL, &error);
-
-	if (error || !cursor || !tracker_sparql_cursor_next (cursor, NULL, NULL)) {
-		g_warning ("Couldn't find %s for entity with urn '%s', %s",
-		           field,
-		           urn,
-		           error ? error->message : "no such value was found");
-
-		if (error) {
-			g_error_free (error);
-		}
-	} else {
-		value = g_strdup (tracker_sparql_cursor_get_string (cursor, 0, NULL));
-	}
-
-	g_clear_object (&cursor);
-
-	return value;
-}
-
-static gchar *
-writeback_gstreamer_get_artist_name (TrackerSparqlConnection *connection,
-                                     const gchar             *urn)
-{
-	gchar *val, *query;
-
-	query = g_strdup_printf ("SELECT ?artistName WHERE {<%s> nmm:artistName ?artistName}", urn);
-	val = writeback_gstreamer_get_from_query (connection, urn, query, "artist name");
-	g_free (query);
-
-	return val;
-}
-
-static gchar *
-writeback_gstreamer_get_album_name (TrackerSparqlConnection *connection,
-                                    const gchar             *urn)
-{
-	gchar *val, *query;
-
-	query = g_strdup_printf ("SELECT ?albumName WHERE {<%s> dc:title ?albumName}", urn);
-	val = writeback_gstreamer_get_from_query (connection, urn, query, "album name");
-	g_free (query);
-
-	return val;
-}
-
-static gchar *
-writeback_gstreamer_get_album_artist (TrackerSparqlConnection *connection,
-                                      const gchar             *urn)
-{
-	gchar *artist_urn, *val, *query;
-
-	query = g_strdup_printf ("SELECT ?albumArtist WHERE {<%s> nmm:albumArtist ?albumArtist}", urn);
-	artist_urn = writeback_gstreamer_get_from_query (connection, urn, query, "album artist");
-	val = writeback_gstreamer_get_artist_name (connection, artist_urn);
-	g_free(query);
-	g_free(artist_urn);
-
-	return val;
-}
-
-static gchar *
-writeback_gstreamer_get_disc_number (TrackerSparqlConnection *connection,
-                                     const gchar             *urn)
-{
-	gchar *val, *query;
-
-	query = g_strdup_printf ("SELECT ?setNumber WHERE {<%s> nmm:setNumber ?setNumber}", urn);
-	val = writeback_gstreamer_get_from_query (connection, urn, query, "set number");
-	g_free (query);
-
-	return val;
-}
-
-static gchar *
-writeback_gstreamer_get_publisher_name (TrackerSparqlConnection *connection,
-                                        const gchar             *urn)
-{
-	gchar *val, *query;
-
-	query = g_strdup_printf ("SELECT ?name WHERE {<%s> nco:fullname ?name}", urn);
-	val = writeback_gstreamer_get_from_query (connection, urn, query, "fullname");
-	g_free (query);
-
-	return val;
-}
-
-static gchar *
-writeback_gstreamer_get_artwork_url (TrackerSparqlConnection *connection,
-                                     const gchar             *urn)
-{
-	gchar *val, *query;
-
-	query = g_strdup_printf ("SELECT ?url WHERE {<%s> nie:url ?url}", urn);
-	val = writeback_gstreamer_get_from_query (connection, urn, query, "image URL");
-	g_free (query);
-
-	return val;
 }
 
 TrackerWriteback *

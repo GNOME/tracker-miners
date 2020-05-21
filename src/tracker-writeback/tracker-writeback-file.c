@@ -29,11 +29,10 @@
 
 #include "tracker-writeback-file.h"
 
-static gboolean tracker_writeback_file_update_metadata (TrackerWriteback         *writeback,
-                                                        GPtrArray                *values,
-                                                        TrackerSparqlConnection  *connection,
-                                                        GCancellable             *cancellable,
-                                                        GError                  **error);
+static gboolean tracker_writeback_file_write_metadata (TrackerWriteback         *writeback,
+                                                       TrackerResource          *resource,
+                                                       GCancellable             *cancellable,
+                                                       GError                  **error);
 
 G_DEFINE_ABSTRACT_TYPE (TrackerWritebackFile, tracker_writeback_file, TRACKER_TYPE_WRITEBACK)
 
@@ -42,7 +41,7 @@ tracker_writeback_file_class_init (TrackerWritebackFileClass *klass)
 {
 	TrackerWritebackClass *writeback_class = TRACKER_WRITEBACK_CLASS (klass);
 
-	writeback_class->update_metadata = tracker_writeback_file_update_metadata;
+	writeback_class->write_metadata = tracker_writeback_file_write_metadata;
 }
 
 static void
@@ -131,32 +130,27 @@ create_temporary_file (GFile      *file,
 }
 
 static gboolean
-tracker_writeback_file_update_metadata (TrackerWriteback         *writeback,
-                                        GPtrArray                *values,
-                                        TrackerSparqlConnection  *connection,
-                                        GCancellable             *cancellable,
-                                        GError                  **error)
+tracker_writeback_file_write_metadata (TrackerWriteback  *writeback,
+                                       TrackerResource   *resource,
+                                       GCancellable      *cancellable,
+                                       GError           **error)
 {
 	TrackerWritebackFileClass *writeback_file_class;
 	gboolean retval;
 	GFile *file, *tmp_file;
 	GFileInfo *file_info;
-	GStrv row;
 	const gchar * const *content_types;
-	const gchar *mime_type;
+	const gchar *mime_type, *url;
 	guint n;
 	GError *n_error = NULL;
 
 	writeback_file_class = TRACKER_WRITEBACK_FILE_GET_CLASS (writeback);
 
-	if (!writeback_file_class->update_file_metadata) {
-		g_critical ("%s doesn't implement update_file_metadata()",
-		            G_OBJECT_TYPE_NAME (writeback));
-
+	if (!writeback_file_class->write_file_metadata) {
 		g_set_error (error,
 		             G_IO_ERROR,
 		             G_IO_ERROR_FAILED,
-		             "%s doesn't implement update_file_metadata()",
+		             "%s doesn't implement write_file_metadata()",
 		             G_OBJECT_TYPE_NAME (writeback));
 
 		return FALSE;
@@ -175,9 +169,17 @@ tracker_writeback_file_update_metadata (TrackerWriteback         *writeback,
 		return FALSE;
 	}
 
-	/* Get the file from the row */
-	row = g_ptr_array_index (values, 0);
-	file = g_file_new_for_uri (row[0]);
+	/* Get the file from the resource */
+	url = tracker_resource_get_first_string (resource, "nie:isStoredAs");
+	if (!url) {
+		g_set_error (error,
+		             G_IO_ERROR,
+		             G_IO_ERROR_INVALID_DATA,
+		             "RDF does not contain nie:isStoredAs");
+		return FALSE;
+	}
+
+	file = g_file_new_for_uri (url);
 
 	file_info = g_file_query_info (file,
 	                               G_FILE_ATTRIBUTE_UNIX_MODE ","
@@ -193,7 +195,7 @@ tracker_writeback_file_update_metadata (TrackerWriteback         *writeback,
 		             G_IO_ERROR,
 		             G_IO_ERROR_FAILED,
 		             "%s doesn't exist",
-		             row[0]);
+		             url);
 
 		return FALSE;
 	}
@@ -206,7 +208,7 @@ tracker_writeback_file_update_metadata (TrackerWriteback         *writeback,
 		             G_IO_ERROR,
 		             G_IO_ERROR_FAILED,
 		             "%s not writable",
-		             row[0]);
+		             url);
 
 		return FALSE;
 	}
@@ -247,12 +249,11 @@ tracker_writeback_file_update_metadata (TrackerWriteback         *writeback,
 		return FALSE;
 	}
 
-	retval = (writeback_file_class->update_file_metadata) (TRACKER_WRITEBACK_FILE (writeback),
-	                                                       tmp_file,
-	                                                       values,
-	                                                       connection,
-	                                                       cancellable,
-	                                                       &n_error);
+	retval = (writeback_file_class->write_file_metadata) (TRACKER_WRITEBACK_FILE (writeback),
+	                                                      tmp_file,
+	                                                      resource,
+	                                                      cancellable,
+	                                                      &n_error);
 
 	if (!retval) {
 		/* Delete the temporary file and preserve original */

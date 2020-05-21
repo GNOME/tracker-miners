@@ -50,9 +50,8 @@ struct TrackerWriteback {
 struct TrackerWritebackClass {
 	GObjectClass parent_class;
 
-	gboolean (* update_metadata) (TrackerWriteback         *writeback,
-	                              GPtrArray                *values,
-	                              TrackerSparqlConnection  *connection,
+	gboolean (* write_metadata)  (TrackerWriteback         *writeback,
+	                              TrackerResource          *resource,
 	                              GCancellable             *cancellable,
 	                              GError                  **error);
 };
@@ -71,13 +70,11 @@ struct TrackerWritebackModuleClass {
 	GTypeModuleClass parent_class;
 };
 
-
 GType                   tracker_writeback_get_type          (void) G_GNUC_CONST;
-gboolean                tracker_writeback_update_metadata   (TrackerWriteback         *writeback,
-                                                             GPtrArray                *values,
-                                                             TrackerSparqlConnection  *connection,
-                                                             GCancellable             *cancellable,
-                                                             GError                  **error);
+gboolean                tracker_writeback_write_metadata    (TrackerWriteback  *writeback,
+                                                             TrackerResource   *resource,
+                                                             GCancellable      *cancellable,
+                                                             GError           **error);
 
 /* Entry functions to be defined by modules */
 TrackerWriteback *      writeback_module_create             (GTypeModule              *module);

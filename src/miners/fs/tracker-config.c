@@ -48,7 +48,6 @@
 #define DEFAULT_LOW_DISK_SPACE_LIMIT             1        /* 0->100 / -1 */
 #define DEFAULT_CRAWLING_INTERVAL                -1       /* 0->365 / -1 / -2 */
 #define DEFAULT_REMOVABLE_DAYS_THRESHOLD         3        /* 1->365 / 0  */
-#define DEFAULT_ENABLE_WRITEBACK                 FALSE
 
 typedef struct {
 	/* IMPORTANT: There are 3 versions of the directories:
@@ -117,10 +116,6 @@ enum {
 	PROP_IGNORED_FILES,
 	PROP_CRAWLING_INTERVAL,
 	PROP_REMOVABLE_DAYS_THRESHOLD,
-
-	/* Writeback */
-	PROP_ENABLE_WRITEBACK
-
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (TrackerConfig, tracker_config, G_TYPE_SETTINGS)
@@ -275,15 +270,6 @@ tracker_config_class_init (TrackerConfigClass *klass)
 	                                                   365,
 	                                                   DEFAULT_REMOVABLE_DAYS_THRESHOLD,
 	                                                   G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
-
-	/* Writeback */
-	g_object_class_install_property (object_class,
-	                                 PROP_ENABLE_WRITEBACK,
-	                                 g_param_spec_boolean ("enable-writeback",
-	                                                       "Enable Writeback",
-	                                                       "Set to false to disable writeback",
-	                                                       DEFAULT_ENABLE_WRITEBACK,
-	                                                       G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 }
 
 static void
@@ -428,11 +414,6 @@ config_get_property (GObject    *object,
 		break;
 	case PROP_REMOVABLE_DAYS_THRESHOLD:
 		g_value_set_int (value, tracker_config_get_removable_days_threshold (config));
-		break;
-
-	/* Writeback */
-	case PROP_ENABLE_WRITEBACK:
-		g_value_set_boolean (value, tracker_config_get_enable_writeback (config));
 		break;
 
 	/* Did we miss any new properties? */
@@ -652,7 +633,6 @@ config_constructed (GObject *object)
 	g_settings_bind (settings, "low-disk-space-limit", object, "low-disk-space-limit", G_SETTINGS_BIND_GET);
 	g_settings_bind (settings, "removable-days-threshold", object, "removable-days-threshold", G_SETTINGS_BIND_GET);
 	g_settings_bind (settings, "enable-monitors", object, "enable-monitors", G_SETTINGS_BIND_GET);
-	g_settings_bind (settings, "enable-writeback", object, "enable-writeback", G_SETTINGS_BIND_GET);
 	g_settings_bind (settings, "index-removable-devices", object, "index-removable-devices", G_SETTINGS_BIND_GET);
 	g_settings_bind (settings, "index-optical-discs", object, "index-optical-discs", G_SETTINGS_BIND_GET);
 	g_settings_bind (settings, "index-on-battery", object, "index-on-battery", G_SETTINGS_BIND_GET);
@@ -723,14 +703,6 @@ tracker_config_get_enable_monitors (TrackerConfig *config)
 	g_return_val_if_fail (TRACKER_IS_CONFIG (config), DEFAULT_ENABLE_MONITORS);
 
 	return g_settings_get_boolean (G_SETTINGS (config), "enable-monitors");
-}
-
-gboolean
-tracker_config_get_enable_writeback (TrackerConfig *config)
-{
-	g_return_val_if_fail (TRACKER_IS_CONFIG (config), DEFAULT_ENABLE_WRITEBACK);
-
-	return g_settings_get_boolean (G_SETTINGS (config), "enable-writeback");
 }
 
 gint

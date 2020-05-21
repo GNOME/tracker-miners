@@ -51,13 +51,12 @@ struct TrackerWritebackXMPClass {
 };
 
 static GType                tracker_writeback_xmp_get_type     (void) G_GNUC_CONST;
-static gboolean             writeback_xmp_update_file_metadata (TrackerWritebackFile     *writeback_file,
-                                                                GFile                    *file,
-                                                                GPtrArray                *values,
-                                                                TrackerSparqlConnection  *connection,
-                                                                GCancellable             *cancellable,
-                                                                GError                  **error);
-static const gchar * const *writeback_xmp_content_types        (TrackerWritebackFile     *writeback_file);
+static gboolean             writeback_xmp_write_file_metadata  (TrackerWritebackFile  *writeback_file,
+                                                                GFile                 *file,
+                                                                TrackerResource       *resource,
+                                                                GCancellable          *cancellable,
+                                                                GError               **error);
+static const gchar * const *writeback_xmp_content_types        (TrackerWritebackFile  *writeback_file);
 
 G_DEFINE_DYNAMIC_TYPE (TrackerWritebackXMP, tracker_writeback_xmp, TRACKER_TYPE_WRITEBACK_FILE);
 
@@ -68,7 +67,7 @@ tracker_writeback_xmp_class_init (TrackerWritebackXMPClass *klass)
 
 	xmp_init ();
 
-	writeback_file_class->update_file_metadata = writeback_xmp_update_file_metadata;
+	writeback_file_class->write_file_metadata = writeback_xmp_write_file_metadata;
 	writeback_file_class->content_types = writeback_xmp_content_types;
 }
 
@@ -108,23 +107,42 @@ writeback_xmp_content_types (TrackerWritebackFile *wbf)
 	return content_types;
 }
 
-static gboolean
-writeback_xmp_update_file_metadata (TrackerWritebackFile     *wbf,
-                                    GFile                    *file,
-                                    GPtrArray                *values,
-                                    TrackerSparqlConnection  *connection,
-                                    GCancellable             *cancellable,
-                                    GError                  **error)
+static void
+write_gps_coord (XmpPtr       xmp,
+                 const gchar *label,
+                 gdouble      coord,
+                 gchar        more,
+                 gchar        less)
 {
+	double degrees, minutes;
+	gchar *val;
+
+	minutes = modf (coord, &degrees);
+
+	val = g_strdup_printf ("%3d,%f%c",
+	                       (int) fabs (degrees),
+	                       minutes,
+	                       coord >= 0 ? more : less);
+
+	xmp_delete_property (xmp, NS_EXIF, label);
+	xmp_set_property (xmp, NS_EXIF, label, val, 0);
+	g_free (val);
+}
+
+static gboolean
+writeback_xmp_write_file_metadata (TrackerWritebackFile  *wbf,
+                                   GFile                 *file,
+                                   TrackerResource       *resource,
+                                   GCancellable          *cancellable,
+                                   GError               **error)
+{
+	GList *properties, *l;
 	gchar *path;
-	guint n;
 	XmpFilePtr xmp_files;
 	XmpPtr xmp;
 #ifdef DEBUG_XMP
 	XmpStringPtr str;
 #endif
-	GString *keywords = NULL;
-	const gchar *urn = NULL;
 
 	path = g_file_get_path (file);
 
@@ -155,135 +173,141 @@ writeback_xmp_update_file_metadata (TrackerWritebackFile     *wbf,
 	xmp_string_free (str);
 #endif
 
-	for (n = 0; n < values->len; n++) {
-		const GStrv row = g_ptr_array_index (values, n);
+	properties = tracker_resource_get_properties (resource);
 
-		urn = row[1]; /* The urn is at 1 */
+	for (l = properties; l; l = l->next) {
+		const gchar *prop = l->data;
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NIE "title") == 0) {
+		if (g_strcmp0 (prop, "nie:title") == 0) {
+			const gchar *title;
+
+			title = tracker_resource_get_first_string (resource, prop);
 			xmp_delete_property (xmp, NS_EXIF, "Title");
-			xmp_set_property (xmp, NS_EXIF, "Title", row[3], 0);
+			xmp_set_property (xmp, NS_EXIF, "Title", title, 0);
 			xmp_delete_property (xmp, NS_DC, "title");
-			xmp_set_property (xmp, NS_DC, "title", row[3], 0);
+			xmp_set_property (xmp, NS_DC, "title", title, 0);
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NCO "creator") == 0) {
-			TrackerSparqlCursor *cursor;
-			GError *error = NULL;
-			gchar *query;
+		if (g_strcmp0 (prop, "nco:creator") == 0) {
+			TrackerResource *creator;
+			const gchar *name = NULL;
 
-			query = g_strdup_printf ("SELECT ?fullname { "
-			                         "  <%s> nco:fullname ?fullname "
-			                         "}", row[3]);
-			cursor = tracker_sparql_connection_query (connection, query, NULL, &error);
-			g_free (query);
-			if (!error) {
-				while (tracker_sparql_cursor_next (cursor, NULL, NULL)) {
-					xmp_delete_property (xmp, NS_DC, "creator");
-					xmp_set_property (xmp, NS_DC, "creator",
-					                  tracker_sparql_cursor_get_string (cursor, 0, NULL),
-					                  0);
-				}
+			creator = tracker_resource_get_first_relation (resource, prop);
+
+			if (creator) {
+				name = tracker_resource_get_first_string (creator,
+				                                          "nco:fullname");
 			}
-			g_object_unref (cursor);
-			g_clear_error (&error);
-		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NCO "contributor") == 0) {
-			TrackerSparqlCursor *cursor;
-			GError *error = NULL;
-			gchar *query;
-
-			query = g_strdup_printf ("SELECT ?fullname { "
-			                         "  <%s> nco:fullname ?fullname "
-			                         "}", row[3]);
-
-			cursor = tracker_sparql_connection_query (connection, query, NULL, &error);
-			g_free (query);
-			if (!error) {
-				while (tracker_sparql_cursor_next (cursor, NULL, NULL)) {
-					xmp_delete_property (xmp, NS_DC, "contributor");
-					xmp_set_property (xmp, NS_DC, "contributor", tracker_sparql_cursor_get_string (cursor, 0, NULL), 0);
-				}
+			if (name) {
+				xmp_delete_property (xmp, NS_DC, "creator");
+				xmp_set_property (xmp, NS_DC, "creator", name, 0);
 			}
-			g_object_unref (cursor);
-			g_clear_error (&error);
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NIE "description") == 0) {
+		if (g_strcmp0 (prop, "nco:contributor") == 0) {
+			TrackerResource *contributor;
+			const gchar *name = NULL;
+
+			contributor = tracker_resource_get_first_relation (resource, prop);
+
+			if (contributor) {
+				name = tracker_resource_get_first_string (contributor,
+				                                          "nco:fullname");
+			}
+
+			if (name) {
+				xmp_delete_property (xmp, NS_DC, "contributor");
+				xmp_set_property (xmp, NS_DC, "contributor", name, 0);
+			}
+		}
+
+		if (g_strcmp0 (prop, "nie:description") == 0) {
+			const gchar *description;
+
+			description = tracker_resource_get_first_string (resource, prop);
 			xmp_delete_property (xmp, NS_DC, "description");
-			xmp_set_property (xmp, NS_DC, "description", row[3], 0);
+			xmp_set_property (xmp, NS_DC, "description", description, 0);
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NIE "copyright") == 0) {
+		if (g_strcmp0 (prop, "nie:copyright") == 0) {
+			const gchar *copyright;
+
+			copyright = tracker_resource_get_first_string (resource, prop);
 			xmp_delete_property (xmp, NS_EXIF, "Copyright");
-			xmp_set_property (xmp, NS_EXIF, "Copyright", row[3], 0);
+			xmp_set_property (xmp, NS_EXIF, "Copyright", copyright, 0);
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NIE "comment") == 0) {
+		if (g_strcmp0 (prop, "nie:comment") == 0) {
+			const gchar *comment;
+
+			comment = tracker_resource_get_first_string (resource, prop);
 			xmp_delete_property (xmp, NS_EXIF, "UserComment");
-			xmp_set_property (xmp, NS_EXIF, "UserComment", row[3], 0);
+			xmp_set_property (xmp, NS_EXIF, "UserComment", comment, 0);
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NIE "keyword") == 0) {
-			if (!keywords) {
-				keywords = g_string_new (row[3]);
-			} else {
-				g_string_append_printf (keywords, ", %s", row[3]);
-			}
-		}
+		if (g_strcmp0 (prop, "nie:keyword") == 0) {
+			GList *keywords, *k;
+			GString *keyword_str = NULL;
 
+			keywords = tracker_resource_get_values (resource, prop);
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NAO "hasTag") == 0) {
-			TrackerSparqlCursor *cursor;
-			GError *error = NULL;
-			gchar *query;
+			for (k = keywords; k; k = k->next) {
+				GValue *value;
 
-			query = g_strdup_printf ("SELECT ?label { "
-			                         "  <%s> nao:prefLabel ?label "
-			                         "}", row[3]);
+				value = k->data;
 
-			cursor = tracker_sparql_connection_query (connection, query, NULL, &error);
-			g_free (query);
-			if (!error) {
-				while (tracker_sparql_cursor_next (cursor, NULL, NULL)) {
-					if (!keywords) {
-						keywords = g_string_new (tracker_sparql_cursor_get_string (cursor, 0, NULL));
-					} else {
-						g_string_append_printf (keywords, ", %s", tracker_sparql_cursor_get_string (cursor, 0, NULL));
-					}
+				if (G_VALUE_HOLDS_STRING (value)) {
+					const gchar *str = g_value_get_string (value);
+
+					if (!keywords)
+						keyword_str = g_string_new (str);
+					else
+						g_string_append_printf (keyword_str, ", %s", str);
 				}
 			}
-			g_object_unref (cursor);
-			g_clear_error (&error);
+
+			if (keyword_str->len > 0) {
+				xmp_delete_property (xmp, NS_DC, "subject");
+				xmp_set_property (xmp, NS_DC, "subject", keyword_str->str, 0);
+			}
+
+			g_string_free (keyword_str, TRUE);
+			g_list_free (keywords);
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NIE "contentCreated") == 0) {
+		if (g_strcmp0 (prop, "nie:contentCreated") == 0) {
+			const gchar *created;
+
+			created = tracker_resource_get_first_string (resource, prop);
 			xmp_delete_property (xmp, NS_EXIF, "Date");
-			xmp_set_property (xmp, NS_EXIF, "Date", row[3], 0);
+			xmp_set_property (xmp, NS_EXIF, "Date", created, 0);
 			xmp_delete_property (xmp,  NS_DC, "date");
-			xmp_set_property (xmp,  NS_DC, "date", row[3], 0);
+			xmp_set_property (xmp,  NS_DC, "date", created, 0);
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NFO "orientation") == 0) {
+		if (g_strcmp0 (prop, "nfo:orientation") == 0) {
+			const gchar *orientation;
+
+			orientation = tracker_resource_get_first_uri (resource, prop);
 
 			xmp_delete_property (xmp, NS_EXIF, "Orientation");
 
-			if        (g_strcmp0 (row[3], TRACKER_PREFIX_NFO "orientation-top") == 0) {
+			if (g_strcmp0 (orientation, "nfo:orientation-top") == 0) {
 				xmp_set_property (xmp, NS_EXIF, "Orientation", "top - left", 0);
-			} else if (g_strcmp0 (row[3], TRACKER_PREFIX_NFO "orientation-top-mirror") == 0) {
+			} else if (g_strcmp0 (orientation, "nfo:orientation-top-mirror") == 0) {
 				xmp_set_property (xmp, NS_EXIF, "Orientation", "top - right", 0);
-			} else if (g_strcmp0 (row[3], TRACKER_PREFIX_NFO "orientation-bottom") == 0) {
+			} else if (g_strcmp0 (orientation, "nfo:orientation-bottom") == 0) {
 				xmp_set_property (xmp, NS_EXIF, "Orientation", "bottom - left", 0);
-			} else if (g_strcmp0 (row[3], TRACKER_PREFIX_NFO "orientation-bottom-mirror") == 0) {
+			} else if (g_strcmp0 (orientation, "nfo:orientation-bottom-mirror") == 0) {
 				xmp_set_property (xmp, NS_EXIF, "Orientation", "bottom - right", 0);
-			} else if (g_strcmp0 (row[3], TRACKER_PREFIX_NFO "orientation-left-mirror") == 0) {
+			} else if (g_strcmp0 (orientation, "nfo:orientation-left-mirror") == 0) {
 				xmp_set_property (xmp, NS_EXIF, "Orientation", "left - top", 0);
-			} else if (g_strcmp0 (row[3], TRACKER_PREFIX_NFO "orientation-right") == 0) {
+			} else if (g_strcmp0 (orientation, "nfo:orientation-right") == 0) {
 				xmp_set_property (xmp, NS_EXIF, "Orientation", "right - top", 0);
-			} else if (g_strcmp0 (row[3], TRACKER_PREFIX_NFO "orientation-right-mirror") == 0) {
+			} else if (g_strcmp0 (orientation, "nfo:orientation-right-mirror") == 0) {
 					xmp_set_property (xmp, NS_EXIF, "Orientation", "right - bottom", 0);
-			} else if (g_strcmp0 (row[3], TRACKER_PREFIX_NFO "orientation-left") == 0) {
+			} else if (g_strcmp0 (orientation, "nfo:orientation-left") == 0) {
 				xmp_set_property (xmp, NS_EXIF, "Orientation", "left - bottom", 0);
 			}
 		}
@@ -294,7 +318,10 @@ writeback_xmp_update_file_metadata (TrackerWritebackFile     *wbf,
 		 * the actual camera did, anyway? Even if the user overwrites them in
 		 * the RDF store ... (does he know what he's doing anyway?) */
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NMM "meteringMode") == 0) {
+		if (g_strcmp0 (prop, "nmm:meteringMode") == 0) {
+			const gchar *metering;
+
+			metering = tracker_resource_get_first_uri (resource, prop);
 
 			xmp_delete_property (xmp, NS_EXIF, "MeteringMode");
 
@@ -307,28 +334,31 @@ writeback_xmp_update_file_metadata (TrackerWritebackFile     *wbf,
 			   6 = Partial
 			   255 = other  */
 
-			if        (g_strcmp0 (row[3], TRACKER_PREFIX_NMM "metering-mode-center-weighted-average") == 0) {
+			if (g_strcmp0 (metering, "nmm:metering-mode-center-weighted-average") == 0) {
 				xmp_set_property (xmp, NS_EXIF, "MeteringMode", "0", 0);
-			} else if (g_strcmp0 (row[3], TRACKER_PREFIX_NMM "metering-mode-average") == 0) {
+			} else if (g_strcmp0 (metering, "nmm:metering-mode-average") == 0) {
 				xmp_set_property (xmp, NS_EXIF, "MeteringMode", "1", 0);
-			} else if (g_strcmp0 (row[3], TRACKER_PREFIX_NMM "metering-mode-spot") == 0) {
+			} else if (g_strcmp0 (metering, "nmm:metering-mode-spot") == 0) {
 				xmp_set_property (xmp, NS_EXIF, "MeteringMode", "3", 0);
-			} else if (g_strcmp0 (row[3], TRACKER_PREFIX_NMM "metering-mode-multispot") == 0) {
+			} else if (g_strcmp0 (metering, "nmm:metering-mode-multispot") == 0) {
 				xmp_set_property (xmp, NS_EXIF, "MeteringMode", "4", 0);
-			} else if (g_strcmp0 (row[3], TRACKER_PREFIX_NMM "metering-mode-pattern") == 0) {
+			} else if (g_strcmp0 (metering, "nmm:metering-mode-pattern") == 0) {
 				xmp_set_property (xmp, NS_EXIF, "MeteringMode", "5", 0);
-			} else if (g_strcmp0 (row[3], TRACKER_PREFIX_NMM "metering-mode-partial") == 0) {
+			} else if (g_strcmp0 (metering, "nmm:metering-mode-partial") == 0) {
 				xmp_set_property (xmp, NS_EXIF, "MeteringMode", "6", 0);
 			} else {
 				xmp_set_property (xmp, NS_EXIF, "MeteringMode", "255", 0);
 			}
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NMM "whiteBalance") == 0) {
+		if (g_strcmp0 (prop, "nmm:whiteBalance") == 0) {
+			const gchar *balance;
+
+			balance = tracker_resource_get_first_uri (resource, prop);
 
 			xmp_delete_property (xmp, NS_EXIF, "WhiteBalance");
 
-			if (g_strcmp0 (row[3], TRACKER_PREFIX_NMM "white-balance-auto") == 0) {
+			if (g_strcmp0 (balance, "nmm:white-balance-auto") == 0) {
 				/* 0 = Auto white balance
 				 * 1 = Manual white balance */
 				xmp_set_property (xmp, NS_EXIF, "WhiteBalance", "0", 0);
@@ -337,11 +367,14 @@ writeback_xmp_update_file_metadata (TrackerWritebackFile     *wbf,
 			}
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NMM "flash") == 0) {
+		if (g_strcmp0 (prop, "nmm:flash") == 0) {
+			const gchar *flash;
+
+			flash = tracker_resource_get_first_uri (resource, prop);
 
 			xmp_delete_property (xmp, NS_EXIF, "Flash");
 
-			if (g_strcmp0 (row[3], TRACKER_PREFIX_NMM "flash-on") == 0) {
+			if (g_strcmp0 (flash, "nmm:flash-on") == 0) {
 				/* 0 = Flash did not fire
 				 * 1 = Flash fired */
 				xmp_set_property (xmp, NS_EXIF, "Flash", "1", 0);
@@ -350,203 +383,135 @@ writeback_xmp_update_file_metadata (TrackerWritebackFile     *wbf,
 			}
 		}
 
-
-		/* TODO: Don't write row[3] as-is here, read xmp_specification.pdf,
+		/* TODO: Don't write value as-is here, read xmp_specification.pdf,
 		   page 84 (bottom). */
+		if (g_strcmp0 (prop, "nmm:focalLength") == 0) {
+			gdouble focal_length;
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NMM "focalLength") == 0) {
+			focal_length = tracker_resource_get_first_double (resource, prop);
 			xmp_delete_property (xmp, NS_EXIF, "FocalLength");
-			xmp_set_property (xmp, NS_EXIF, "FocalLength", row[3], 0);
+			xmp_set_property (xmp, NS_EXIF, "FocalLength", focal_length, 0);
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NMM "exposureTime") == 0) {
+		if (g_strcmp0 (prop, "nmm:exposureTime") == 0) {
+			gdouble exposure;
+
+			exposure = tracker_resource_get_first_double (resource, prop);
 			xmp_delete_property (xmp, NS_EXIF, "ExposureTime");
-			xmp_set_property (xmp, NS_EXIF, "ExposureTime", row[3], 0);
+			xmp_set_property (xmp, NS_EXIF, "ExposureTime", exposure, 0);
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NMM "isoSpeed") == 0) {
+		if (g_strcmp0 (prop, "nmm:isoSpeed") == 0) {
+			gdouble speed;
+
+			speed = tracker_resource_get_first_double (resource, prop);
 			xmp_delete_property (xmp, NS_EXIF, "ISOSpeedRatings");
-			xmp_set_property (xmp, NS_EXIF, "ISOSpeedRatings", row[3], 0);
+			xmp_set_property (xmp, NS_EXIF, "ISOSpeedRatings", speed, 0);
 		}
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NMM "fnumber") == 0) {
+		if (g_strcmp0 (prop, "nmm:fnumber") == 0) {
+			gdouble fnumber;
+
+			fnumber = tracker_resource_get_first_double (resource, prop);
 			xmp_delete_property (xmp, NS_EXIF, "FNumber");
-			xmp_set_property (xmp, NS_EXIF, "FNumber", row[3], 0);
+			xmp_set_property (xmp, NS_EXIF, "FNumber", fnumber, 0);
 		}
 
+		if (g_strcmp0 (prop, "nfo:equipment") == 0) {
+			TrackerResource *equipment;
+			const gchar *maker, *model;
 
-		/* Totally deprecated: this uses nfo:Equipment nowadays */
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NMM "camera") == 0) {
-			gchar *work_on = g_strdup (row[3]);
-			gchar *ptr = strchr (work_on, ' ');
+			equipment = tracker_resource_get_first_relation (resource, prop);
 
-			if (ptr) {
-
-				*ptr = '\0';
-				ptr++;
-
-				xmp_delete_property (xmp, NS_EXIF, "Make");
-				xmp_set_property (xmp, NS_EXIF, "Make", work_on, 0);
-				xmp_delete_property (xmp, NS_EXIF, "Model");
-				xmp_set_property (xmp, NS_EXIF, "Model", ptr, 0);
-			} else {
-				xmp_delete_property (xmp, NS_EXIF, "Make");
-				xmp_delete_property (xmp, NS_EXIF, "Model");
-				xmp_set_property (xmp, NS_EXIF, "Model", work_on, 0);
+			if (equipment) {
+				maker = tracker_resource_get_first_string (equipment,
+				                                           "nfo:manufacturer");
+				model = tracker_resource_get_first_string (equipment,
+				                                           "nfo:model");
 			}
 
-			g_free (work_on);
+			if (maker) {
+				xmp_delete_property (xmp, NS_EXIF, "Make");
+				xmp_set_property (xmp, NS_EXIF, "Make", maker, 0);
+			}
+
+			if (model) {
+				xmp_delete_property (xmp, NS_EXIF, "Model");
+				xmp_set_property (xmp, NS_EXIF, "Model", model, 0);
+			}
 		}
 #endif /* SET_TYPICAL_CAMERA_FIELDS */
 
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NFO "heading") == 0) {
+		if (g_strcmp0 (prop, "nfo:heading") == 0) {
+			gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
+			gdouble heading;
+
+			heading = tracker_resource_get_first_double (resource, prop);
+			g_ascii_dtostr (buf, G_ASCII_DTOSTR_BUF_SIZE, heading);
 			xmp_delete_property (xmp, NS_EXIF, "GPSImgDirection");
-			xmp_set_property (xmp, NS_EXIF, "GPSImgDirection", row[3], 0);
+			xmp_set_property (xmp, NS_EXIF, "GPSImgDirection", buf, 0);
 		}
-	}
 
-	if (urn != NULL) {
-		TrackerSparqlCursor *cursor;
-		GError *error = NULL;
-		gchar *query;
+		if (g_strcmp0 (prop, "slo:location") == 0) {
+			TrackerResource *location;
+			gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
+			const gchar *str;
+			gdouble value;
 
-		query = g_strdup_printf ("SELECT "
-		                         "nco:locality (?addr) "
-		                         "nco:region (?addr) "
-		                         "nco:streetAddress (?addr) "
-		                         "nco:country (?addr) "
-		                         "slo:altitude (?loc) "
-		                         "slo:longitude (?loc) "
-		                         "slo:latitude (?loc) "
-		                         "WHERE { <%s> slo:location ?loc . "
-		                                 "?loc slo:postalAddress ?addr . }",
-		                         urn);
+			location = tracker_resource_get_first_relation (resource, prop);
 
-		cursor = tracker_sparql_connection_query (connection, query, NULL, &error);
-		g_free (query);
-		if (!error) {
-			if (tracker_sparql_cursor_next (cursor, NULL, NULL)) {
-				const gchar *city = NULL, *subl = NULL, *country = NULL,
-				            *state = NULL, *altitude = NULL, *longitude = NULL,
-				            *latitude = NULL;
-
-				if (tracker_sparql_cursor_get_value_type (cursor, 0) != TRACKER_SPARQL_VALUE_TYPE_UNBOUND) {
-					city = tracker_sparql_cursor_get_string (cursor, 0, NULL);
-				}
-
-				if (tracker_sparql_cursor_get_value_type (cursor, 1) != TRACKER_SPARQL_VALUE_TYPE_UNBOUND) {
-					state = tracker_sparql_cursor_get_string (cursor, 1, NULL);
-				}
-
-				if (tracker_sparql_cursor_get_value_type (cursor, 2) != TRACKER_SPARQL_VALUE_TYPE_UNBOUND) {
-					subl = tracker_sparql_cursor_get_string (cursor, 2, NULL);
-				}
-
-				if (tracker_sparql_cursor_get_value_type (cursor, 3) != TRACKER_SPARQL_VALUE_TYPE_UNBOUND) {
-					country = tracker_sparql_cursor_get_string (cursor, 3, NULL);
-				}
-
-				if (tracker_sparql_cursor_get_value_type (cursor, 4) != TRACKER_SPARQL_VALUE_TYPE_UNBOUND) {
-					altitude = tracker_sparql_cursor_get_string (cursor, 4, NULL);
-				}
-
-				if (tracker_sparql_cursor_get_value_type (cursor, 5) != TRACKER_SPARQL_VALUE_TYPE_UNBOUND) {
-					longitude = tracker_sparql_cursor_get_string (cursor, 5, NULL);
-				}
-				
-				if (tracker_sparql_cursor_get_value_type (cursor, 6) != TRACKER_SPARQL_VALUE_TYPE_UNBOUND) {
-					latitude = tracker_sparql_cursor_get_string (cursor, 6, NULL);
-				}
-
-				/* TODO: A lot of these location fields are pretty vague and ambigious.
-				 * We should go through them one by one and ensure that all of them are
-				 * used sanely */
-
-				xmp_delete_property (xmp, NS_IPTC4XMP, "City");
-				xmp_delete_property (xmp, NS_PHOTOSHOP, "City");
-				if (city != NULL) {
-					xmp_set_property (xmp, NS_IPTC4XMP, "City", city, 0);
-					xmp_set_property (xmp, NS_PHOTOSHOP, "City", city, 0);
-				}
-
-				xmp_delete_property (xmp, NS_IPTC4XMP, "State");
-				xmp_delete_property (xmp, NS_IPTC4XMP, "Province");
-				xmp_delete_property (xmp, NS_PHOTOSHOP, "State");
-				if (state != NULL) {
-					xmp_set_property (xmp, NS_IPTC4XMP, "State", state, 0);
-					xmp_set_property (xmp, NS_IPTC4XMP, "Province", state, 0);
-					xmp_set_property (xmp, NS_PHOTOSHOP, "State", state, 0);
-				}
-
-				xmp_delete_property (xmp, NS_IPTC4XMP, "SubLocation");
-				xmp_delete_property (xmp, NS_PHOTOSHOP, "Location");
-				if (subl != NULL) {
-					xmp_set_property (xmp, NS_IPTC4XMP, "SubLocation", subl, 0);
-					xmp_set_property (xmp, NS_PHOTOSHOP, "Location", subl, 0);
-				}
-
-				xmp_delete_property (xmp, NS_PHOTOSHOP, "Country");
-				xmp_delete_property (xmp, NS_IPTC4XMP, "Country");
-				xmp_delete_property (xmp, NS_IPTC4XMP, "PrimaryLocationName");
-				xmp_delete_property (xmp, NS_IPTC4XMP, "CountryName");
-				if (country != NULL) {
-					xmp_set_property (xmp, NS_PHOTOSHOP, "Country", country, 0);
-					xmp_set_property (xmp, NS_IPTC4XMP, "Country", country, 0);
-					xmp_set_property (xmp, NS_IPTC4XMP, "PrimaryLocationName", country, 0);
-					xmp_set_property (xmp, NS_IPTC4XMP, "CountryName", country, 0);
-				}
-
-				xmp_delete_property (xmp, NS_EXIF, "GPSAltitude");
-				if (altitude != NULL) {
-					xmp_set_property (xmp, NS_EXIF, "GPSAltitude", altitude, 0);
-				}
-
-				xmp_delete_property (xmp, NS_EXIF, "GPSLongitude");
-				if (longitude != NULL) {
-					double coord = atof (longitude);
-					double degrees, minutes;
-					gchar *val;
-
-					minutes = modf (coord, &degrees);
-
-					val = g_strdup_printf ("%3d,%f%c",
-					                       (int) fabs(degrees),
-					                       minutes,
-					                       coord >= 0 ? 'E' : 'W');
-
-					xmp_set_property (xmp, NS_EXIF, "GPSLongitude", val, 0);
-
-					g_free (val);
-				}
-
-				xmp_delete_property (xmp, NS_EXIF, "GPSLatitude");
-				if (latitude != NULL) {
-					double coord = atof (latitude);
-					double degrees, minutes;
-					gchar *val;
-
-					minutes = modf (coord, &degrees);
-
-					val = g_strdup_printf ("%3d,%f%c",
-					                       (int) fabs(degrees),
-					                       minutes,
-					                       coord >= 0 ? 'N' : 'S');
-
-					xmp_set_property (xmp, NS_EXIF, "GPSLatitude", val, 0);
-
-					g_free (val);
-				}
+			/* TODO: A lot of these location fields are pretty vague and ambigious.
+			 * We should go through them one by one and ensure that all of them are
+			 * used sanely */
+			str = tracker_resource_get_first_string (location, "nco:locality");
+			xmp_delete_property (xmp, NS_IPTC4XMP, "City");
+			xmp_delete_property (xmp, NS_PHOTOSHOP, "City");
+			if (str != NULL) {
+				xmp_set_property (xmp, NS_IPTC4XMP, "City", str, 0);
+				xmp_set_property (xmp, NS_PHOTOSHOP, "City", str, 0);
 			}
+
+			str = tracker_resource_get_first_string (location, "nco:region");
+			xmp_delete_property (xmp, NS_IPTC4XMP, "State");
+			xmp_delete_property (xmp, NS_IPTC4XMP, "Province");
+			xmp_delete_property (xmp, NS_PHOTOSHOP, "State");
+			if (str != NULL) {
+				xmp_set_property (xmp, NS_IPTC4XMP, "State", str, 0);
+				xmp_set_property (xmp, NS_IPTC4XMP, "Province", str, 0);
+				xmp_set_property (xmp, NS_PHOTOSHOP, "State", str, 0);
+			}
+
+			str = tracker_resource_get_first_string (location, "nco:streetAddress");
+			xmp_delete_property (xmp, NS_IPTC4XMP, "SubLocation");
+			xmp_delete_property (xmp, NS_PHOTOSHOP, "Location");
+			if (str != NULL) {
+				xmp_set_property (xmp, NS_IPTC4XMP, "SubLocation", str, 0);
+				xmp_set_property (xmp, NS_PHOTOSHOP, "Location", str, 0);
+			}
+
+			str = tracker_resource_get_first_string (location, "nco:country");
+			xmp_delete_property (xmp, NS_PHOTOSHOP, "Country");
+			xmp_delete_property (xmp, NS_IPTC4XMP, "Country");
+			xmp_delete_property (xmp, NS_IPTC4XMP, "PrimaryLocationName");
+			xmp_delete_property (xmp, NS_IPTC4XMP, "CountryName");
+			if (str != NULL) {
+				xmp_set_property (xmp, NS_PHOTOSHOP, "Country", str, 0);
+				xmp_set_property (xmp, NS_IPTC4XMP, "Country", str, 0);
+				xmp_set_property (xmp, NS_IPTC4XMP, "PrimaryLocationName", str, 0);
+				xmp_set_property (xmp, NS_IPTC4XMP, "CountryName", str, 0);
+			}
+
+			value = tracker_resource_get_first_double (location, "slo:altitude");
+			xmp_delete_property (xmp, NS_EXIF, "GPSAltitude");
+			g_ascii_dtostr (buf, G_ASCII_DTOSTR_BUF_SIZE, value);
+			xmp_set_property (xmp, NS_EXIF, "GPSAltitude", buf, 0);
+
+			value = tracker_resource_get_first_double (location, "slo:longitude");
+			write_gps_coord (xmp, "GPSLongitude", value, 'E', 'W');
+
+			value = tracker_resource_get_first_double (location, "slo:latitude");
+			write_gps_coord (xmp, "GPSLatitude", value, 'N', 'S');
 		}
-
-		g_object_unref (cursor);
-		g_clear_error (&error);
-	}
-
-	if (keywords) {
-		xmp_delete_property (xmp, NS_DC, "subject");
-		xmp_set_property (xmp, NS_DC, "subject", keywords->str, 0);
-		g_string_free (keywords, TRUE);
 	}
 
 #ifdef DEBUG_XMP
@@ -573,6 +538,7 @@ writeback_xmp_update_file_metadata (TrackerWritebackFile     *wbf,
 	xmp_free (xmp);
 	xmp_files_free (xmp_files);
 	g_free (path);
+	g_list_free (properties);
 
 	return TRUE;
 }

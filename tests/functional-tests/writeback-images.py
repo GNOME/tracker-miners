@@ -26,6 +26,9 @@ import unittest as ut
 import configuration
 import fixtures
 
+import gi
+from gi.repository import GLib
+
 log = logging.getLogger(__name__)
 
 
@@ -50,18 +53,17 @@ class WritebackImagesTest(fixtures.TrackerWritebackTest):
         initial_mtime = path.stat().st_mtime
 
         TEST_VALUE = prop.replace(":", "") + "test"
-        SPARQL_TMPL = """
-           DELETE { ?u %s ?v } WHERE { ?u nie:url '%s' ; %s ?v }
-           INSERT { ?u a nie:InformationElement; %s '%s' }
-           WHERE  { ?u nie:url '%s' }
-        """
-        self.tracker.update(SPARQL_TMPL % (prop, path.as_uri(), prop, prop, TEST_VALUE, path.as_uri()))
+        self.writeback_data({
+            'rdf:type': GLib.Variant('s', 'nfo:Image'),
+            'nie:isStoredAs': GLib.Variant('s', path.as_uri()),
+            prop: GLib.Variant('s', TEST_VALUE),
+        })
 
         log.debug("Waiting for change on %s", path)
         self.wait_for_file_change(path, initial_mtime)
         log.debug("Got the change")
 
-        results = fixtures.get_tracker_extract_jsonld_output(self.extra_env, path, mimetype)
+        results = fixtures.get_tracker_extract_jsonld_output({}, path, mimetype)
         keyDict = expectedKey or prop
         self.assertIn(TEST_VALUE, results[keyDict])
 
@@ -140,8 +142,4 @@ class WritebackImagesTest(fixtures.TrackerWritebackTest):
 
 
 if __name__ == "__main__":
-    print("FIXME: This test is skipped as it currently fails. See: https://gitlab.gnome.org/GNOME/tracker-miners/issues/96")
-    import sys
-    sys.exit(77)
-
     ut.main(failfast=True, verbosity=2)

@@ -20,25 +20,27 @@ import unittest
 
 import fixtures
 
+import gi
+from gi.repository import GLib
 
 class WritebackAudioTest(fixtures.TrackerWritebackTest):
     def _writeback_test(self, path):
         prop = 'nie:title'
 
-        path = self.prepare_test_audio(path)
+        path = self.prepare_test_audio(self.datadir_path(path))
         initial_mtime = path.stat().st_mtime
 
         TEST_VALUE = prop.replace(":", "") + "test"
-        SPARQL_TMPL = """
-           DELETE { ?u a nie:InformationElement; %s ?v } WHERE { ?u nie:url '%s' ; %s ?v }
-           INSERT { ?u a nie:InformationElement; %s '%s' }
-           WHERE  { ?u nie:url '%s' }
-        """
-        self.tracker.update(SPARQL_TMPL % (prop, path.as_uri(), prop, prop, TEST_VALUE, path.as_uri()))
+
+        self.writeback_data({
+            'rdf:type': GLib.Variant('s', 'nfo:Audio'),
+            'nie:isStoredAs': GLib.Variant('s', path.as_uri()),
+            'nie:title': GLib.Variant('s', TEST_VALUE),
+        })
 
         self.wait_for_file_change(path, initial_mtime)
 
-        results = fixtures.get_tracker_extract_jsonld_output(self.extra_env, path)
+        results = fixtures.get_tracker_extract_jsonld_output({}, path)
         self.assertIn(TEST_VALUE, results[prop])
 
     def test_writeback_mp3(self):
@@ -54,8 +56,4 @@ class WritebackAudioTest(fixtures.TrackerWritebackTest):
         self._writeback_test(self.datadir_path('writeback-test-8.mp4'))
 
 if __name__ == "__main__":
-    print("FIXME: This test is skipped as it currently fails. See: https://gitlab.gnome.org/GNOME/tracker-miners/issues/96")
-    import sys
-    sys.exit(77)
-
     unittest.main(failfast=True, verbosity=2)

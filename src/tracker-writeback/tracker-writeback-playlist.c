@@ -49,13 +49,12 @@ struct PlaylistMap {
 };
 
 static GType                tracker_writeback_playlist_get_type     (void) G_GNUC_CONST;
-static gboolean             writeback_playlist_update_file_metadata (TrackerWritebackFile     *wbf,
-                                                                     GFile                    *file,
-                                                                     GPtrArray                *values,
-                                                                     TrackerSparqlConnection  *connection,
-                                                                     GCancellable             *cancellable,
-                                                                     GError                  **error);
-static const gchar * const *writeback_playlist_content_types        (TrackerWritebackFile     *wbf);
+static gboolean             writeback_playlist_write_file_metadata  (TrackerWritebackFile  *wbf,
+                                                                     GFile                 *file,
+                                                                     TrackerResource       *resource,
+                                                                     GCancellable          *cancellable,
+                                                                     GError               **error);
+static const gchar * const *writeback_playlist_content_types        (TrackerWritebackFile  *wbf);
 
 G_DEFINE_DYNAMIC_TYPE (TrackerWritebackPlaylist, tracker_writeback_playlist, TRACKER_TYPE_WRITEBACK_FILE);
 
@@ -64,7 +63,7 @@ tracker_writeback_playlist_class_init (TrackerWritebackPlaylistClass *klass)
 {
 	TrackerWritebackFileClass *writeback_file_class = TRACKER_WRITEBACK_FILE_CLASS (klass);
 
-	writeback_file_class->update_file_metadata = writeback_playlist_update_file_metadata;
+	writeback_file_class->write_file_metadata = writeback_playlist_write_file_metadata;
 	writeback_file_class->content_types = writeback_playlist_content_types;
 }
 
@@ -141,86 +140,93 @@ get_playlist_type (GFile             *file,
 	return FALSE;
 }
 
-static void
-rewrite_playlist (TrackerSparqlConnection *connection,
-                  GFile                   *file,
-                  const gchar             *subject)
+static gboolean
+writeback_playlist_write_file_metadata (TrackerWritebackFile  *writeback_file,
+                                        GFile                 *file,
+                                        TrackerResource       *resource,
+                                        GCancellable          *cancellable,
+                                        GError               **error)
 {
+	GList *properties, *l;
+	TotemPlParser *parser;
+	TotemPlPlaylist *playlist;
+	TotemPlPlaylistIter iter;
 	TotemPlParserType type;
+	GPtrArray *entries;
+	guint amount = 0;
 	gchar *path;
-	TrackerSparqlCursor *cursor;
-	GError *error = NULL;
-	gchar *query;
 
 	if (!get_playlist_type (file, &type)) {
-		return;
+		g_set_error (G_IO_ERROR,
+		             G_IO_ERROR_FAILED,
+		             "Unhandled playlist type");
+		return FALSE;
 	}
 
-	path = g_file_get_path (file);
-	query = g_strdup_printf ("SELECT ?entry { ?unknown a nfo:MediaFileListEntry ; "
-	                                                  "nie:url '%s' ; "
-	                                                  "nfo:entryUrl ?entry"
-	                         "}", subject);
-	cursor = tracker_sparql_connection_query (connection, query, NULL, &error);
-	g_free (query);
+	entries = g_ptr_array_new ();
 
-	if (!error) {
-		TotemPlParser *parser;
-		TotemPlPlaylist *playlist;
-		TotemPlPlaylistIter iter;
-		guint amount = 0;
+	for (l = properties; l; l = l->next) {
+		const gchar *prop = l->data;
 
-		parser = totem_pl_parser_new ();
-		playlist = totem_pl_playlist_new ();
+		if (g_strcmp0 (prop, "nfo:hasMediaFileListEntry") == 0) {
+			GList *resources;
 
-		while (tracker_sparql_cursor_next (cursor, NULL, NULL)) {
+			resources = tracker_resource_get_values (resource, prop);
+
+			for (l = resources; l; l = l->next) {
+				TrackerResource *entry;
+				const gchar *url;
+				GValue *value;
+				gpointer ptr;
+				gint pos;
+
+				value = l->data;
+				entry = g_value_get_object (value);
+				pos = tracker_resource_get_first_integer (entry,
+				                                          "nfo:listPosition");
+				url = tracker_resource_get_first_string (entry,
+				                                         "nfo:entryUrl");
+
+				if (entries->len < pos)
+					g_array_set_size (entries, pos);
+
+				ptr = &g_ptr_array_index (entries, pos) = url;
+				*ptr = url;
+			}
+		}
+	}
+
+	parser = totem_pl_parser_new ();
+	playlist = totem_pl_playlist_new ();
+
+	for (i = 0; entries->len; i++) {
+		const gchar *uri;
+
+		uri = g_ptr_array_index (entries, i);
+
+		if (uri) {
 			totem_pl_playlist_append  (playlist, &iter);
 			totem_pl_playlist_set (playlist, &iter,
 			                       TOTEM_PL_PARSER_FIELD_URI,
-			                       tracker_sparql_cursor_get_string (cursor, 0, NULL),
-			                       NULL);
-			amount++;
+			                       uri, NULL);
 		}
+	}
 
-		if (amount > 0) {
-			totem_pl_parser_save (parser, playlist, file, NULL, type, &error);
-		} else {
-			/* TODO: Empty the file in @path */
-		}
-
-		if (error) {
-			g_critical ("Could not save playlist: %s\n", error->message);
-			g_error_free (error);
-		}
-
-		g_object_unref (playlist);
-		g_object_unref (parser);
-		g_object_unref (cursor);
-
+	if (entries->len > 0) {
+		totem_pl_parser_save (parser, playlist, file, NULL, type, &error);
 	} else {
-		g_clear_error (&error);
+		/* TODO: Empty the file in @path */
 	}
 
-	g_free (path);
-}
-
-static gboolean
-writeback_playlist_update_file_metadata (TrackerWritebackFile     *writeback_file,
-                                         GFile                    *file,
-                                         GPtrArray                *values,
-                                         TrackerSparqlConnection  *connection,
-                                         GCancellable             *cancellable,
-                                         GError                  **error)
-{
-	guint n;
-
-	for (n = 0; n < values->len; n++) {
-		const GStrv row = g_ptr_array_index (values, n);
-		if (g_strcmp0 (row[2], TRACKER_PREFIX_NFO "entryCounter") == 0) {
-			rewrite_playlist (connection, file, row[0]);
-			break;
-		}
+	if (error) {
+		g_critical ("Could not save playlist: %s\n", error->message);
+		g_error_free (error);
 	}
+
+	g_ptr_array_unref (entries);
+	g_list_free (properties);
+	g_object_unref (playlist);
+	g_object_unref (parser);
 
 	return TRUE;
 }

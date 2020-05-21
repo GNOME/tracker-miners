@@ -107,8 +107,4 @@ class WritebackKeepDateTest (fixtures.TrackerWritebackTest):
 
 
 if __name__ == "__main__":
-    print("FIXME: This test is skipped as it currently fails. See: https://gitlab.gnome.org/GNOME/tracker-miners/issues/96")
-    import sys
-    sys.exit(77)
-
     ut.main(verbosity=2)

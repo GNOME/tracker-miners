@@ -126,7 +126,6 @@ endif
 if libjpeg.found() and libgif.found() and libpng.found() and libtiff.found() and exempi.found() and libexif.found()
   functional_tests += [
     'writeback-images',
-    'writeback-image-details',
   ]
 endif
 
