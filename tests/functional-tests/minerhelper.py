@@ -20,11 +20,13 @@
 
 import gi
 gi.require_version('Tracker', '3.0')
-from gi.repository import Gio, GLib
+from gi.repository import Gio, GLib, GObject
 from gi.repository import Tracker
 
+import contextlib
 import logging
 
+import trackertestutils.dbusdaemon
 import trackertestutils.mainloop
 
 import configuration
@@ -33,8 +35,80 @@ import configuration
 log = logging.getLogger(__name__)
 
 
-class WakeupCycleTimeoutException(RuntimeError):
+class AwaitTimeoutException(RuntimeError):
     pass
+
+
+def await_status(miner_iface, target_status, timeout=configuration.DEFAULT_TIMEOUT):
+    log.info("Blocking until miner reports status of %s", target_status)
+    loop = trackertestutils.mainloop.MainLoop()
+
+    if miner_iface.GetStatus() == target_status:
+        log.info("Status is %s now", target_status)
+        return
+
+    def signal_cb(proxy, sender_name, signal_name, parameters):
+        if signal_name == 'Progress':
+            status, progress, remaining_time = parameters.unpack()
+            log.debug("Got status: %s", status)
+            if status == target_status:
+                loop.quit()
+
+    def timeout_cb():
+        log.info("Timeout fired after %s seconds", timeout)
+        raise AwaitTimeoutException(
+            f"Timeout awaiting miner status of '{target_status}'")
+
+    signal_id = miner_iface.connect('g-signal', signal_cb)
+    timeout_id = GLib.timeout_add_seconds(timeout, timeout_cb)
+
+    loop.run_checked()
+
+    GObject.signal_handler_disconnect(miner_iface, signal_id)
+    GLib.source_remove(timeout_id)
+
+
+class await_signal():
+    """Context manager to await a specific D-Bus signal.
+
+    Useful to wait for org.freedesktop.Tracker3.Miner signals like
+    Paused and Resumed.
+
+    """
+    def __init__(self, miner_iface, signal_name,
+                 timeout=configuration.DEFAULT_TIMEOUT):
+        self.miner_iface = miner_iface
+        self.signal_name = signal_name
+        self.timeout = timeout
+
+        self.loop = trackertestutils.mainloop.MainLoop()
+
+    def __enter__(self):
+        log.info("Awaiting signal %s", self.signal_name)
+
+        def signal_cb(proxy, sender_name, signal_name, parameters):
+            if signal_name == self.signal_name:
+                log.debug("Received signal %s", signal_name)
+                self.loop.quit()
+
+        def timeout_cb():
+            log.info("Timeout fired after %s seconds", self.timeout)
+            raise AwaitTimeoutException(
+                f"Timeout awaiting signal '{self.signal_name}'")
+
+        self.signal_id = self.miner_iface.connect('g-signal', signal_cb)
+        self.timeout_id = GLib.timeout_add_seconds(self.timeout, timeout_cb)
+
+    def __exit__(self, etype, evalue, etraceback):
+        if etype is not None:
+            return False
+
+        self.loop.run_checked()
+
+        GLib.source_remove(self.timeout_id)
+        GObject.signal_handler_disconnect(self.miner_iface, self.signal_id)
+
+        return True
 
 
 class MinerFsHelper ():
@@ -62,78 +136,17 @@ class MinerFsHelper ():
 
     def start(self):
         self.miner_fs.Start()
+        trackertestutils.dbusdaemon.await_bus_name(self.bus, self.MINERFS_BUSNAME)
 
     def stop(self):
         self.miner_fs.Stop()
 
+    def get_status(self):
+        return self.miner_fs.GetStatus()
+
     def get_sparql_connection(self):
         return Tracker.SparqlConnection.bus_new(
             'org.freedesktop.Tracker3.Miner.Files', None, self.bus)
-
-    def start_watching_progress(self):
-        self._previous_status = None
-        self._target_wakeup_count = None
-        self._wakeup_count = 0
-
-        def signal_handler(proxy, sender_name, signal_name, parameters):
-            if signal_name == 'Progress':
-                self._progress_cb(*parameters.unpack())
-
-        self._progress_handler_id = self.miner_fs.connect('g-signal', signal_handler)
-
-    def stop_watching_progress(self):
-        if self._progress_handler_id != 0:
-            self.miner_fs.disconnect(self._progress_handler_id)
-
-    def _progress_cb(self, status, progress, remaining_time):
-        if self._previous_status is None:
-            self._previous_status = status
-        if self._previous_status != 'Idle' and status == 'Idle':
-            self._wakeup_count += 1
-
-        if self._target_wakeup_count is not None and self._wakeup_count >= self._target_wakeup_count:
-            self.loop.quit()
-
-    def wakeup_count(self):
-        """Return the number of wakeup-to-idle cycles the miner-fs completed."""
-        return self._wakeup_count
-
-    def await_wakeup_count(self, target_wakeup_count, timeout=configuration.DEFAULT_TIMEOUT):
-        """Block until the miner has completed N wakeup-and-idle cycles.
-
-        This function is for use by miner-fs tests that should trigger an
-        operation in the miner, but which do not cause a new resource to be
-        inserted. These tests can instead wait for the status to change from
-        Idle to Processing... and then back to Idle.
-
-        The miner may change its status any number of times, but you can use
-        this function reliably as follows:
-
-            wakeup_count = miner_fs.wakeup_count()
-            # Trigger a miner-fs operation somehow ...
-            miner_fs.await_wakeup_count(wakeup_count + 1)
-            # The miner has probably finished processing the operation now.
-
-        If the timeout is reached before enough wakeup cycles complete, an
-        exception will be raised.
-
-        """
-
-        assert self._target_wakeup_count is None
-
-        if self._wakeup_count >= target_wakeup_count:
-            log.debug("miner-fs wakeup count is at %s (target is %s). No need to wait", self._wakeup_count, target_wakeup_count)
-        else:
-            def _timeout_cb():
-                raise WakeupCycleTimeoutException()
-            timeout_id = GLib.timeout_add_seconds(timeout, _timeout_cb)
-
-            log.debug("Waiting for miner-fs wakeup count of %s (currently %s)", target_wakeup_count, self._wakeup_count)
-            self._target_wakeup_count = target_wakeup_count
-            self.loop.run_checked()
-
-            self._target_wakeup_count = None
-            GLib.source_remove(timeout_id)
 
     def index_file(self, uri):
         return self.index.IndexFile('(s)', uri)
