@@ -42,7 +42,7 @@ import unittest as ut
 import trackertestutils.dconf
 import trackertestutils.helpers
 import configuration as cfg
-from minerfshelper import MinerFsHelper
+from minerhelper import MinerFsHelper
 
 log = logging.getLogger(__name__)
 
