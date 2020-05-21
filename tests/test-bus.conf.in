@@ -8,6 +8,7 @@
 
   <servicedir>@abs_top_builddir@/tests/services/</servicedir>
   <standard_session_servicedirs/>
+  <standard_system_servicedirs/>
 
   <policy context="default">
     <!-- Allow everything to be sent -->

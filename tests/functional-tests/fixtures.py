@@ -115,7 +115,6 @@ class TrackerMinerTest(ut.TestCase):
 
             self.miner_fs = MinerFsHelper(self.sandbox.get_connection())
             self.miner_fs.start()
-            self.miner_fs.start_watching_progress()
 
             self.tracker = trackertestutils.helpers.StoreHelper(
                 self.miner_fs.get_sparql_connection())

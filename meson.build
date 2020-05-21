@@ -93,6 +93,9 @@ libmath = cc.find_library('m', required: false)
 network_manager = dependency('libnm', required: get_option('network_manager'))
 have_network_manager = network_manager.found()
 
+# We use this in the functional-tests if available.
+umockdev = dependency('umockdev-1.0', required: false)
+
 have_tracker_extract = get_option('extract')
 have_tracker_miner_fs = get_option('miner_fs')
 have_tracker_miner_rss = get_option('miner_rss')
