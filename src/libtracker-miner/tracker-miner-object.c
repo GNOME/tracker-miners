@@ -468,7 +468,11 @@ miner_get_property (GObject    *object,
 
 	switch (prop_id) {
 	case PROP_STATUS:
-		g_value_set_string (value, miner->priv->status);
+		if (tracker_miner_is_paused (miner)) {
+			g_value_set_string (value, "Paused");
+		} else {
+			g_value_set_string (value, miner->priv->status);
+		}
 		break;
 	case PROP_PROGRESS:
 		g_value_set_double (value, miner->priv->progress);
