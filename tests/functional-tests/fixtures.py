@@ -39,7 +39,6 @@ import sys
 import time
 import unittest as ut
 
-import trackertestutils.dconf
 import trackertestutils.helpers
 import configuration as cfg
 from minerhelper import MinerFsHelper
@@ -108,10 +107,7 @@ class TrackerMinerTest(ut.TestCase):
             # function.
             os.makedirs(self.indexed_dir, exist_ok=True)
 
-            for schema_name, contents in self.config().items():
-                dconf = trackertestutils.dconf.DConfClient(self.sandbox)
-                for key, value in contents.items():
-                    dconf.write(schema_name, key, value)
+            self.sandbox.set_config(self.config())
 
             self.miner_fs = MinerFsHelper(self.sandbox.get_connection())
             self.miner_fs.start()
