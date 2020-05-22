@@ -60,9 +60,9 @@ def tracker_test_main():
         # only errors and warnings should be output here unless the environment
         # contains G_MESSAGES_DEBUG= and/or TRACKER_VERBOSITY=1 or more.
         handler_stderr = logging.StreamHandler(stream=sys.stderr)
-        handler_stderr.addFilter(logging.Filter('trackertestutils.dbusdaemon.stderr'))
+        handler_stderr.addFilter(logging.Filter('sandbox-session-bus.stderr'))
         handler_stdout = logging.StreamHandler(stream=sys.stderr)
-        handler_stdout.addFilter(logging.Filter('trackertestutils.dbusdaemon.stdout'))
+        handler_stdout.addFilter(logging.Filter('sandbox-session-bus.stdout'))
         logging.basicConfig(level=logging.INFO,
                             handlers=[handler_stderr, handler_stdout],
                             format='%(message)s')
@@ -96,7 +96,7 @@ class TrackerMinerTest(ut.TestCase):
         extra_env['LANG'] = 'en_GB.utf8'
 
         self.sandbox = trackertestutils.helpers.TrackerDBusSandbox(
-            dbus_daemon_config_file=cfg.TEST_DBUS_DAEMON_CONFIG_FILE, extra_env=extra_env)
+            session_bus_config_file=cfg.TEST_SESSION_BUS_CONFIG_FILE, extra_env=extra_env)
 
         self.sandbox.start()
 
@@ -109,9 +109,8 @@ class TrackerMinerTest(ut.TestCase):
 
             self.sandbox.set_config(self.config())
 
-            self.miner_fs = MinerFsHelper(self.sandbox.get_connection())
+            self.miner_fs = MinerFsHelper(self.sandbox.get_session_bus_connection())
             self.miner_fs.start()
-            self.miner_fs.start_watching_progress()
 
             self.tracker = trackertestutils.helpers.StoreHelper(
                 self.miner_fs.get_sparql_connection())
