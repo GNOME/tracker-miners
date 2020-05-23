@@ -99,7 +99,7 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 		}
 	}
 
-	if (video_stream) {
+	if (video_stream && !(video_stream->disposition & AV_DISPOSITION_ATTACHED_PIC)) {
 		tracker_resource_add_uri(metadata, "rdf:type", "nmm:Video");
 
 		if (video_stream->codec->width > 0 && video_stream->codec->height > 0) {
