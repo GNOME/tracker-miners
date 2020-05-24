@@ -17,7 +17,7 @@
         "nie:title": "track title",
         "nmm:trackNumber": "12",
         "nmm:musicAlbum": {
-            "@id": "urn:album:awesome%20album:my%20album%20artist",
+            "@id": "urn:album:awesome%20album:my%20album%20artist:2020-01-01T00:00:00+00:00",
             "@type": "nmm:MusicAlbum",
             "nie:title": "awesome album",
             "nmm:albumTrackCount": "28",
@@ -43,7 +43,7 @@
             ]
         },
         "nmm:musicAlbumDisc": {
-            "@id": "urn:album-disc:awesome%20album:my%20album%20artist:Disc1",
+            "@id": "urn:album-disc:awesome%20album:my%20album%20artist:2020-01-01T00:00:00+00:00:Disc1",
             "@type": "nmm:MusicAlbumDisc",
             "nmm:setNumber": 1
         },
