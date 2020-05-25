@@ -233,6 +233,7 @@ extract_gst_date_time (gchar       *buf,
 	if (gst_tag_list_get_date_time (tag_list, tag_date_time, &date_time)) {
 		gboolean complete;
 
+		ret = gst_date_time_has_year (date_time);
 		complete = get_gst_date_time_to_buf (date_time, buf, size);
 		gst_date_time_unref (date_time);
 
@@ -240,8 +241,6 @@ extract_gst_date_time (gchar       *buf,
 			g_debug ("GstDateTime was not complete, parts of the date/time were missing (e.g. hours, minutes, seconds)");
 		}
 	} else if (gst_tag_list_get_date (tag_list, tag_date, &date)) {
-		gboolean ret = FALSE;
-
 		if (date && g_date_valid (date)) {
 			if (date->julian)
 				ret = g_date_valid_julian (date->julian_days);

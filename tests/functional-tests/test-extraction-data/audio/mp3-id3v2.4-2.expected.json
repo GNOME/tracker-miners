@@ -27,6 +27,7 @@
             ]
         },
         "nmm:musicAlbum": {
+            "@id": "urn:album:Now:Anna%20Abreu",
             "@type": "nmm:MusicAlbum",
             "tracker:hasExternalReference": [
                 {
@@ -42,6 +43,11 @@
                     "tracker:referenceIdentifier": "561234"
                 }
             ]
+        },
+        "nmm:musicAlbumDisc": {
+            "@id": "urn:album-disc:Now:Anna%20Abreu:Disc1",
+            "@type": "nmm:MusicAlbumDisc",
+            "nmm:setNumber": 1
         },
         "tracker:hasExternalReference": [
             {
