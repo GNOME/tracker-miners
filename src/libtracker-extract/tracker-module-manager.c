@@ -118,7 +118,7 @@ load_extractor_rule (GKeyFile    *key_file,
 	}
 
 	/* This key is optional */
-	block_mimetypes = g_key_file_get_string_list (key_file, "ExtractorRule", "BlockMimeTypes", &n_block_mimetypes, &local_error);
+	block_mimetypes = g_key_file_get_string_list (key_file, "ExtractorRule", "BlockMimeTypes", &n_block_mimetypes, NULL);
 
 	rule.rule_path = g_strdup (rule_path);
 

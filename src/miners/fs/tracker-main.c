@@ -176,6 +176,7 @@ save_current_locale (TrackerDomainOntology *domain_ontology)
 		g_clear_error (&error);
 	}
 
+	g_object_unref (cache);
 	g_free (locale);
 	g_free (locale_file);
 }
@@ -194,6 +195,7 @@ detect_locale_changed (TrackerMiner          *miner,
 	cache = get_cache_dir (domain_ontology);
 	cache_path = g_file_get_path (cache);
 	locale_file = g_build_filename (cache_path, LOCALE_FILENAME, NULL);
+	g_object_unref (cache);
 	g_free (cache_path);
 
 	if (G_LIKELY (g_file_test (locale_file, G_FILE_TEST_EXISTS))) {

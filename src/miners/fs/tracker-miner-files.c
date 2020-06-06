@@ -773,6 +773,8 @@ miner_files_finalize (GObject *object)
 
 	disk_space_check_stop (TRACKER_MINER_FILES (object));
 
+	g_slist_free_full (mf->private->application_dirs, g_object_unref);
+
 	if (priv->index_recursive_directories) {
 		g_slist_foreach (priv->index_recursive_directories, (GFunc) g_free, NULL);
 		g_slist_free (priv->index_recursive_directories);
@@ -2221,8 +2223,9 @@ miner_files_create_information_element (const gchar *uri,
 	tracker_resource_add_uri (file_resource, "rdf:type", "nfo:FileDataObject");
 
 	/* Laying the link between the IE and the DO */
-	tracker_resource_add_relation (resource, "nie:isStoredAs", file_resource);
-	tracker_resource_add_relation (file_resource, "nie:interpretedAs", resource);
+	tracker_resource_add_take_relation (resource, "nie:isStoredAs", file_resource);
+	tracker_resource_add_uri (file_resource, "nie:interpretedAs",
+				  tracker_resource_get_identifier (resource));
 
 	while (rdf_types[i]) {
 		tracker_resource_add_uri (resource, "rdf:type", rdf_types[i]);
@@ -2435,6 +2438,7 @@ process_file_cb (GObject      *object,
 		                                                      graph ?
 		                                                      graph :
 		                                                      DEFAULT_GRAPH);
+		g_object_unref (element_resource);
 	}
 
 	sparql_str = g_strdup_printf ("%s %s %s %s %s",

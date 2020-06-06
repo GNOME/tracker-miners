@@ -551,6 +551,8 @@ mount_add (TrackerStorage *storage,
 
 		g_debug ("Ignoring mount '%s', URI '%s' is not native",
 		         mount_name, uri);
+		g_object_unref (root);
+		g_free (mount_name);
 		g_free (uri);
 		return;
 	}
