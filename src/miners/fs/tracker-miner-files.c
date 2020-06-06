@@ -2299,7 +2299,7 @@ process_file_cb (GObject      *object,
 	TrackerResource *resource, *element_resource;
 	ProcessFileData *data;
 	const gchar *mime_type;
-	gchar *parent_urn, *update_relations_sparql = NULL;
+	gchar *parent_urn;
 	gchar *delete_properties_sparql = NULL, *mount_point_sparql;
 	GFileInfo *file_info;
 	guint64 time_;
@@ -2338,8 +2338,11 @@ process_file_cb (GObject      *object,
 	mime_type = g_file_info_get_content_type (file_info);
 
 	data->mime_type = g_strdup (mime_type);
+	is_directory = (g_file_info_get_file_type (file_info) == G_FILE_TYPE_DIRECTORY ?
+	                TRUE : FALSE);
 
-	if (tracker_miner_fs_get_urn (TRACKER_MINER_FS (data->miner), file)) {
+	if (!is_directory &&
+	    tracker_miner_fs_get_urn (TRACKER_MINER_FS (data->miner), file)) {
 		/* Update: delete all information elements for the given data object
 		 * and delete dataSources, so we ensure the file is extracted again.
 		 */
@@ -2362,9 +2365,6 @@ process_file_cb (GObject      *object,
 	resource = tracker_resource_new (uri);
 
 	tracker_resource_add_uri (resource, "rdf:type", "nfo:FileDataObject");
-
-	is_directory = (g_file_info_get_file_type (file_info) == G_FILE_TYPE_DIRECTORY ?
-	                TRUE : FALSE);
 
 	parent = g_file_get_parent (file);
 	parent_urn = tracker_miner_fs_query_urn (TRACKER_MINER_FS (data->miner), parent);
@@ -2399,28 +2399,11 @@ process_file_cb (GObject      *object,
 	                                                           mime_type,
 	                                                           is_directory);
 
-	if (element_resource && is_directory &&
+	if (is_directory &&
 	    tracker_miner_fs_get_urn (TRACKER_MINER_FS (data->miner), file)) {
-		/* Directories need to have the child nfo:FileDataObjects
-		 * updated to point to the new nfo:Folder.
-		 */
-		update_relations_sparql =
-			g_strdup_printf ("DELETE {"
-			                 "  GRAPH " DEFAULT_GRAPH " {"
-			                 "    ?u nfo:belongsToContainer ?ie "
-			                 "  }"
-			                 "} INSERT {"
-			                 "  GRAPH " DEFAULT_GRAPH " {"
-			                 "    ?u nfo:belongsToContainer %s "
-			                 "  }"
-			                 "} WHERE {"
-			                 "  GRAPH " DEFAULT_GRAPH " {"
-			                 "    ?u nfo:belongsToContainer ?ie . "
-			                 "    ?ie nie:isStoredAs <%s> "
-			                 "  }"
-			                 "}",
-			                 tracker_resource_get_identifier (element_resource),
-			                 uri);
+		/* Preserve URN for nfo:Folders */
+		tracker_resource_set_identifier (element_resource,
+		                                 tracker_miner_fs_get_urn (TRACKER_MINER_FS (data->miner), file));
 	}
 
 	mount_point_sparql = update_mount_point_sparql (data);
@@ -2437,8 +2420,7 @@ process_file_cb (GObject      *object,
 		                                                      DEFAULT_GRAPH);
 	}
 
-	sparql_str = g_strdup_printf ("%s %s %s %s %s",
-	                              update_relations_sparql ? update_relations_sparql : "",
+	sparql_str = g_strdup_printf ("%s %s %s %s",
 	                              delete_properties_sparql ? delete_properties_sparql : "",
 	                              sparql_update_str,
 	                              ie_update_str ? ie_update_str : "",
