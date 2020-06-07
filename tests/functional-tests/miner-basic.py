@@ -370,8 +370,6 @@ class MinerCrawlTest(fixtures.TrackerMinerTest):
             self.miner_fs.index_file(directory_uri)
 
         new_urn = self.__get_file_urn(directory)
-        # After the update, the InformationElement should be brand new
-        assert(urn != new_urn)
         # Ensure that children remain consistent, old and new ones
         self.assertEqual(new_urn,
                          self.__get_parent_urn(self.path("test-monitored/file1.txt")))

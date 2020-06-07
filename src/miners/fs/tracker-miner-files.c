@@ -2040,6 +2040,7 @@ miner_files_create_information_element (TrackerMinerFiles *miner,
 {
 	TrackerResource *resource, *file_resource;
 	GStrv rdf_types;
+	const gchar *urn = NULL;
 	gchar *uri;
 	gint i = 0;
 
@@ -2048,7 +2049,11 @@ miner_files_create_information_element (TrackerMinerFiles *miner,
 	if (!rdf_types)
 		return NULL;
 
-	resource = tracker_resource_new (NULL);
+	/* Preserve URN for nfo:Folders */
+	if (is_directory)
+		urn = tracker_miner_fs_get_urn (TRACKER_MINER_FS (miner), file);
+
+	resource = tracker_resource_new (urn);
 	tracker_resource_set_string (resource, "nie:mimeType", mime_type);
 	tracker_resource_add_uri (resource, "rdf:type", "nie:InformationElement");
 
@@ -2152,7 +2157,7 @@ process_file_cb (GObject      *object,
 	TrackerResource *resource, *element_resource;
 	ProcessFileData *data;
 	const gchar *mime_type;
-	gchar *parent_urn, *update_relations_sparql = NULL;
+	gchar *parent_urn;
 	gchar *delete_properties_sparql = NULL, *mount_point_sparql;
 	GFileInfo *file_info;
 	guint64 time_;
@@ -2191,8 +2196,11 @@ process_file_cb (GObject      *object,
 	mime_type = g_file_info_get_content_type (file_info);
 
 	data->mime_type = g_strdup (mime_type);
+	is_directory = (g_file_info_get_file_type (file_info) == G_FILE_TYPE_DIRECTORY ?
+	                TRUE : FALSE);
 
-	if (tracker_miner_fs_get_urn (TRACKER_MINER_FS (data->miner), file)) {
+	if (!is_directory &&
+	    tracker_miner_fs_get_urn (TRACKER_MINER_FS (data->miner), file)) {
 		/* Update: delete all information elements for the given data object
 		 * and delete dataSources, so we ensure the file is extracted again.
 		 */
@@ -2215,9 +2223,6 @@ process_file_cb (GObject      *object,
 	resource = tracker_resource_new (uri);
 
 	tracker_resource_add_uri (resource, "rdf:type", "nfo:FileDataObject");
-
-	is_directory = (g_file_info_get_file_type (file_info) == G_FILE_TYPE_DIRECTORY ?
-	                TRUE : FALSE);
 
 	parent = g_file_get_parent (file);
 	parent_urn = tracker_miner_fs_query_urn (TRACKER_MINER_FS (data->miner), parent);
@@ -2253,30 +2258,6 @@ process_file_cb (GObject      *object,
 
 	miner_files_add_to_datasource (data->miner, file, resource, element_resource);
 
-	if (element_resource && is_directory &&
-	    tracker_miner_fs_get_urn (TRACKER_MINER_FS (data->miner), file)) {
-		/* Directories need to have the child nfo:FileDataObjects
-		 * updated to point to the new nfo:Folder.
-		 */
-		update_relations_sparql =
-			g_strdup_printf ("DELETE {"
-			                 "  GRAPH " DEFAULT_GRAPH " {"
-			                 "    ?u nfo:belongsToContainer ?ie "
-			                 "  }"
-			                 "} INSERT {"
-			                 "  GRAPH " DEFAULT_GRAPH " {"
-			                 "    ?u nfo:belongsToContainer %s "
-			                 "  }"
-			                 "} WHERE {"
-			                 "  GRAPH " DEFAULT_GRAPH " {"
-			                 "    ?u nfo:belongsToContainer ?ie . "
-			                 "    ?ie nie:isStoredAs <%s> "
-			                 "  }"
-			                 "}",
-			                 tracker_resource_get_identifier (element_resource),
-			                 uri);
-	}
-
 	mount_point_sparql = update_mount_point_sparql (data);
 	sparql_update_str = tracker_resource_print_sparql_update (resource, NULL, DEFAULT_GRAPH);
 
@@ -2292,8 +2273,7 @@ process_file_cb (GObject      *object,
 		g_object_unref (element_resource);
 	}
 
-	sparql_str = g_strdup_printf ("%s %s %s %s %s",
-	                              update_relations_sparql ? update_relations_sparql : "",
+	sparql_str = g_strdup_printf ("%s %s %s %s",
 	                              delete_properties_sparql ? delete_properties_sparql : "",
 	                              sparql_update_str,
 	                              ie_update_str ? ie_update_str : "",
