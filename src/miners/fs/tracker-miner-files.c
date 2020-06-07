@@ -390,7 +390,7 @@ tracker_miner_files_init (TrackerMinerFiles *mf)
 
 	priv->extract_check_query = g_strdup_printf ("SELECT ?u { "
 						     "  ?u a nfo:FileDataObject ;"
-						     "     tracker:available true ; "
+						     "     nie:dataSource/tracker:available true ; "
 	                                             "     nie:interpretedAs ?ie . "
 						     "  ?ie a ?class . "
 						     "  FILTER (?class IN (%s) && "
@@ -820,195 +820,67 @@ miner_files_finalize (GObject *object)
 }
 
 static void
-ensure_mount_point_exists (TrackerMinerFiles *miner,
-                           GFile             *mount_point,
-                           GString           *accumulator)
-{
-	gchar *iri;
-	gchar *uri;
-
-	uri = g_file_get_uri (mount_point);
-
-	/* Query the store for the URN of the mount point */
-	iri = tracker_miner_fs_query_urn (TRACKER_MINER_FS (miner),
-	                                  mount_point);
-
-	if (iri) {
-		/* If exists, just return, nothing else to do */
-		g_debug ("Mount point '%s' already exists in store: '%s'",
-		         uri, iri);
-		g_free (iri);
-	} else {
-		/* If it doesn't exist, we need to create it */
-		g_debug ("Mount point '%s' does not exist in store, need to create it",
-		         uri);
-
-		/* Create a nfo:Folder for the mount point */
-		g_string_append_printf (accumulator,
-		                        "INSERT SILENT {"
-		                        " _:file a nfo:FileDataObject, nie:InformationElement, nfo:Folder ; "
-		                        "        nie:isStoredAs _:file ; "
-		                        "        nie:url \"%s\" ; "
-		                        "        nie:mimeType \"inode/directory\" ; "
-		                        "        nfo:fileLastModified \"1981-06-05T02:20:00Z\" . "
-		                        "}",
-		                        uri);
-	}
-
-	g_free (uri);
-}
-
-static void
 set_up_mount_point_cb (GObject      *source,
                        GAsyncResult *result,
                        gpointer      user_data)
 {
 	TrackerSparqlConnection *connection = TRACKER_SPARQL_CONNECTION (source);
-	gchar *removable_device_urn = user_data;
 	GError *error = NULL;
 
 	tracker_sparql_connection_update_finish (connection, result, &error);
 
 	if (error) {
-		g_critical ("Could not set mount point in database '%s', %s",
-		            removable_device_urn,
+		g_critical ("Could not set mount point in database, %s",
 		            error->message);
 		g_error_free (error);
 	}
-
-	g_free (removable_device_urn);
-}
-
-static void
-set_up_mount_point_type (TrackerMinerFiles *miner,
-                         const gchar       *removable_device_urn,
-                         gboolean           removable,
-                         gboolean           optical,
-                         GString           *accumulator)
-{
-	if (!accumulator) {
-		return;
-	}
-
-	g_debug ("Mount point type being set in DB for URN '%s'",
-	         removable_device_urn);
-
-	g_string_append_printf (accumulator,
-	                        "DELETE { <%s> tracker:isRemovable ?unknown } WHERE { <%s> a tracker:Volume; tracker:isRemovable ?unknown } ",
-	                        removable_device_urn, removable_device_urn);
-
-	g_string_append_printf (accumulator,
-	                        "INSERT DATA { <%s> a tracker:Volume; tracker:isRemovable %s } ",
-	                        removable_device_urn, removable ? "true" : "false");
-
-	g_string_append_printf (accumulator,
-	                        "DELETE { <%s> tracker:isOptical ?unknown } WHERE { <%s> a tracker:Volume; tracker:isOptical ?unknown } ",
-	                        removable_device_urn, removable_device_urn);
-
-	g_string_append_printf (accumulator,
-	                        "INSERT { <%s> a tracker:Volume; tracker:isOptical %s } ",
-	                        removable_device_urn, optical ? "true" : "false");
 }
 
 static void
 set_up_mount_point (TrackerMinerFiles *miner,
-                    const gchar       *removable_device_urn,
-                    const gchar       *mount_point,
-                    const gchar       *mount_name,
+                    GFile             *mount_point,
                     gboolean           mounted,
                     GString           *accumulator)
 {
 	GString *queries;
+	gchar *uri;
 
 	queries = g_string_new (NULL);
+	uri = g_file_get_uri (mount_point);
 
 	if (mounted) {
-		g_debug ("Mount point state (MOUNTED) being set in DB for URN '%s' (mount_point: %s)",
-		         removable_device_urn,
-		         mount_point ? mount_point : "unknown");
-
-		if (mount_point) {
-			GFile *file;
-			gchar *uri;
-
-			file = g_file_new_for_path (mount_point);
-			uri = g_file_get_uri (file);
-
-			/* Before assigning a nfo:FileDataObject as tracker:mountPoint for
-			 * the volume, make sure the nfo:FileDataObject exists in the store */
-			ensure_mount_point_exists (miner, file, queries);
-
-			g_string_append_printf (queries,
-			                        "DELETE { "
-			                        "  <%s> tracker:mountPoint ?u "
-			                        "} WHERE { "
-			                        "  ?u a nfo:FileDataObject; "
-			                        "     nie:url \"%s\" "
-			                        "} ",
-			                        removable_device_urn, uri);
-
-			g_string_append_printf (queries,
-			                        "DELETE { <%s> a rdfs:Resource }  "
-			                        "INSERT { "
-			                        "  <%s> a tracker:Volume; "
-			                        "       tracker:mountPoint ?u "
-			                        "} WHERE { "
-			                        "  ?u a nfo:FileDataObject; "
-			                        "     nie:url \"%s\" "
-			                        "} ",
-			                        removable_device_urn, removable_device_urn, uri);
-
-			g_object_unref (file);
-			g_free (uri);
-		}
+		g_debug ("Mount point state (MOUNTED) being set in DB for mount_point '%s'",
+		         uri);
 
 		g_string_append_printf (queries,
-		                        "DELETE { <%s> tracker:isMounted ?unknown } WHERE { <%s> a tracker:Volume; tracker:isMounted ?unknown } ",
-		                        removable_device_urn, removable_device_urn);
-
-                if (mount_name) {
-                        g_string_append_printf (queries,
-                                                "INSERT DATA { <%s> a tracker:Volume; tracker:isMounted true; nie:title \"%s\" } ",
-                                                removable_device_urn, mount_name);
-                } else {
-                        g_string_append_printf (queries,
-                                                "INSERT DATA { <%s> a tracker:Volume; tracker:isMounted true } ",
-                                                removable_device_urn);
-                }
-
-                g_string_append_printf (queries,
-                                        "INSERT { ?do tracker:available true } WHERE { ?do nie:dataSource <%s> } ",
-                                        removable_device_urn);
+		                        "DELETE { ?u tracker:unmountDate ?d } "
+		                        "WHERE { <%s> a nfo:FileDataObject/"
+		                        "               nie:interpretedAs/"
+		                        "               nie:rootElementOf ?u"
+		                        "}",
+		                        uri);
 	} else {
 		gchar *now;
 
-		g_debug ("Mount point state (UNMOUNTED) being set in DB for URN '%s'",
-		         removable_device_urn);
+		g_debug ("Mount point state (UNMOUNTED) being set in DB for URI '%s'",
+		         uri);
 
 		now = tracker_date_to_string (time (NULL));
 
 		g_string_append_printf (queries,
-		                        "DELETE { <%s> tracker:unmountDate ?unknown } WHERE { <%s> a tracker:Volume; tracker:unmountDate ?unknown } ",
-		                        removable_device_urn, removable_device_urn);
-
-		g_string_append_printf (queries,
-		                        "INSERT { <%s> a tracker:Volume; tracker:unmountDate \"%s\" } ",
-		                        removable_device_urn, now);
-
-		g_string_append_printf (queries,
-		                        "DELETE { <%s> tracker:isMounted ?unknown } WHERE { <%s> a tracker:Volume; tracker:isMounted ?unknown } ",
-		                        removable_device_urn, removable_device_urn);
-
-		g_string_append_printf (queries,
-		                        "INSERT { <%s> a tracker:Volume; tracker:isMounted false } ",
-		                        removable_device_urn);
-
-		g_string_append_printf (queries,
-		                        "DELETE { ?do tracker:available true } WHERE { ?do nie:dataSource <%s> } ",
-		                        removable_device_urn);
+		                        "DELETE { ?u tracker:unmountDate ?unknown1 ;"
+		                        "            tracker:available ?unknown2 } "
+		                        "INSERT { ?u tracker:unmountDate \"%s\" } "
+		                        "WHERE { <%s> a nfo:FileDataObject/"
+		                        "               nie:interpretedAs/"
+		                        "               nie:rootElementOf ?u"
+		                        "}",
+		                        now, uri);
 
 		g_free (now);
 	}
+
+	g_free (uri);
 
 	if (accumulator) {
 		g_string_append_printf (accumulator, "%s ", queries->str);
@@ -1018,7 +890,7 @@ set_up_mount_point (TrackerMinerFiles *miner,
 		                                        G_PRIORITY_LOW,
 		                                        NULL,
 		                                        set_up_mount_point_cb,
-		                                        g_strdup (removable_device_urn));
+		                                        NULL);
 	}
 
 	g_string_free (queries, TRUE);
@@ -1061,13 +933,19 @@ init_mount_points (TrackerMinerFiles *miner_files)
 	GString *accumulator;
 	GError *error = NULL;
 	TrackerSparqlCursor *cursor;
-	GSList *uuids, *u;
+	GSList *mounts, *l;
 
 	g_debug ("Initializing mount points...");
 
 	/* First, get all mounted volumes, according to tracker-store (SYNC!) */
 	cursor = tracker_sparql_connection_query (tracker_miner_get_connection (miner),
-	                                          "SELECT ?v WHERE { ?v a tracker:Volume ; tracker:isMounted true }",
+	                                          "SELECT ?f WHERE { "
+	                                          "  ?v a tracker:IndexedFolder ; "
+	                                          "     tracker:isRemovable true; "
+	                                          "     tracker:available true . "
+	                                          "  ?f a nfo:FileDataObject ; "
+	                                          "     nie:interpretedAs/nie:rootElementOf ?v . "
+	                                          "}",
 	                                          NULL, &error);
 	if (error) {
 		g_critical ("Could not obtain the mounted volumes: %s", error->message);
@@ -1080,13 +958,6 @@ init_mount_points (TrackerMinerFiles *miner_files)
 	volumes = g_hash_table_new_full (g_str_hash, g_str_equal,
 	                                 (GDestroyNotify) g_free,
 	                                 NULL);
-
-
-	/* Make sure the root partition is always set to mounted, as GIO won't
-	 * report it as a proper mount */
-	g_hash_table_insert (volumes,
-	                     g_strdup (TRACKER_DATASOURCE_URN_NON_REMOVABLE_MEDIA),
-	                     GINT_TO_POINTER (VOLUME_MOUNTED));
 
 	while (tracker_sparql_cursor_next (cursor, NULL, NULL)) {
 		gint state;
@@ -1110,43 +981,38 @@ init_mount_points (TrackerMinerFiles *miner_files)
 	g_object_unref (cursor);
 
 	/* Then, get all currently mounted non-REMOVABLE volumes, according to GIO */
-	uuids = tracker_storage_get_device_uuids (priv->storage, 0, TRUE);
-	for (u = uuids; u; u = u->next) {
-		const gchar *uuid;
-		gchar *non_removable_device_urn;
+	mounts = tracker_storage_get_device_uuids (priv->storage, 0, TRUE);
+	for (l = mounts; l; l = l->next) {
+		gchar *path;
 		gint state;
 
-		uuid = u->data;
-		non_removable_device_urn = g_strdup_printf (TRACKER_PREFIX_DATASOURCE_URN "%s", uuid);
-
-		state = GPOINTER_TO_INT (g_hash_table_lookup (volumes, non_removable_device_urn));
+		path = g_strdup (l->data);
+		state = GPOINTER_TO_INT (g_hash_table_lookup (volumes, path));
 		state |= VOLUME_MOUNTED;
 
-		g_hash_table_replace (volumes, non_removable_device_urn, GINT_TO_POINTER (state));
+		g_hash_table_replace (volumes, path, GINT_TO_POINTER (state));
 	}
 
-	g_slist_foreach (uuids, (GFunc) g_free, NULL);
-	g_slist_free (uuids);
+	g_slist_foreach (mounts, (GFunc) g_free, NULL);
+	g_slist_free (mounts);
 
 	/* Then, get all currently mounted REMOVABLE volumes, according to GIO */
 	if (priv->index_removable_devices) {
-		uuids = tracker_storage_get_device_uuids (priv->storage, TRACKER_STORAGE_REMOVABLE, FALSE);
-		for (u = uuids; u; u = u->next) {
-			const gchar *uuid;
-			gchar *removable_device_urn;
+		mounts = tracker_storage_get_device_roots (priv->storage, TRACKER_STORAGE_REMOVABLE, FALSE);
+		for (l = mounts; l; l = l->next) {
+			gchar *path;
 			gint state;
 
-			uuid = u->data;
-			removable_device_urn = g_strdup_printf (TRACKER_PREFIX_DATASOURCE_URN "%s", uuid);
+			path = g_strdup (l->data);
 
-			state = GPOINTER_TO_INT (g_hash_table_lookup (volumes, removable_device_urn));
+			state = GPOINTER_TO_INT (g_hash_table_lookup (volumes, path));
 			state |= VOLUME_MOUNTED;
 
-			g_hash_table_replace (volumes, removable_device_urn, GINT_TO_POINTER (state));
+			g_hash_table_replace (volumes, path, GINT_TO_POINTER (state));
 		}
 
-		g_slist_foreach (uuids, (GFunc) g_free, NULL);
-		g_slist_free (uuids);
+		g_slist_foreach (mounts, (GFunc) g_free, NULL);
+		g_slist_free (mounts);
 	}
 
 	accumulator = g_string_new (NULL);
@@ -1154,93 +1020,58 @@ init_mount_points (TrackerMinerFiles *miner_files)
 
 	/* Finally, set up volumes based on the composed info */
 	while (g_hash_table_iter_next (&iter, &key, &value)) {
-		const gchar *urn = key;
+		const gchar *mount_point = key;
 		gint state = GPOINTER_TO_INT (value);
+		GFile *file = g_file_new_for_path (mount_point);
 
 		if ((state & VOLUME_MOUNTED) &&
 		    !(state & VOLUME_MOUNTED_IN_STORE)) {
-			const gchar *mount_point = NULL;
-			TrackerStorageType type = 0;
+			g_debug ("Mount point state incorrect in DB for mount '%s', "
+			         "currently it is mounted",
+			         mount_point);
 
-			/* Note: is there any case where the urn doesn't have our
-			 *  datasource prefix? */
-			if (g_str_has_prefix (urn, TRACKER_PREFIX_DATASOURCE_URN)) {
-				const gchar *uuid;
+			/* Set mount point state */
+			set_up_mount_point (TRACKER_MINER_FILES (miner),
+			                    file,
+			                    TRUE,
+			                    accumulator);
 
-				uuid = urn + strlen (TRACKER_PREFIX_DATASOURCE_URN);
-				mount_point = tracker_storage_get_mount_point_for_uuid (priv->storage, uuid);
-				type = tracker_storage_get_type_for_uuid (priv->storage, uuid);
-			}
+			if (mount_point) {
+				TrackerIndexingTree *indexing_tree;
+				TrackerDirectoryFlags flags;
 
-			if (urn) {
-				if (mount_point) {
-					g_debug ("Mount point state incorrect in DB for URN '%s', "
-					         "currently it is mounted on '%s'",
-					         urn,
-					         mount_point);
-				} else {
-					g_debug ("Mount point state incorrect in DB for URN '%s', "
-					         "currently it is mounted",
-					         urn);
+				indexing_tree = tracker_miner_fs_get_indexing_tree (TRACKER_MINER_FS (miner));
+				flags = TRACKER_DIRECTORY_FLAG_RECURSE |
+					TRACKER_DIRECTORY_FLAG_CHECK_MTIME |
+					TRACKER_DIRECTORY_FLAG_PRESERVE;
+
+				if (tracker_config_get_enable_monitors (miner_files->private->config)) {
+					flags |= TRACKER_DIRECTORY_FLAG_MONITOR;
 				}
 
-				/* Set mount point state */
-				set_up_mount_point (TRACKER_MINER_FILES (miner),
-				                    urn,
-				                    mount_point,
-                                                    NULL,
-				                    TRUE,
-				                    accumulator);
-
-				/* Set mount point type */
-				set_up_mount_point_type (TRACKER_MINER_FILES (miner),
-				                         urn,
-				                         TRACKER_STORAGE_TYPE_IS_REMOVABLE (type),
-				                         TRACKER_STORAGE_TYPE_IS_OPTICAL (type),
-				                         accumulator);
-
-				if (mount_point) {
-					TrackerIndexingTree *indexing_tree;
-					TrackerDirectoryFlags flags;
-					GFile *file;
-
-					indexing_tree = tracker_miner_fs_get_indexing_tree (TRACKER_MINER_FS (miner));
-					flags = TRACKER_DIRECTORY_FLAG_RECURSE |
-						TRACKER_DIRECTORY_FLAG_CHECK_MTIME |
-						TRACKER_DIRECTORY_FLAG_PRESERVE;
-
-					if (tracker_config_get_enable_monitors (miner_files->private->config)) {
-						flags |= TRACKER_DIRECTORY_FLAG_MONITOR;
-					}
-
-					/* Add the current mount point as reported to have incorrect
-					 * state. We will force mtime checks on this mount points,
-					 * even if no-mtime-check-needed was set. */
-					file = g_file_new_for_path (mount_point);
-					if (tracker_miner_files_is_file_eligible (miner_files, file)) {
-						tracker_indexing_tree_add (indexing_tree,
-									   file,
-									   flags);
-					}
-					g_object_unref (file);
+				/* Add the current mount point as reported to have incorrect
+				 * state. We will force mtime checks on this mount points,
+				 * even if no-mtime-check-needed was set. */
+				if (tracker_miner_files_is_file_eligible (miner_files, file)) {
+					tracker_indexing_tree_add (indexing_tree,
+					                           file,
+					                           flags);
 				}
 			}
 		} else if (!(state & VOLUME_MOUNTED) &&
 		           (state & VOLUME_MOUNTED_IN_STORE)) {
-			if (urn) {
-				g_debug ("Mount point state incorrect in DB for URN '%s', "
-				         "currently it is NOT mounted",
-				         urn);
-				set_up_mount_point (TRACKER_MINER_FILES (miner),
-				                    urn,
-				                    NULL,
-                                                    NULL,
-				                    FALSE,
-				                    accumulator);
-				/* There's no need to force mtime check in these inconsistent
-				 * mount points, as they are not mounted right now. */
-			}
+			g_debug ("Mount point state incorrect in DB for mount '%s', "
+			         "currently it is NOT mounted",
+			         mount_point);
+			set_up_mount_point (TRACKER_MINER_FILES (miner),
+			                    file,
+			                    FALSE,
+			                    accumulator);
+			/* There's no need to force mtime check in these inconsistent
+			 * mount points, as they are not mounted right now. */
 		}
+
+		g_object_unref (file);
 	}
 
 	if (accumulator->str[0] != '\0') {
@@ -1315,11 +1146,9 @@ mount_point_removed_cb (TrackerStorage *storage,
 {
 	TrackerMinerFiles *miner = user_data;
 	TrackerIndexingTree *indexing_tree;
-	gchar *urn;
 	GFile *mount_point_file;
 
-	urn = g_strdup_printf (TRACKER_PREFIX_DATASOURCE_URN "%s", uuid);
-	g_debug ("Mount point removed for URN '%s'", urn);
+	g_debug ("Mount point removed for path '%s'", mount_point);
 
 	mount_point_file = g_file_new_for_path (mount_point);
 
@@ -1329,9 +1158,8 @@ mount_point_removed_cb (TrackerStorage *storage,
 	tracker_indexing_tree_remove (indexing_tree, mount_point_file);
 
 	/* Set mount point status in tracker-store */
-	set_up_mount_point (miner, urn, mount_point, NULL, FALSE, NULL);
+	set_up_mount_point (miner, mount_point_file, FALSE, NULL);
 
-	g_free (urn);
 	g_object_unref (mount_point_file);
 }
 
@@ -1346,13 +1174,12 @@ mount_point_added_cb (TrackerStorage *storage,
 {
 	TrackerMinerFiles *miner = user_data;
 	TrackerMinerFilesPrivate *priv;
-	gchar *urn;
-	GString *queries;
+	GFile *mount_point_file;
 
 	priv = TRACKER_MINER_FILES_GET_PRIVATE (miner);
 
-	urn = g_strdup_printf (TRACKER_PREFIX_DATASOURCE_URN "%s", uuid);
-	g_debug ("Mount point added for URN '%s'", urn);
+	g_debug ("Mount point added for path '%s'", mount_point);
+	mount_point_file = g_file_new_for_path (mount_point);
 
 	if (removable && !priv->index_removable_devices) {
 		g_debug ("  Not crawling, removable devices disabled in config");
@@ -1361,10 +1188,8 @@ mount_point_added_cb (TrackerStorage *storage,
 	} else if (!removable && !optical) {
 		TrackerIndexingTree *indexing_tree;
 		TrackerDirectoryFlags flags;
-		GFile *mount_point_file;
 		GSList *l;
 
-		mount_point_file = g_file_new_for_path (mount_point);
 		indexing_tree = tracker_miner_fs_get_indexing_tree (TRACKER_MINER_FS (miner));
 
 		/* Check if one of the recursively indexed locations is in
@@ -1430,8 +1255,6 @@ mount_point_added_cb (TrackerStorage *storage,
 			}
 			g_object_unref (config_file);
 		}
-
-		g_object_unref (mount_point_file);
 	} else {
 		g_debug ("  Adding directories in removable/optical media to crawler's queue");
 		miner_files_add_removable_or_optical_directory (miner,
@@ -1439,17 +1262,8 @@ mount_point_added_cb (TrackerStorage *storage,
 		                                                uuid);
 	}
 
-	queries = g_string_new ("");
-	set_up_mount_point (miner, urn, mount_point, mount_name, TRUE, queries);
-	set_up_mount_point_type (miner, urn, removable, optical, queries);
-	tracker_sparql_connection_update_async (tracker_miner_get_connection (TRACKER_MINER (miner)),
-	                                        queries->str,
-	                                        G_PRIORITY_LOW,
-	                                        NULL,
-	                                        set_up_mount_point_cb,
-	                                        g_strdup (urn));
-	g_string_free (queries, TRUE);
-	g_free (urn);
+	set_up_mount_point (miner, mount_point_file, TRUE, NULL);
+	g_object_unref (mount_point_file);
 }
 
 #if defined(HAVE_UPOWER) || defined(HAVE_HAL)
@@ -2174,37 +1988,59 @@ index_applications_changed_cb (GObject    *gobject,
 static void
 miner_files_add_to_datasource (TrackerMinerFiles *mf,
                                GFile             *file,
-                               TrackerResource   *resource)
+                               TrackerResource   *resource,
+                               TrackerResource   *element_resource)
 {
-	TrackerMinerFilesPrivate *priv;
-	const gchar *removable_device_uuid;
-	gchar *removable_device_urn;
+	TrackerIndexingTree *indexing_tree;
 
-	priv = TRACKER_MINER_FILES_GET_PRIVATE (mf);
+	indexing_tree = tracker_miner_fs_get_indexing_tree (TRACKER_MINER_FS (mf));
 
-	removable_device_uuid = tracker_storage_get_uuid_for_file (priv->storage, file);
-
-	if (removable_device_uuid) {
-		removable_device_urn = g_strdup_printf (TRACKER_PREFIX_DATASOURCE_URN "%s",
-		                                        removable_device_uuid);
+	if (tracker_indexing_tree_file_is_root (indexing_tree, file)) {
+		tracker_resource_set_relation (resource, "nie:dataSource", element_resource);
 	} else {
-		removable_device_urn = g_strdup (TRACKER_DATASOURCE_URN_NON_REMOVABLE_MEDIA);
+		const gchar *root_urn = NULL;
+		GFile *root;
+
+		root = tracker_indexing_tree_get_root (indexing_tree, file, NULL);
+
+		if (root)
+			root_urn = tracker_miner_fs_query_urn (TRACKER_MINER_FS (mf), root);
+
+		if (root_urn)
+			tracker_resource_set_uri (resource, "nie:dataSource", root_urn);
 	}
+}
 
-	tracker_resource_set_uri (resource, "nie:dataSource", removable_device_urn);
+static void
+miner_files_add_mount_info (TrackerMinerFiles *miner,
+                            TrackerResource   *resource,
+                            GFile             *file)
+{
+	TrackerMinerFilesPrivate *priv = TRACKER_MINER_FILES_GET_PRIVATE (miner);
+	TrackerStorageType storage_type;
+	const gchar *uuid;
 
-	tracker_resource_set_boolean (resource, "tracker:available", TRUE);
+	uuid = tracker_storage_get_uuid_for_file (priv->storage, file);
+	if (!uuid)
+		return;
 
-	g_free (removable_device_urn);
+	storage_type = tracker_storage_get_type_for_uuid (priv->storage, uuid);
+
+	tracker_resource_set_boolean (resource, "tracker:isRemovable",
+	                              (storage_type & TRACKER_STORAGE_REMOVABLE) != 0);
+	tracker_resource_set_boolean (resource, "tracker:isOptical",
+	                              (storage_type & TRACKER_STORAGE_OPTICAL) != 0);
 }
 
 static TrackerResource *
-miner_files_create_information_element (const gchar *uri,
-                                        const gchar *mime_type,
-                                        gboolean     is_directory)
+miner_files_create_information_element (TrackerMinerFiles *miner,
+                                        GFile             *file,
+                                        const gchar       *mime_type,
+                                        gboolean           is_directory)
 {
 	TrackerResource *resource, *file_resource;
 	GStrv rdf_types;
+	gchar *uri;
 	gint i = 0;
 
 	rdf_types = tracker_extract_module_manager_get_rdf_types (mime_type);
@@ -2216,11 +2052,25 @@ miner_files_create_information_element (const gchar *uri,
 	tracker_resource_set_string (resource, "nie:mimeType", mime_type);
 	tracker_resource_add_uri (resource, "rdf:type", "nie:InformationElement");
 
-	if (is_directory)
-		tracker_resource_add_uri (resource, "rdf:type", "nfo:Folder");
+	if (is_directory) {
+		TrackerIndexingTree *indexing_tree;
 
+		tracker_resource_add_uri (resource, "rdf:type", "nfo:Folder");
+		indexing_tree = tracker_miner_fs_get_indexing_tree (TRACKER_MINER_FS (miner));
+
+		if (tracker_indexing_tree_file_is_root (indexing_tree, file)) {
+			tracker_resource_add_uri (resource, "rdf:type", "tracker:IndexedFolder");
+			tracker_resource_set_boolean (resource, "tracker:available", TRUE);
+			tracker_resource_set_relation (resource, "nie:rootElementOf", resource);
+
+			miner_files_add_mount_info (miner, resource, file);
+		}
+	}
+
+	uri = g_file_get_uri (file);
 	file_resource = tracker_resource_new (uri);
 	tracker_resource_add_uri (file_resource, "rdf:type", "nfo:FileDataObject");
+	g_free (uri);
 
 	/* Laying the link between the IE and the DO */
 	tracker_resource_add_take_relation (resource, "nie:isStoredAs", file_resource);
@@ -2269,14 +2119,14 @@ update_mount_point_sparql (ProcessFileData *data)
 		                        "DELETE { "
 		                        "  <%s> tracker:mountPoint ?unknown "
 		                        "} WHERE { "
-		                        "  <%s> a tracker:Volume; "
+		                        "  <%s> a tracker:IndexedFolder; "
 		                        "       tracker:mountPoint ?unknown "
 		                        "} ",
 		                        removable_device_urn, removable_device_urn);
 
 		g_string_append_printf (queries,
 		                        "INSERT { "
-		                        "  <%s> a tracker:Volume; "
+		                        "  <%s> a tracker:IndexedFolder; "
 		                        "       tracker:mountPoint ?u "
 		                        "} WHERE { "
 		                        "  ?u a nfo:FileDataObject; "
@@ -2396,11 +2246,12 @@ process_file_cb (GObject      *object,
 	/* The URL of the DataObject (because IE = DO, this is correct) */
 	tracker_resource_set_string (resource, "nie:url", uri);
 
-	miner_files_add_to_datasource (data->miner, file, resource);
-
-	element_resource = miner_files_create_information_element (uri,
+	element_resource = miner_files_create_information_element (data->miner,
+	                                                           file,
 	                                                           mime_type,
 	                                                           is_directory);
+
+	miner_files_add_to_datasource (data->miner, file, resource, element_resource);
 
 	if (element_resource && is_directory &&
 	    tracker_miner_fs_get_urn (TRACKER_MINER_FS (data->miner), file)) {
@@ -2998,7 +2849,7 @@ miner_files_in_removable_media_remove_by_type (TrackerMinerFiles  *miner,
 		                        "    ?ie a rdfs:Resource "
 		                        "  }"
 		                        "} WHERE { "
-		                        "  ?v a tracker:Volume ; "
+		                        "  ?v a tracker:IndexedFolder ; "
 		                        "     tracker:isRemovable %s ; "
 		                        "     tracker:isOptical %s . "
 		                        "  ?f nie:dataSource ?v . "
@@ -3045,9 +2896,9 @@ miner_files_in_removable_media_remove_by_date (TrackerMinerFiles  *miner,
 	                        "    ?ie a rdfs:Resource "
 	                        "  }"
 	                        "} WHERE { "
-	                        "  ?v a tracker:Volume ; "
+	                        "  ?v a tracker:IndexedFolder ; "
 	                        "     tracker:isRemovable true ; "
-	                        "     tracker:isMounted false ; "
+	                        "     tracker:available false ; "
 	                        "     tracker:unmountDate ?d . "
 	                        "  ?f nie:dataSource ?v . "
 	                        "  GRAPH ?g {"

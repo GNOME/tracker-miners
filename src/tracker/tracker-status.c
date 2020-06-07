@@ -370,7 +370,7 @@ get_file_and_folder_count (int *files,
 			"\nSELECT COUNT(?file) "
 			"\nWHERE { "
 			"\n  ?file a nfo:FileDataObject ;"
-			"\n        tracker:available true ."
+			"\n        nie:dataSource/tracker:available true ."
 			"\n  FILTER (?file != nfo:Folder) "
 			"\n}";
 
@@ -397,7 +397,7 @@ get_file_and_folder_count (int *files,
 			"\nSELECT COUNT(?folders)"
 			"\nWHERE { "
 			"\n  ?folders a nfo:Folder ;"
-			"\n           tracker:available true ."
+			"\n           nie:dataSource/tracker:available true ."
 			"\n}";
 
 		cursor = tracker_sparql_connection_query (connection, query, NULL, &error);

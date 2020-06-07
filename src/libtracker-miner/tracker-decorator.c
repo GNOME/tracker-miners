@@ -721,7 +721,7 @@ create_query_string (TrackerDecorator  *decorator,
 			                        "{ ?urn a rdfs:Resource;"
 			                        "       a ?type ;"
 			                        "       nie:isStoredAs ?do . "
-			                        "  ?do tracker:available true ."
+			                        "  ?do nie:dataSource/tracker:available true ."
 			                        "  FILTER (! EXISTS { ?do nie:dataSource <%s> } ",
 			                        priv->data_source);
 

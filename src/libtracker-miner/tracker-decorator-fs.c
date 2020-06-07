@@ -180,7 +180,7 @@ check_files (TrackerDecorator    *decorator,
 	_tracker_decorator_query_append_rdf_type_filter (decorator, query);
 
 	if (available)
-		g_string_append (query, "&& BOUND(tracker:available(?urn))");
+		g_string_append (query, "&& BOUND(tracker:available(nie:dataSource(?urn)))");
 
 	g_string_append (query, ")}");
 
