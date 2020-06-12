@@ -2033,25 +2033,17 @@ miner_files_add_mount_info (TrackerMinerFiles *miner,
 }
 
 static TrackerResource *
-miner_files_create_information_element (TrackerMinerFiles *miner,
-                                        GFile             *file,
-                                        const gchar       *mime_type,
-                                        gboolean           is_directory)
+miner_files_create_folder_information_element (TrackerMinerFiles *miner,
+					       GFile             *file,
+					       const gchar       *mime_type,
+					       gboolean           is_directory)
 {
 	TrackerResource *resource, *file_resource;
-	GStrv rdf_types;
 	const gchar *urn = NULL;
 	gchar *uri;
-	gint i = 0;
-
-	rdf_types = tracker_extract_module_manager_get_rdf_types (mime_type);
-
-	if (!rdf_types)
-		return NULL;
 
 	/* Preserve URN for nfo:Folders */
-	if (is_directory)
-		urn = tracker_miner_fs_get_urn (TRACKER_MINER_FS (miner), file);
+	urn = tracker_miner_fs_get_urn (TRACKER_MINER_FS (miner), file);
 
 	resource = tracker_resource_new (urn);
 	tracker_resource_set_string (resource, "nie:mimeType", mime_type);
@@ -2081,13 +2073,6 @@ miner_files_create_information_element (TrackerMinerFiles *miner,
 	tracker_resource_add_take_relation (resource, "nie:isStoredAs", file_resource);
 	tracker_resource_add_uri (file_resource, "nie:interpretedAs",
 				  tracker_resource_get_identifier (resource));
-
-	while (rdf_types[i]) {
-		tracker_resource_add_uri (resource, "rdf:type", rdf_types[i]);
-		i++;
-	}
-
-	g_strfreev (rdf_types);
 
 	return resource;
 }
@@ -2154,7 +2139,7 @@ process_file_cb (GObject      *object,
                  gpointer      user_data)
 {
 	TrackerMinerFilesPrivate *priv;
-	TrackerResource *resource, *element_resource;
+	TrackerResource *resource, *folder_resource = NULL;
 	ProcessFileData *data;
 	const gchar *mime_type;
 	gchar *parent_urn;
@@ -2251,26 +2236,24 @@ process_file_cb (GObject      *object,
 	/* The URL of the DataObject (because IE = DO, this is correct) */
 	tracker_resource_set_string (resource, "nie:url", uri);
 
-	element_resource = miner_files_create_information_element (data->miner,
-	                                                           file,
-	                                                           mime_type,
-	                                                           is_directory);
+	if (is_directory) {
+		folder_resource =
+			miner_files_create_folder_information_element (data->miner,
+								       file,
+								       mime_type,
+								       is_directory);
+	}
 
-	miner_files_add_to_datasource (data->miner, file, resource, element_resource);
+	miner_files_add_to_datasource (data->miner, file, resource, folder_resource);
 
 	mount_point_sparql = update_mount_point_sparql (data);
 	sparql_update_str = tracker_resource_print_sparql_update (resource, NULL, DEFAULT_GRAPH);
 
-	if (element_resource) {
-		const gchar *graph;
-
-		graph = tracker_extract_module_manager_get_graph (mime_type);
-		ie_update_str = tracker_resource_print_sparql_update (element_resource,
+	if (folder_resource) {
+		ie_update_str = tracker_resource_print_sparql_update (folder_resource,
 		                                                      NULL,
-		                                                      graph ?
-		                                                      graph :
 		                                                      DEFAULT_GRAPH);
-		g_object_unref (element_resource);
+		g_object_unref (folder_resource);
 	}
 
 	sparql_str = g_strdup_printf ("%s %s %s %s",
