@@ -40,10 +40,9 @@ import sys
 import time
 import unittest as ut
 
-import trackertestutils.dconf
 import trackertestutils.helpers
 import configuration as cfg
-from minerfshelper import MinerFsHelper
+from minerhelper import MinerFsHelper
 
 log = logging.getLogger(__name__)
 
@@ -97,7 +96,7 @@ class TrackerMinerTest(ut.TestCase):
         extra_env['LANG'] = 'en_GB.utf8'
 
         self.sandbox = trackertestutils.helpers.TrackerDBusSandbox(
-            dbus_daemon_config_file=cfg.TEST_DBUS_DAEMON_CONFIG_FILE, extra_env=extra_env)
+            session_bus_config_file=cfg.TEST_DBUS_DAEMON_CONFIG_FILE, extra_env=extra_env)
 
         self.sandbox.start()
 
@@ -108,12 +107,9 @@ class TrackerMinerTest(ut.TestCase):
             # function.
             os.makedirs(self.indexed_dir, exist_ok=True)
 
-            for schema_name, contents in self.config().items():
-                dconf = trackertestutils.dconf.DConfClient(self.sandbox)
-                for key, value in contents.items():
-                    dconf.write(schema_name, key, value)
+            self.sandbox.set_config(self.config())
 
-            self.miner_fs = MinerFsHelper(self.sandbox.get_connection())
+            self.miner_fs = MinerFsHelper(self.sandbox.get_session_bus_connection())
             self.miner_fs.start()
             self.miner_fs.start_watching_progress()
 
@@ -409,7 +405,7 @@ class TrackerWritebackTest (TrackerMinerTest):
     def setUp(self):
         super(TrackerWritebackTest, self).setUp()
         self.writeback_proxy = Gio.DBusProxy.new_sync(
-            self.sandbox.get_connection(),
+            self.sandbox.get_session_bus_connection(),
             Gio.DBusProxyFlags.DO_NOT_AUTO_START_AT_CONSTRUCTION, None,
             self.WRITEBACK_BUSNAME, self.WRITEBACK_PATH, self.WRITEBACK_IFACE)
 
