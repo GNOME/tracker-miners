@@ -1,5 +1,11 @@
 python = find_program('python3')
 
+if umockdev.found()
+  umockdev_wrapper = find_program('umockdev-wrapper')
+else
+  umockdev_wrapper = python
+endif
+
 # Configure functional tests to run completely from source tree.
 testconf = configuration_data()
 
@@ -7,7 +13,8 @@ config_json_full_path = meson.current_build_dir() / 'configuration.json'
 dconf_profile_full_path = meson.current_source_dir() / 'trackertest'
 tracker_extractors_dir = meson.current_build_dir() / '..' / '..' / 'src' / 'tracker-extract'
 
-testconf.set('TEST_DBUS_DAEMON_CONFIG_FILE', build_root / 'tests' / 'test-bus.conf')
+testconf.set('TEST_SESSION_BUS_CONFIG_FILE', build_root / 'tests' / 'test-session-bus.conf')
+testconf.set('TEST_SYSTEM_BUS_CONFIG_FILE', meson.current_source_dir() / '..' / 'test-system-bus.conf')
 testconf.set('TEST_DCONF_PROFILE', dconf_profile_full_path)
 testconf.set('TEST_DOMAIN_ONTOLOGY_RULE', meson.current_build_dir() / 'test-domain.rule')
 testconf.set('TEST_EXTRACTOR_RULES_DIR', tracker_uninstalled_extract_rules_dir)
@@ -148,6 +155,10 @@ else
   warning('No GStreamer h264 codec was detected. Some extractor tests will be disabled.')
 endif
 
+umockdev_tests = [
+  'miner-power',
+]
+
 test_env = environment()
 
 if get_option('tracker_core') == 'subproject'
@@ -183,3 +194,15 @@ foreach t: functional_tests
     suite: ['functional'],
     timeout: 120)
 endforeach
+
+if umockdev.found()
+  # FIXME: these tests don't appear in the test runner output if umockdev
+  # wasn't found. We should really report them as skipped, but it's tricky.
+  foreach t: umockdev_tests
+    file = meson.current_source_dir() / '@0@.py'.format(t)
+    test(t, umockdev_wrapper,
+      args: [python.path(), file],
+      env: test_env,
+      suite: ['functional', 'umockdev'])
+  endforeach
+endif
