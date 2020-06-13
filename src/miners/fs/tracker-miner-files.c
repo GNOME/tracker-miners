@@ -2141,13 +2141,13 @@ process_file_cb (GObject      *object,
 	TrackerMinerFilesPrivate *priv;
 	TrackerResource *resource, *folder_resource = NULL;
 	ProcessFileData *data;
-	const gchar *mime_type;
+	const gchar *mime_type, *graph;
 	gchar *parent_urn;
 	gchar *delete_properties_sparql = NULL, *mount_point_sparql;
 	GFileInfo *file_info;
 	guint64 time_;
 	GFile *file, *parent;
-	gchar *uri, *sparql_str, *sparql_update_str, *time_str, *ie_update_str = NULL;
+	gchar *uri, *sparql_str, *sparql_update_str, *time_str, *ie_update_str = NULL, *graph_file_str = NULL;
 	GError *error = NULL;
 	gboolean is_special;
 	gboolean is_directory;
@@ -2256,10 +2256,25 @@ process_file_cb (GObject      *object,
 		g_object_unref (folder_resource);
 	}
 
-	sparql_str = g_strdup_printf ("%s %s %s %s",
+	graph = tracker_extract_module_manager_get_graph (mime_type);
+
+	if (graph) {
+		TrackerResource *graph_file;
+
+		/* This mimetype will be extracted by some module, pre-fill the
+		 * nfo:FileDataObject in that graph.
+		 */
+		graph_file = tracker_resource_new (uri);
+		tracker_resource_add_uri (graph_file, "rdf:type", "nfo:FileDataObject");
+		graph_file_str = tracker_resource_print_sparql_update (graph_file,
+								       NULL, graph);
+	}
+
+	sparql_str = g_strdup_printf ("%s %s %s %s %s",
 	                              delete_properties_sparql ? delete_properties_sparql : "",
 	                              sparql_update_str,
 	                              ie_update_str ? ie_update_str : "",
+				      graph_file_str ? graph_file_str : "",
 	                              mount_point_sparql ? mount_point_sparql : "");
 	g_free (ie_update_str);
 	g_free (delete_properties_sparql);
