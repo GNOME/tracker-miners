@@ -413,10 +413,7 @@ glib_mkenums = find_program('glib-mkenums')
 
 subdir('src')
 subdir('data')
-
-if get_option('docs')
-  subdir('docs')
-endif
+subdir('docs')
 
 test_c_args = tracker_c_args + [
   '-DTOP_BUILDDIR="@0@/"'.format(meson.build_root()),
