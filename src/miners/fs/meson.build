@@ -5,22 +5,16 @@ sources = [
     'tracker-miner-files.c',
     'tracker-miner-files-index.c',
     'tracker-miner-files-peer-listener.c',
+    'tracker-power-upower.c',
     'tracker-storage.c',
 ]
 
 tracker_miner_fs_deps = [
      tracker_miner,
      tracker_miners_common_dep,
-     tracker_extract_dep
+     tracker_extract_dep,
+     upower,
 ]
-
-if battery_detection_library_name == 'upower'
-  sources += 'tracker-power-upower.c'
-  tracker_miner_fs_deps += upower
-elif battery_detection_library_name == 'hal'
-  sources += 'tracker-power-hal.c'
-  tracker_miner_fs_deps += hal
-endif
 
 executable('tracker-miner-fs-@0@'.format(tracker_api_major),
     sources,

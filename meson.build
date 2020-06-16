@@ -84,7 +84,7 @@ libxml2 = dependency('libxml-2.0', version: '>= 2.6', required: get_option('xml'
 libvorbis = dependency('vorbisfile', version: '>= 0.22', required: get_option('vorbis'))
 poppler = dependency('poppler-glib', version: '>= 0.16.0', required: get_option('pdf'))
 totem_plparser = dependency('totem-plparser', required: get_option('playlist'))
-upower = dependency('upower-glib', version: '>= 0.9.0', required: false)
+upower = dependency('upower-glib', version: '>= 0.9.0')
 zlib = dependency('zlib')
 
 libgif = cc.find_library('gif', required: get_option('gif'))
@@ -133,39 +133,6 @@ elif buildtype == 'release'
 endif
 
 add_project_arguments(debug_cflags, language: 'c')
-
-##################################################################
-# Check for libtracker-common: battery/mains power detection
-#
-# By default, AUTO with this order of preference:
-#  1)  upower
-#  2)  hal
-##################################################################
-
-have_hal = false
-battery_detection_library_name = ''
-
-if upower.found()
-  if get_option('battery_detection') == 'auto' or get_option('battery_detection') == 'upower'
-    battery_detection_library = upower
-    battery_detection_library_name = 'upower'
-  endif
-elif get_option('battery_detection') == 'upower'
-  error('upower explicitly requested, but upower library was not found')
-endif
-
-if battery_detection_library_name == ''
-  hal = dependency('hal', version: '>= 0.5', required: false)
-
-  if hal.found()
-    battery_detection_library = hal
-    battery_detection_library_name = 'hal'
-  elif get_option('battery_detection') == 'hal'
-    error('HAL explicitly requested, but not found')
-  else
-    battery_detection_library_name = '(none)'
-  endif
-endif
 
 ####################################################################
 # This section is for tracker-extract dependencies
@@ -337,14 +304,12 @@ conf.set('HAVE_EXEMPI', exempi.found())
 conf.set('HAVE_GSTREAMER', generic_media_handler_name == 'gstreamer')
 conf.set('GSTREAMER_BACKEND_DISCOVERER', gstreamer_backend_name == 'Discoverer')
 conf.set('GSTREAMER_BACKEND_GUPNP_DLNA', gstreamer_backend_name == 'GUPnP-DLNA')
-conf.set('HAVE_HAL', battery_detection_library_name == 'hal')
 conf.set('HAVE_LIBCUE', libcue.found())
 conf.set('HAVE_LIBCUE2', libcue.found() and libcue.version().version_compare('>= 2.0.0'))
 conf.set('HAVE_LIBICU_CHARSET_DETECTION', charset_library_name == 'icu')
 conf.set('HAVE_LIBEXIF', libexif.found())
 conf.set('HAVE_LIBIPTCDATA', libiptcdata.found())
 conf.set('HAVE_LIBSECCOMP', libseccomp.found())
-conf.set('HAVE_UPOWER', battery_detection_library_name == 'upower')
 conf.set('HAVE_NETWORK_MANAGER', have_network_manager)
 
 conf.set('HAVE_GETLINE', cc.has_function('getline', prefix : '#include <stdio.h>'))
@@ -452,7 +417,6 @@ summary = [
   '    Source code location:                   ' + meson.source_root(),
   '    Compiler:                               ' + cc.get_id(),
   '\nFeature Support:',
-  '    Battery/mains power detection:          ' + battery_detection_library_name,
   '    Support for network status detection:   ' + have_network_manager.to_string(),
   '\nData Miners / Writebacks:',
   '    FS (File System):                       ' + have_tracker_miner_fs.to_string(),
