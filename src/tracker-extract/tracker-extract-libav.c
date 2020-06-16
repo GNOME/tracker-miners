@@ -30,6 +30,15 @@
 #include <libavformat/avformat.h>
 #include <libavutil/mathematics.h>
 
+static AVDictionaryEntry *find_tag (AVFormatContext *format, AVStream *stream, const gchar *name)
+{
+	AVDictionaryEntry *tag = av_dict_get(format->metadata, name, NULL, 0);
+	if (!tag) {
+		tag = av_dict_get(stream->metadata, name, NULL, 0);
+	}
+
+	return tag;
+}
 
 G_MODULE_EXPORT gboolean
 tracker_extract_get_metadata (TrackerExtractInfo *info)
@@ -153,27 +162,27 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 			tracker_resource_set_int64 (metadata, "nfo:duration", duration);
 		}
 
-		if ((tag = av_dict_get (format->metadata, "track", NULL, 0))) {
+		if ((tag = find_tag (format, audio_stream, "track"))) {
 			int track = atoi(tag->value);
 			if (track > 0) {
 				tracker_resource_set_int64 (metadata, "nmm:trackNumber", track);
 			}
 		}
 
-		if ((tag = av_dict_get (format->metadata, "album", NULL, 0))) {
+		if ((tag = find_tag (format, audio_stream, "album"))) {
 			album_title = tag->value;
 		}
 
-		if (album_title && (tag = av_dict_get (format->metadata, "album_artist", NULL, 0))) {
+		if (album_title && (tag = find_tag (format, audio_stream, "album_artist"))) {
 			album_artist_name = tag->value;
 			album_artist = tracker_extract_new_artist (album_artist_name);
 		}
 
-		if ((tag = av_dict_get (format->metadata, "artist", tag, 0))) {
+		if ((tag = find_tag (format, audio_stream, "artist"))) {
 			performer = tracker_extract_new_artist (tag->value);
 		}
 
-		if (!performer && (tag = av_dict_get (format->metadata, "performer", tag, 0))) {
+		if (!performer && (tag = find_tag (format, audio_stream, "performer"))) {
 			performer = tracker_extract_new_artist (tag->value);
 		}
 
@@ -181,7 +190,7 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 			tracker_resource_set_relation (metadata, "nmm:performer", performer);
 		}
 
-		if ((tag = av_dict_get (format->metadata, "composer", tag, 0))) {
+		if ((tag = find_tag (format, audio_stream, "composer"))) {
 			TrackerResource *composer = tracker_extract_new_artist (tag->value);
 			tracker_resource_set_relation (metadata, "nmm:composer", composer);
 			g_object_unref (composer);
@@ -191,7 +200,7 @@ tracker_extract_get_metadata (TrackerExtractInfo *info)
 			int disc_number = 1;
 			TrackerResource *album_disc;
 
-			if ((tag = av_dict_get (format->metadata, "disc", NULL, 0))) {
+			if ((tag = find_tag (format, audio_stream, "disc"))) {
 				disc_number = atoi (tag->value);
 			}
 
