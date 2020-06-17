@@ -91,6 +91,7 @@ struct _TrackerDecoratorPrivate {
 	GCancellable *cancellable;
 
 	gint batch_size;
+	gint n_updates;
 
 	guint processing : 1;
 	guint querying   : 1;
@@ -347,6 +348,8 @@ decorator_commit_cb (GObject      *object,
 	priv = decorator->priv;
 	conn = TRACKER_SPARQL_CONNECTION (object);
 
+	priv->n_updates--;
+
 	if (!tracker_sparql_connection_update_array_finish (conn, result, &error)) {
 		g_warning ("There was an error pushing metadata: %s\n", error->message);
 
@@ -401,6 +404,7 @@ decorator_commit_info (TrackerDecorator *decorator)
 	/* Move sparql buffer to commit buffer */
 	priv->commit_buffer = priv->sparql_buffer;
 	priv->sparql_buffer = NULL;
+	priv->n_updates++;
 	array = g_ptr_array_new ();
 
 	for (i = 0; i < priv->commit_buffer->len; i++) {
@@ -904,6 +908,7 @@ decorator_cache_next_items (TrackerDecorator *decorator)
 	TrackerDecoratorPrivate *priv = decorator->priv;
 
 	if (priv->querying ||
+	    priv->n_updates > 1 ||
 	    g_hash_table_size (priv->tasks) > 0 ||
 	    !g_queue_is_empty (&priv->item_cache))
 		return;
@@ -1020,6 +1025,7 @@ notifier_events_cb (TrackerDecorator *decorator,
 		    GPtrArray        *events,
 		    TrackerNotifier  *notifier)
 {
+	TrackerDecoratorPrivate *priv = decorator->priv;
 	gboolean check_added = FALSE;
 	gint64 id;
 	gint i;
@@ -1045,7 +1051,7 @@ notifier_events_cb (TrackerDecorator *decorator,
 		}
 	}
 
-	if (check_added)
+	if (check_added && !priv->querying && priv->n_updates == 0)
 		decorator_cache_next_items (decorator);
 }
 
