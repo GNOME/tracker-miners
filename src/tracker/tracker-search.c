@@ -443,7 +443,7 @@ get_emails (TrackerSparqlConnection *connection,
 	fts = get_fts_string (search_terms, use_or_operator);
 
 	if (fts) {
-		query = g_strdup_printf ("SELECT nie:url(?email) nmo:receivedDate(?email) nmo:messageSubject(?email) fts:snippet(?email, \"%s\", \"%s\") "
+		query = g_strdup_printf ("SELECT nie:isStoredAs(?email) nmo:receivedDate(?email) nmo:messageSubject(?email) fts:snippet(?email, \"%s\", \"%s\") "
 		                         "WHERE { "
 		                         "  ?email a nmo:Email ;"
 		                         "  fts:match \"%s\" ."
@@ -457,7 +457,7 @@ get_emails (TrackerSparqlConnection *connection,
 		                         search_offset,
 		                         search_limit);
 	} else {
-		query = g_strdup_printf ("SELECT nie:url(?email) nmo:receivedDate(?email) nmo:messageSubject(?email) "
+		query = g_strdup_printf ("SELECT nie:isStoredAs(?email) nmo:receivedDate(?email) nmo:messageSubject(?email) "
 		                         "WHERE { "
 		                         "  ?email a nmo:Email ."
 		                         "} "
@@ -556,13 +556,13 @@ get_document_files (TrackerSparqlConnection *connection,
 	fts = get_fts_string (search_terms, use_or_operator);
 
 	if (fts) {
-		query = g_strdup_printf ("SELECT ?document nie:url(?document) fts:snippet(?document, \"%s\", \"%s\") "
+		query = g_strdup_printf ("SELECT ?document nie:isStoredAs(?document) fts:snippet(?document, \"%s\", \"%s\") "
 		                         "WHERE { "
 		                         "  ?document a nfo:Document ;"
 		                         "  fts:match \"%s\" ."
 		                         "  %s"
 		                         "} "
-		                         "ORDER BY ASC(nie:url(?document)) "
+		                         "ORDER BY ASC(nie:isStoredAs(?document)) "
 		                         "OFFSET %d "
 		                         "LIMIT %d",
 		                         disable_color ? "" : SNIPPET_BEGIN,
@@ -572,12 +572,12 @@ get_document_files (TrackerSparqlConnection *connection,
 		                         search_offset,
 		                         search_limit);
 	} else {
-		query = g_strdup_printf ("SELECT ?document nie:url(?document) "
+		query = g_strdup_printf ("SELECT ?document nie:isStoredAs(?document) "
 		                         "WHERE { "
 		                         "  ?document a nfo:Document ."
 		                         "  %s"
 		                         "} "
-		                         "ORDER BY ASC(nie:url(?document)) "
+		                         "ORDER BY ASC(nie:isStoredAs(?document)) "
 		                         "OFFSET %d "
 		                         "LIMIT %d",
 		                         show_all_str,
@@ -610,13 +610,13 @@ get_video_files (TrackerSparqlConnection *connection,
 	fts = get_fts_string (search_terms, use_or_operator);
 
 	if (fts) {
-		query = g_strdup_printf ("SELECT ?video nie:url(?video) fts:snippet(?video, \"%s\", \"%s\") "
+		query = g_strdup_printf ("SELECT ?video nie:isStoredAs(?video) fts:snippet(?video, \"%s\", \"%s\") "
 		                         "WHERE { "
 		                         "  ?video a nfo:Video ;"
 		                         "  fts:match \"%s\" ."
 		                         "  %s"
 		                         "} "
-		                         "ORDER BY ASC(nie:url(?video)) "
+		                         "ORDER BY ASC(nie:isStoredAs(?video)) "
 		                         "OFFSET %d "
 		                         "LIMIT %d",
 		                         disable_color ? "" : SNIPPET_BEGIN,
@@ -626,12 +626,12 @@ get_video_files (TrackerSparqlConnection *connection,
 		                         search_offset,
 		                         search_limit);
 	} else {
-		query = g_strdup_printf ("SELECT ?video nie:url(?video) "
+		query = g_strdup_printf ("SELECT ?video nie:isStoredAs(?video) "
 		                         "WHERE { "
 		                         "  ?video a nfo:Video ."
 		                         "  %s"
 		                         "} "
-		                         "ORDER BY ASC(nie:url(?video)) "
+		                         "ORDER BY ASC(nie:isStoredAs(?video)) "
 		                         "OFFSET %d "
 		                         "LIMIT %d",
 		                         show_all_str,
@@ -664,13 +664,13 @@ get_image_files (TrackerSparqlConnection *connection,
 	fts = get_fts_string (search_terms, use_or_operator);
 
 	if (fts) {
-		query = g_strdup_printf ("SELECT ?image nie:url(?image) fts:snippet(?image, \"%s\", \"%s\") "
+		query = g_strdup_printf ("SELECT ?image nie:isStoredAs(?image) fts:snippet(?image, \"%s\", \"%s\") "
 		                         "WHERE { "
 		                         "  ?image a nfo:Image ;"
 		                         "  fts:match \"%s\" ."
 		                         "  %s"
 		                         "} "
-		                         "ORDER BY ASC(nie:url(?image)) "
+		                         "ORDER BY ASC(nie:isStoredAs(?image)) "
 		                         "OFFSET %d "
 		                         "LIMIT %d",
 		                         disable_color ? "" : SNIPPET_BEGIN,
@@ -680,12 +680,12 @@ get_image_files (TrackerSparqlConnection *connection,
 		                         search_offset,
 		                         search_limit);
 	} else {
-		query = g_strdup_printf ("SELECT ?image nie:url(?image) "
+		query = g_strdup_printf ("SELECT ?image nie:isStoredAs(?image) "
 		                         "WHERE { "
 		                         "  ?image a nfo:Image ."
 		                         "  %s"
 		                         "} "
-		                         "ORDER BY ASC(nie:url(?image)) "
+		                         "ORDER BY ASC(nie:isStoredAs(?image)) "
 		                         "OFFSET %d "
 		                         "LIMIT %d",
 		                         show_all_str,
@@ -718,13 +718,13 @@ get_music_files (TrackerSparqlConnection *connection,
 	fts = get_fts_string (search_terms, use_or_operator);
 
 	if (fts) {
-		query = g_strdup_printf ("SELECT ?song nie:url(?song) fts:snippet(?song, \"%s\", \"%s\")"
+		query = g_strdup_printf ("SELECT ?song nie:isStoredAs(?song) fts:snippet(?song, \"%s\", \"%s\")"
 		                         "WHERE { "
 		                         "  ?song a nmm:MusicPiece ;"
 		                         "  fts:match \"%s\" ."
 		                         "  %s"
 		                         "} "
-		                         "ORDER BY ASC(nie:url(?song)) "
+		                         "ORDER BY ASC(nie:isStoredAs(?song)) "
 		                         "OFFSET %d "
 		                         "LIMIT %d",
 		                         disable_color ? "" : SNIPPET_BEGIN,
@@ -734,12 +734,12 @@ get_music_files (TrackerSparqlConnection *connection,
 		                         search_offset,
 		                         search_limit);
 	} else {
-		query = g_strdup_printf ("SELECT ?song nie:url(?song) "
+		query = g_strdup_printf ("SELECT ?song nie:isStoredAs(?song) "
 		                         "WHERE { "
 		                         "  ?song a nmm:MusicPiece ."
 		                         "  %s"
 		                         "} "
-		                         "ORDER BY ASC(nie:url(?song)) "
+		                         "ORDER BY ASC(nie:isStoredAs(?song)) "
 		                         "OFFSET %d "
 		                         "LIMIT %d",
 		                         show_all_str,
@@ -949,7 +949,7 @@ get_bookmarks (TrackerSparqlConnection *connection,
 	fts = get_fts_string (search_terms, use_or_operator);
 
 	if (fts) {
-		query = g_strdup_printf ("SELECT nie:title(?urn) nie:url(?bookmark) "
+		query = g_strdup_printf ("SELECT nie:title(?urn) nie:isStoredAs(?bookmark) "
 		                         "WHERE {"
 		                         "  ?urn a nfo:Bookmark ;"
 		                         "       nfo:bookmarks ?bookmark ."
@@ -962,7 +962,7 @@ get_bookmarks (TrackerSparqlConnection *connection,
 		                         search_offset,
 		                         search_limit);
 	} else {
-		query = g_strdup_printf ("SELECT nie:title(?urn) nie:url(?bookmark) "
+		query = g_strdup_printf ("SELECT nie:title(?urn) nie:isStoredAs(?bookmark) "
 		                         "WHERE {"
 		                         "  ?urn a nfo:Bookmark ;"
 		                         "       nfo:bookmarks ?bookmark ."
@@ -1287,11 +1287,11 @@ get_files (TrackerSparqlConnection *connection,
 		query = g_strdup_printf ("SELECT ?u ?url "
 		                         "WHERE { "
 		                         "  ?u a nie:InformationElement ;"
-		                         "  nie:url ?url ;"
+		                         "  nie:isStoredAs ?url ;"
 		                         "  fts:match \"%s\" ."
 		                         "  %s"
 		                         "} "
-		                         "ORDER BY ASC(nie:url(?u)) "
+		                         "ORDER BY ASC(?urn) "
 		                         "OFFSET %d "
 		                         "LIMIT %d",
 		                         fts,
@@ -1302,10 +1302,10 @@ get_files (TrackerSparqlConnection *connection,
 		query = g_strdup_printf ("SELECT ?u ?url "
 		                         "WHERE { "
 		                         "  ?u a nie:InformationElement ;"
-		                         "     nie:url ?url ."
+		                         "     nie:isStoredAs ?url ."
 		                         "  %s"
 		                         "} "
-		                         "ORDER BY ASC(nie:url(?u)) "
+		                         "ORDER BY ASC(?urn) "
 		                         "OFFSET %d "
 		                         "LIMIT %d",
 		                         show_all_str,
@@ -1338,13 +1338,13 @@ get_folders (TrackerSparqlConnection *connection,
 	fts = get_fts_string (search_terms, use_or_operator);
 
 	if (fts) {
-		query = g_strdup_printf ("SELECT ?u nie:url(?u) "
+		query = g_strdup_printf ("SELECT ?u nie:isStoredAs(?u) "
 		                         "WHERE { "
 		                         "  ?u a nfo:Folder ;"
 		                         "  fts:match \"%s\" ."
 		                         "  %s"
 		                         "} "
-		                         "ORDER BY ASC(nie:url(?u)) "
+		                         "ORDER BY ASC(nie:isStoredAs(?u)) "
 		                         "OFFSET %d "
 		                         "LIMIT %d",
 		                         fts,
@@ -1352,12 +1352,12 @@ get_folders (TrackerSparqlConnection *connection,
 		                         search_offset,
 		                         search_limit);
 	} else {
-		query = g_strdup_printf ("SELECT ?u nie:url(?u) "
+		query = g_strdup_printf ("SELECT ?u nie:isStoredAs(?u) "
 		                         "WHERE { "
 		                         "  ?u a nfo:Folder ."
 		                         "  %s"
 		                         "} "
-		                         "ORDER BY ASC(nie:url(?u)) "
+		                         "ORDER BY ASC(nie:isStoredAs(?u)) "
 		                         "OFFSET %d "
 		                         "LIMIT %d",
 		                         show_all_str,
@@ -1395,14 +1395,14 @@ get_all_by_search (TrackerSparqlConnection *connection,
 	show_all_str = show_all ? "" : "?s nie:dataSource/tracker:available true . ";
 
 	if (details) {
-		query = g_strdup_printf ("SELECT tracker:coalesce (nie:url (?s), ?s) nie:mimeType (?s) ?type fts:snippet(?s, \"%s\", \"%s\") "
+		query = g_strdup_printf ("SELECT tracker:coalesce (nie:isStoredAs (?s), ?s) nie:mimeType (?s) ?type fts:snippet(?s, \"%s\", \"%s\") "
 		                         "WHERE {"
 		                         "  ?s fts:match \"%s\" ;"
 		                         "  rdf:type ?type ."
 		                         "  %s"
 		                         "} "
-		                         "GROUP BY nie:url(?s) "
-		                         "ORDER BY nie:url(?s) "
+		                         "GROUP BY nie:isStoredAs(?s) "
+		                         "ORDER BY nie:isStoredAs(?s) "
 		                         "OFFSET %d LIMIT %d",
 		                         disable_color ? "" : SNIPPET_BEGIN,
 		                         disable_color ? "" : SNIPPET_END,
@@ -1411,12 +1411,12 @@ get_all_by_search (TrackerSparqlConnection *connection,
 		                         search_offset,
 		                         search_limit);
 	} else {
-		query = g_strdup_printf ("SELECT tracker:coalesce (nie:url (?s), ?s) fts:snippet(?s, \"%s\", \"%s\") "
+		query = g_strdup_printf ("SELECT tracker:coalesce (nie:isStoredAs (?s), ?s) fts:snippet(?s, \"%s\", \"%s\") "
 		                         "WHERE {"
 		                         "  ?s fts:match \"%s\" ."
 		                         "  %s"
 		                         "} "
-		                         "ORDER BY nie:url(?s) "
+		                         "ORDER BY nie:isStoredAs(?s) "
 		                         "OFFSET %d LIMIT %d",
 		                         disable_color ? "" : SNIPPET_BEGIN,
 		                         disable_color ? "" : SNIPPET_END,
