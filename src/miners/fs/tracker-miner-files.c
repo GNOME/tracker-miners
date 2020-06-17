@@ -53,8 +53,6 @@
 #define LAST_CRAWL_FILENAME           "last-crawl.txt"
 #define NEED_MTIME_CHECK_FILENAME     "no-need-mtime-check.txt"
 
-#define TRACKER_EXTRACT_DATA_SOURCE TRACKER_PREFIX_TRACKER "extractor-data-source"
-
 #define DEFAULT_GRAPH "tracker:FileSystem"
 
 #define TRACKER_MINER_FILES_GET_PRIVATE(o) (tracker_miner_files_get_instance_private (TRACKER_MINER_FILES (o)))
@@ -76,10 +74,7 @@ struct TrackerMinerFilesPrivate {
 	TrackerStorage *storage;
 
 	TrackerExtractWatchdog *extract_watchdog;
-	gboolean checking_unextracted;
 	guint grace_period_timeout_id;
-	GCancellable *extract_check_cancellable;
-	gchar *extract_check_query;
 
 	GVolumeMonitor *volume_monitor;
 
@@ -93,6 +88,8 @@ struct TrackerMinerFilesPrivate {
 	gboolean disk_space_pause;
 
 	gboolean low_battery_pause;
+
+	gboolean start_extractor;
 
 #if defined(HAVE_UPOWER) || defined(HAVE_HAL)
 	TrackerPower *power;
@@ -275,43 +272,14 @@ tracker_miner_files_class_init (TrackerMinerFilesClass *klass)
 }
 
 static void
-check_unextracted_cb (GObject      *object,
-                      GAsyncResult *res,
-                      gpointer      user_data)
-{
-	TrackerMinerFiles *mf = user_data;
-	TrackerExtractWatchdog *watchdog = mf->private->extract_watchdog;
-	TrackerSparqlCursor *cursor;
-	GError *error = NULL;
-
-	mf->private->checking_unextracted = FALSE;
-	cursor = tracker_sparql_connection_query_finish (TRACKER_SPARQL_CONNECTION (object),
-	                                                 res, &error);
-	if (error) {
-		g_warning ("Could not check unextracted items: %s", error->message);
-		g_error_free (error);
-		return;
-	}
-
-	if (tracker_sparql_cursor_next (cursor, mf->private->extract_check_cancellable, NULL))
-		tracker_extract_watchdog_ensure_started (watchdog);
-	else
-		g_debug ("Not starting extractor. Nothing to do.");
-
-	g_object_unref (cursor);
-}
-
-static void
 tracker_miner_files_check_unextracted (TrackerMinerFiles *mf)
 {
-	if (mf->private->checking_unextracted)
+	if (!mf->private->start_extractor)
 		return;
 
-	mf->private->checking_unextracted = TRUE;
-	tracker_sparql_connection_query_async (tracker_miner_get_connection (TRACKER_MINER (mf)),
-					       mf->private->extract_check_query,
-	                                       mf->private->extract_check_cancellable,
-	                                       check_unextracted_cb, mf);
+	mf->private->start_extractor = FALSE;
+	g_debug ("Starting extractor");
+	tracker_extract_watchdog_ensure_started (mf->private->extract_watchdog);
 }
 
 static gboolean
@@ -382,21 +350,10 @@ tracker_miner_files_init (TrackerMinerFiles *mf)
 	priv->mtime_check = TRUE;
 	priv->quark_mount_point_uuid = g_quark_from_static_string ("tracker-mount-point-uuid");
 
-	priv->extract_check_cancellable = g_cancellable_new ();
-
 	rdf_types = tracker_extract_module_manager_get_all_rdf_types ();
 	rdf_types_str = g_strjoinv (",", rdf_types);
 	g_strfreev (rdf_types);
 
-	priv->extract_check_query = g_strdup_printf ("SELECT ?u { "
-						     "  ?u a nfo:FileDataObject ;"
-						     "     nie:dataSource/tracker:available true ; "
-	                                             "     nie:interpretedAs ?ie . "
-						     "  ?ie a ?class . "
-						     "  FILTER (?class IN (%s) && "
-						     "          NOT EXISTS { ?u nie:dataSource <" TRACKER_EXTRACT_DATA_SOURCE "> })"
-						     "} LIMIT 1",
-						     rdf_types_str);
 	g_free (rdf_types_str);
 }
 
@@ -749,9 +706,6 @@ miner_files_finalize (GObject *object)
 	mf = TRACKER_MINER_FILES (object);
 	priv = mf->private;
 
-	g_cancellable_cancel (priv->extract_check_cancellable);
-	g_object_unref (priv->extract_check_cancellable);
-	g_free (priv->extract_check_query);
 	g_free (priv->domain);
 
 	if (priv->grace_period_timeout_id != 0) {
@@ -2311,6 +2265,7 @@ miner_files_process_file (TrackerMinerFS *fs,
 
 	priv = TRACKER_MINER_FILES (fs)->private;
 	priv->extraction_queue = g_list_prepend (priv->extraction_queue, data);
+	priv->start_extractor = TRUE;
 
 	attrs = G_FILE_ATTRIBUTE_STANDARD_TYPE ","
 		G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE ","
