@@ -22,6 +22,7 @@
 #include "config-miners.h"
 
 #include <libtracker-miners-common/tracker-common.h>
+#include <libtracker-extract/tracker-extract.h>
 #include <libtracker-sparql/tracker-sparql.h>
 
 #include "tracker-file-notifier.h"
@@ -32,6 +33,8 @@
 static GQuark quark_property_iri = 0;
 static GQuark quark_property_store_mtime = 0;
 static GQuark quark_property_filesystem_mtime = 0;
+static GQuark quark_property_extractor_hash = 0;
+static GQuark quark_property_mimetype = 0;
 static gboolean force_check_updated = FALSE;
 
 enum {
@@ -278,6 +281,8 @@ file_notifier_traverse_tree_foreach (GFile    *file,
 	TrackerFileNotifierPrivate *priv;
 	guint64 *store_mtime, *disk_mtime;
 	GFile *current_root;
+	gchar *hash, *mimetype;
+	gboolean stop = FALSE;
 
 	notifier = user_data;
 	priv = tracker_file_notifier_get_instance_private (notifier);
@@ -287,6 +292,10 @@ file_notifier_traverse_tree_foreach (GFile    *file,
 	                                                  quark_property_store_mtime);
 	disk_mtime = tracker_file_system_steal_property (priv->file_system, file,
 	                                                 quark_property_filesystem_mtime);
+	hash = tracker_file_system_steal_property (priv->file_system, file,
+	                                           quark_property_extractor_hash);
+	mimetype = tracker_file_system_steal_property (priv->file_system, file,
+	                                               quark_property_mimetype);
 
 	/* If we're crawling over a subdirectory of a root index, it's been
 	 * already notified in the crawling op that made it processed, so avoid
@@ -295,24 +304,27 @@ file_notifier_traverse_tree_foreach (GFile    *file,
 	if (current_root == file &&
 	    (current_root != priv->current_index_root->root ||
 	     priv->current_index_root->ignore_root)) {
-		g_free (store_mtime);
-		g_free (disk_mtime);
-		return FALSE;
+		goto out;
 	}
 
 	if (store_mtime && !disk_mtime) {
 		/* In store but not in disk, delete */
 		g_signal_emit (notifier, signals[FILE_DELETED], 0, file);
-
-		g_free (store_mtime);
-		g_free (disk_mtime);
-		return TRUE;
+		stop = TRUE;
+		goto out;
 	} else if (disk_mtime && !store_mtime) {
 		/* In disk but not in store, create */
 		g_signal_emit (notifier, signals[FILE_CREATED], 0, file);
 	} else if (store_mtime && disk_mtime && *disk_mtime != *store_mtime) {
 		/* Mtime changed, update */
 		g_signal_emit (notifier, signals[FILE_UPDATED], 0, file, FALSE);
+	} else if (mimetype) {
+		const gchar *current_hash;
+
+		current_hash = tracker_extract_module_manager_get_hash (mimetype);
+
+		if (g_strcmp0 (hash, current_hash) != 0)
+			g_signal_emit (notifier, signals[FILE_UPDATED], 0, file, FALSE);
 	} else if (!store_mtime && !disk_mtime) {
 		/* what are we doing with such file? should happen rarely,
 		 * only with files that we've queried, but we decided not
@@ -330,10 +342,13 @@ file_notifier_traverse_tree_foreach (GFile    *file,
 		}
 	}
 
+out:
 	g_free (store_mtime);
 	g_free (disk_mtime);
+	g_free (hash);
+	g_free (mimetype);
 
-	return FALSE;
+	return stop;
 }
 
 static gboolean
@@ -469,6 +484,8 @@ _insert_store_info (TrackerFileNotifier *notifier,
                     GFileType            file_type,
                     GFile               *parent,
                     const gchar         *iri,
+                    const gchar         *extractor_hash,
+                    const gchar         *mimetype,
                     guint64              _time)
 {
 	TrackerFileNotifierPrivate *priv;
@@ -484,6 +501,19 @@ _insert_store_info (TrackerFileNotifier *notifier,
 	tracker_file_system_set_property (priv->file_system, canonical,
 	                                  quark_property_store_mtime,
 	                                  g_memdup (&_time, sizeof (guint64)));
+
+	if (extractor_hash) {
+		tracker_file_system_set_property (priv->file_system, canonical,
+		                                  quark_property_extractor_hash,
+		                                  g_strdup (extractor_hash));
+	}
+
+	if (mimetype) {
+		tracker_file_system_set_property (priv->file_system, canonical,
+		                                  quark_property_mimetype,
+		                                  g_strdup (mimetype));
+	}
+
 	return canonical;
 }
 
@@ -636,17 +666,24 @@ sparql_contents_ensure_statement (TrackerFileNotifier  *notifier,
 
 	priv->content_query =
 		tracker_sparql_connection_query_statement (priv->connection,
-		                                           "SELECT ?uri ?folderUrn ?lastModified "
-		                                           "FROM tracker:FileSystem "
+		                                           "SELECT ?uri ?folderUrn ?lastModified ?hash nie:mimeType(?ie) "
 		                                           "{"
-		                                           "  ?uri a nfo:FileDataObject ;"
-		                                           "       nfo:fileLastModified ?lastModified ;"
-		                                           "       nie:dataSource ?s ."
-		                                           "  ~root nie:interpretedAs /"
-		                                           "        nie:rootElementOf ?s ."
+		                                           "  GRAPH tracker:FileSystem {"
+		                                           "    ?uri a nfo:FileDataObject ;"
+		                                           "         nfo:fileLastModified ?lastModified ;"
+		                                           "         nie:dataSource ?s ."
+		                                           "    ~root nie:interpretedAs /"
+		                                           "          nie:rootElementOf ?s ."
+		                                           "    OPTIONAL {"
+		                                           "      ?uri nie:interpretedAs ?folderUrn ."
+		                                           "      ?folderUrn a nfo:Folder "
+		                                           "    }"
+		                                           "    OPTIONAL {"
+		                                           "      ?uri tracker:extractorHash ?hash "
+		                                           "    }"
+		                                           "  }"
 		                                           "  OPTIONAL {"
-		                                           "    ?uri nie:interpretedAs ?folderUrn ."
-		                                           "    ?folderUrn a nfo:Folder "
+		                                           "    ?uri nie:interpretedAs ?ie "
 		                                           "  }"
 		                                           "}"
 		                                           "ORDER BY ?uri",
@@ -726,6 +763,8 @@ query_execute_cb (TrackerSparqlStatement *statement,
 		                    file_type,
 		                    NULL,
 		                    folder_urn,
+		                    tracker_sparql_cursor_get_string (cursor, 3, NULL),
+		                    tracker_sparql_cursor_get_string (cursor, 4, NULL),
 		                    _time);
 
 		g_object_unref (file);
@@ -1731,6 +1770,12 @@ tracker_file_notifier_class_init (TrackerFileNotifierClass *klass)
 	quark_property_filesystem_mtime = g_quark_from_static_string ("tracker-property-filesystem-mtime");
 	tracker_file_system_register_property (quark_property_filesystem_mtime,
 	                                       g_free);
+
+	quark_property_extractor_hash = g_quark_from_static_string ("tracker-property-store-extractor-hash");
+	tracker_file_system_register_property (quark_property_extractor_hash, g_free);
+
+	quark_property_mimetype = g_quark_from_static_string ("tracker-property-store-mimetype");
+	tracker_file_system_register_property (quark_property_mimetype, g_free);
 
 	force_check_updated = g_getenv ("TRACKER_MINER_FORCE_CHECK_UPDATED") != NULL;
 }
