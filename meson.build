@@ -85,7 +85,6 @@ libvorbis = dependency('vorbisfile', version: '>= 0.22', required: get_option('v
 poppler = dependency('poppler-glib', version: '>= 0.16.0', required: get_option('pdf'))
 totem_plparser = dependency('totem-plparser', required: get_option('playlist'))
 upower = dependency('upower-glib', version: '>= 0.9.0', required: false)
-zlib = dependency('zlib')
 
 libgif = cc.find_library('gif', required: get_option('gif'))
 libmath = cc.find_library('m', required: false)

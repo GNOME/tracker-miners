@@ -182,8 +182,6 @@ extract_ps (const gchar *uri)
 
 #ifdef USING_UNZIPPSFILES
 
-#include <zlib.h>
-
 static TrackerResource *
 extract_ps_gz (const gchar *uri)
 {
