@@ -25,6 +25,7 @@ import os
 import pathlib
 import unittest as ut
 
+import configuration as cfg
 import fixtures
 
 
@@ -41,7 +42,9 @@ class MinerResourceRemovalTest(fixtures.TrackerMinerTest):
                          nie:isStoredAs <%s> . \
                   } " % (fixtures.AUDIO_GRAPH, file_urn, title, url)
 
-        with self.tracker.await_insert(fixtures.AUDIO_GRAPH, f'a nmm:MusicPiece; nie:title "{title}"') as resource:
+        with self.tracker.await_insert(fixtures.AUDIO_GRAPH,
+                                       f'a nmm:MusicPiece; nie:title "{title}"',
+                                       timeout=cfg.AWAIT_TIMEOUT) as resource:
             self.tracker.update(sparql)
         return resource
 
@@ -70,7 +73,7 @@ class MinerResourceRemovalTest(fixtures.TrackerMinerTest):
         ie_1 = self.create_extra_audio_content(file_1.urn, self.uri(file_1_name), "Test resource 1")
         ie_2 = self.create_extra_audio_content(file_2.urn, self.uri(file_2_name), "Test resource 2")
 
-        with self.tracker.await_delete(fixtures.DOCUMENTS_GRAPH, file_1.id):
+        with self.tracker.await_delete(fixtures.DOCUMENTS_GRAPH, file_1.id, timeout=cfg.AWAIT_TIMEOUT):
             os.unlink(self.path("test-monitored/test_1.txt"))
 
         self.assertResourceMissing(self.uri(file_1_name))

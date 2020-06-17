@@ -11,6 +11,8 @@ variables:
   # This can be used when debugging test failures that only occur within GitLab CI.
   MESON_TEST_EXTRA_ARGS: ""
 
+  TRACKER_TESTS_AWAIT_TIMEOUT: 30
+
 stages:
   - test
   - analysis

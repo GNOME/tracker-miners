@@ -150,7 +150,7 @@ class TrackerMinerTest(ut.TestCase):
             content_escaped = Tracker.sparql_escape_string(content)
             expected += [f'nie:plainTextContent "{content_escaped}"']
 
-        return self.tracker.await_insert(DOCUMENTS_GRAPH, '; '.join(expected))
+        return self.tracker.await_insert(DOCUMENTS_GRAPH, '; '.join(expected), timeout=cfg.AWAIT_TIMEOUT)
 
     def await_document_uri_change(self, resource_id, from_path, to_path):
         """Wraps await_update() context manager."""
@@ -159,7 +159,8 @@ class TrackerMinerTest(ut.TestCase):
         return self.tracker.await_property_update(DOCUMENTS_GRAPH,
                                                   resource_id,
                                                   f'nie:isStoredAs <{from_url}>',
-                                                  f'nie:isStoredAs <{to_url}>')
+                                                  f'nie:isStoredAs <{to_url}>',
+                                                  timeout=cfg.AWAIT_TIMEOUT)
 
     def await_photo_inserted(self, path):
         url = self.uri(path)
@@ -169,7 +170,7 @@ class TrackerMinerTest(ut.TestCase):
             f'nie:isStoredAs <{url}>',
         ]
 
-        return self.tracker.await_insert(PICTURES_GRAPH, '; '.join(expected))
+        return self.tracker.await_insert(PICTURES_GRAPH, '; '.join(expected), timeout=cfg.AWAIT_TIMEOUT)
 
 
 class TrackerMinerFTSTest (TrackerMinerTest):
@@ -197,12 +198,13 @@ class TrackerMinerFTSTest (TrackerMinerTest):
             with self.tracker.await_content_update(DOCUMENTS_GRAPH,
                                                    resource_id,
                                                    f'nie:plainTextContent "{old_text_escaped}"',
-                                                   f'nie:plainTextContent "{text_escaped}"'):
+                                                   f'nie:plainTextContent "{text_escaped}"',
+                                                   timeout=cfg.AWAIT_TIMEOUT):
                 path.write_text(text)
         else:
             url = self.uri(self.testfile)
             expected = f'a nfo:Document; nie:isStoredAs <{url}>; nie:plainTextContent "{text_escaped}"'
-            with self.tracker.await_insert(DOCUMENTS_GRAPH, expected):
+            with self.tracker.await_insert(DOCUMENTS_GRAPH, expected, timeout=cfg.AWAIT_TIMEOUT):
                 path.write_text(text)
 
     def search_word(self, word):
@@ -423,7 +425,7 @@ class TrackerWritebackTest (TrackerMinerTest):
 
         # Copy and wait.
         expected = f'nie:url <{url}>'
-        with self.tracker.await_insert(FILESYSTEM_GRAPH, expected):
+        with self.tracker.await_insert(FILESYSTEM_GRAPH, expected, timeout=cfg.AWAIT_TIMEOUT):
             shutil.copy(filename, self.indexed_dir)
         return path
 
@@ -433,7 +435,7 @@ class TrackerWritebackTest (TrackerMinerTest):
 
         # Copy and wait.
         expected = f'nie:url <{url}>'
-        with self.tracker.await_insert(FILESYSTEM_GRAPH, expected):
+        with self.tracker.await_insert(FILESYSTEM_GRAPH, expected, timeout=cfg.AWAIT_TIMEOUT):
             shutil.copy(source_path, self.indexed_dir)
         return dest_path
 

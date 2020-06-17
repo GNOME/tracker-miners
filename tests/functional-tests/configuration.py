@@ -30,9 +30,6 @@ import tempfile
 import sys
 
 
-DEFAULT_TIMEOUT = 10
-
-
 if 'TRACKER_FUNCTIONAL_TEST_CONFIG' not in os.environ:
     raise RuntimeError("The TRACKER_FUNCTIONAL_TEST_CONFIG environment "
                        "variable must be set to point to the location of "
@@ -122,6 +119,12 @@ def get_environment_int(variable, default=0):
 
 def tests_verbose():
     return get_environment_boolean('TRACKER_TESTS_VERBOSE')
+
+
+# Timeout when awaiting resources. For developers, we want a short default
+# so they don't spend a long time waiting for tests to fail. For CI we want
+# to set a longer timeout so we don't see failures on slow CI runners.
+AWAIT_TIMEOUT = get_environment_int('TRACKER_TESTS_AWAIT_TIMEOUT', default=10)
 
 
 DEBUG_TESTS_NO_CLEANUP = 1

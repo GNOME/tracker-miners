@@ -37,6 +37,9 @@ class WakeupCycleTimeoutException(RuntimeError):
     pass
 
 
+DEFAULT_TIMEOUT = 10
+
+
 class MinerFsHelper ():
 
     MINERFS_BUSNAME = "org.freedesktop.Tracker3.Miner.Files"
@@ -98,7 +101,7 @@ class MinerFsHelper ():
         """Return the number of wakeup-to-idle cycles the miner-fs completed."""
         return self._wakeup_count
 
-    def await_wakeup_count(self, target_wakeup_count, timeout=configuration.DEFAULT_TIMEOUT):
+    def await_wakeup_count(self, target_wakeup_count, timeout=DEFAULT_TIMEOUT):
         """Block until the miner has completed N wakeup-and-idle cycles.
 
         This function is for use by miner-fs tests that should trigger an
