@@ -155,7 +155,7 @@ Boston, MA  02110-1301, USA.
 
     <key name="ignored-directories-with-content" type="as">
       <summary>Ignored directories with content</summary>
-      <description>Avoid any directory containing a file blacklisted here</description>
+      <description>Avoid any directory containing a file blocklisted here</description>
       <default>[ '.trackerignore', '.git', '.hg', '.nomedia' ]</default>
     </key>
   </schema>

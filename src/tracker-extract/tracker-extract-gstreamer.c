@@ -1310,7 +1310,7 @@ G_MODULE_EXPORT gboolean
 tracker_extract_module_init (GError **error)
 {
 	/* Lifted from totem-video-thumbnailer */
-	const gchar *blacklisted[] = {
+	const gchar *blocklisted[] = {
 		"bcmdec",
 		"vaapi",
 		"video4linux2"
@@ -1321,10 +1321,10 @@ tracker_extract_module_init (GError **error)
 	gst_init (NULL, NULL);
 	registry = gst_registry_get ();
 
-	for (i = 0; i < G_N_ELEMENTS (blacklisted); i++) {
+	for (i = 0; i < G_N_ELEMENTS (blocklisted); i++) {
 		GstPlugin *plugin =
 			gst_registry_find_plugin (registry,
-						  blacklisted[i]);
+						  blocklisted[i]);
 		if (plugin)
 			gst_registry_remove_plugin (registry, plugin);
 	}
