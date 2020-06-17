@@ -83,6 +83,9 @@ static GInitableIface *parent_initable_iface;
 static void decorator_get_next_file (TrackerDecorator *decorator);
 static void tracker_extract_decorator_initable_iface_init (GInitableIface *iface);
 
+static void decorator_ignore_file (GFile    *file,
+                                   gpointer  user_data);
+
 G_DEFINE_TYPE_WITH_CODE (TrackerExtractDecorator, tracker_extract_decorator,
                         TRACKER_TYPE_DECORATOR_FS,
                         G_ADD_PRIVATE (TrackerExtractDecorator)
@@ -142,36 +145,25 @@ tracker_extract_decorator_finalize (GObject *object)
 	G_OBJECT_CLASS (tracker_extract_decorator_parent_class)->finalize (object);
 }
 
-static TrackerResource *
-decorator_save_info (TrackerExtractDecorator *decorator,
-                     TrackerDecoratorInfo    *decorator_info,
-                     TrackerExtractInfo      *info)
+static void
+fill_data (TrackerResource *resource,
+           const gchar     *url,
+           const gchar     *mimetype)
 {
-	const gchar *urn;
-	TrackerResource *resource = NULL, *file_resource;
+	TrackerResource *dataobject;
+	GStrv rdf_types;
+	gint i;
 
-	g_set_object (&resource, tracker_extract_info_get_resource (info));
+	dataobject = tracker_resource_new (url);
+	tracker_resource_set_string (resource, "nie:mimeType", mimetype);
+	tracker_resource_add_take_relation (resource, "nie:isStoredAs", dataobject);
+	tracker_resource_add_uri (dataobject, "nie:interpretedAs",
+	                          tracker_resource_get_identifier (resource));
 
-	if (resource == NULL) {
-		g_message ("Extract module returned no resource for %s",
-		           tracker_decorator_info_get_url (decorator_info));
-		/* We must still insert something into the store so that the correct
-		 * nie:dataSource triple get inserted. Otherwise, tracker-extract will
-		 * try to re-extract this file every time it starts.
-		 */
-		resource = tracker_resource_new (NULL);
-	}
+	rdf_types = tracker_extract_module_manager_get_rdf_types (mimetype);
 
-	urn = tracker_decorator_info_get_urn (decorator_info);
-	tracker_resource_set_identifier (resource, urn);
-
-	file_resource = tracker_resource_new (tracker_decorator_info_get_url (decorator_info));
-	tracker_resource_add_uri (file_resource, "rdf:type", "nfo:FileDataObject");
-	tracker_resource_add_uri (file_resource, "nie:dataSource",
-	        tracker_decorator_get_data_source (TRACKER_DECORATOR (decorator)));
-	tracker_resource_add_take_relation (resource, "nie:isStoredAs", file_resource);
-
-	return resource;
+	for (i = 0; rdf_types[i] != NULL; i++)
+		tracker_resource_add_uri (resource, "rdf:type", rdf_types[i]);
 }
 
 static void
@@ -183,8 +175,8 @@ get_metadata_cb (TrackerExtract *extract,
 	TrackerExtractInfo *info;
 	TrackerResource *resource;
 	GError *error = NULL;
-	const gchar *graph, *mime_type;
-	gchar *sparql;
+	const gchar *graph, *mime_type, *hash;
+	gchar *update_hash_sparql;
 
 	priv = tracker_extract_decorator_get_instance_private (TRACKER_EXTRACT_DECORATOR (data->decorator));
 	info = tracker_extract_file_finish (extract, result, &error);
@@ -193,28 +185,44 @@ get_metadata_cb (TrackerExtract *extract,
 	g_hash_table_remove (priv->recovery_files, tracker_decorator_info_get_url (data->decorator_info));
 
 	if (error) {
-		g_message ("Extraction failed: %s\n", error ? error->message : "no error given");
-		g_clear_error (&error);
-
-		mime_type = tracker_decorator_info_get_mimetype (data->decorator_info);
-		graph = tracker_extract_module_manager_get_graph (mime_type);
-
-		sparql = g_strdup_printf ("INSERT DATA { GRAPH %s {"
-		                          "  <%s> nie:dataSource <" TRACKER_EXTRACT_DATA_SOURCE ">;"
-		                          "       nie:dataSource <" TRACKER_EXTRACT_FAILURE_DATA_SOURCE ">."
-		                          "}}",
-		                          graph,
-		                          tracker_decorator_info_get_url (data->decorator_info));
-
-		tracker_decorator_info_complete (data->decorator_info, sparql);
+		decorator_ignore_file (data->file, data->decorator);
+		tracker_decorator_info_complete_error (data->decorator_info, error);
 	} else {
-		resource = decorator_save_info (TRACKER_EXTRACT_DECORATOR (data->decorator),
-		                                data->decorator_info, info);
-		sparql = tracker_resource_print_sparql_update (resource, NULL,
-		                                               tracker_extract_info_get_graph (info));
-		tracker_decorator_info_complete (data->decorator_info, sparql);
+		gchar *resource_sparql, *sparql;
+
+		mime_type = tracker_extract_info_get_mimetype (info);
+		hash = tracker_extract_module_manager_get_hash (mime_type);
+		graph = tracker_extract_info_get_graph (info);
+		resource = tracker_extract_info_get_resource (info);
+
+		update_hash_sparql =
+			g_strdup_printf ("INSERT DATA {"
+			                 "  GRAPH tracker:FileSystem {"
+			                 "    <%s> tracker:extractorHash \"%s\" ."
+			                 "  }"
+			                 "}",
+			                 tracker_decorator_info_get_url (data->decorator_info),
+			                 hash);
+
+		if (resource) {
+			fill_data (resource,
+			           tracker_decorator_info_get_url (data->decorator_info),
+			           mime_type);
+
+			resource_sparql = tracker_resource_print_sparql_update (resource, NULL, graph);
+
+			sparql = g_strdup_printf ("%s; %s",
+			                          update_hash_sparql,
+			                          resource_sparql);
+			g_free (resource_sparql);
+			g_free (update_hash_sparql);
+
+			tracker_decorator_info_complete (data->decorator_info, sparql);
+		} else {
+			tracker_decorator_info_complete (data->decorator_info, update_hash_sparql);
+		}
+
 		tracker_extract_info_unref (info);
-		g_object_unref (resource);
 	}
 
 	priv->n_extracting_files--;
@@ -591,7 +599,7 @@ decorator_ignore_file (GFile    *file,
 	TrackerSparqlConnection *conn;
 	GError *error = NULL;
 	gchar *uri, *query;
-	const gchar *mimetype, *graph;
+	const gchar *mimetype, *hash;
 	GFileInfo *info;
 
 	uri = g_file_get_uri (file);
@@ -609,16 +617,14 @@ decorator_ignore_file (GFile    *file,
 
 	mimetype = g_file_info_get_attribute_string (info,
 	                                             G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE);
-	graph = tracker_extract_module_manager_get_graph (mimetype);
+	hash = tracker_extract_module_manager_get_hash (mimetype);
 	g_object_unref (info);
 
 	conn = tracker_miner_get_connection (TRACKER_MINER (decorator));
-	query = g_strdup_printf ("INSERT DATA { GRAPH %s {"
-	                         "  <%s> nie:dataSource <" TRACKER_EXTRACT_DATA_SOURCE ">;"
-	                         "       nie:dataSource <" TRACKER_EXTRACT_FAILURE_DATA_SOURCE ">."
+	query = g_strdup_printf ("INSERT DATA { GRAPH tracker:FileSystem {"
+	                         "  <%s> tracker:extractorHash \"%s\" ;"
 	                         "}}",
-	                         graph,
-	                         uri);
+	                         uri, hash);
 
 	tracker_sparql_connection_update (conn, query, G_PRIORITY_DEFAULT, NULL, &error);
 
