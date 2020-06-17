@@ -44,7 +44,6 @@ static void     config_constructed          (GObject       *object);
 enum {
 	PROP_0,
 	PROP_MAX_BYTES,
-	PROP_MAX_MEDIA_ART_WIDTH,
 	PROP_WAIT_FOR_MINER_FS,
 };
 
@@ -93,7 +92,6 @@ config_set_property (GObject      *object,
 	switch (param_id) {
 	/* We don't care about these... we don't save anyway. */
 	case PROP_MAX_BYTES:
-	case PROP_MAX_MEDIA_ART_WIDTH:
 	case PROP_WAIT_FOR_MINER_FS:
 		break;
 
