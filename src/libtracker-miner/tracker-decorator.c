@@ -88,6 +88,9 @@ struct _TrackerDecoratorPrivate {
 	GTimer *timer;
 	GQueue next_elem_queue; /* Queue of incoming tasks */
 
+	TrackerSparqlStatement *remaining_items_query;
+	TrackerSparqlStatement *item_count_query;
+
 	GCancellable *cancellable;
 
 	gint batch_size;
@@ -584,7 +587,6 @@ static gchar *
 create_query_string (TrackerDecorator  *decorator,
                      gchar            **select_clauses)
 {
-	TrackerDecoratorPrivate *priv = decorator->priv;
 	const gchar *graphs[] = {
 		"tracker:Audio",
 		"tracker:Pictures",
@@ -593,7 +595,7 @@ create_query_string (TrackerDecorator  *decorator,
 		"tracker:Documents",
 	};
 	GString *query;
-	gint i, offset;
+	gint i;
 
 	query = g_string_new ("SELECT ");
 
@@ -613,26 +615,47 @@ create_query_string (TrackerDecorator  *decorator,
 		                        graphs[i]);
 	}
 
-	offset = g_hash_table_size (priv->tasks);
-	if (priv->sparql_buffer)
-		offset += priv->sparql_buffer->len;
-	if (priv->commit_buffer)
-		offset += priv->commit_buffer->len;
-
 	g_string_append_printf (query,
 	                        "FILTER (NOT EXISTS {"
 	                        "  GRAPH tracker:FileSystem { ?urn tracker:extractorHash ?hash }"
 	                        "})"
-	                        "} OFFSET %d LIMIT %d",
-	                        offset,
+	                        "} OFFSET ~offset LIMIT %d",
 	                        QUERY_BATCH_SIZE);
 
 	return g_string_free (query, FALSE);
 }
 
-static gchar *
-create_remaining_items_query (TrackerDecorator *decorator)
+static TrackerSparqlStatement *
+create_prepared_statement (TrackerDecorator  *decorator,
+                           gchar            **select_clauses)
 {
+	TrackerDecoratorPrivate *priv = decorator->priv;
+	TrackerSparqlConnection *sparql_conn;
+	TrackerSparqlStatement *statement;
+	GError *error = NULL;
+	gchar *query;
+
+	query = create_query_string (decorator, select_clauses);
+
+	sparql_conn = tracker_miner_get_connection (TRACKER_MINER (decorator));
+	statement = tracker_sparql_connection_query_statement (sparql_conn,
+	                                                       query,
+	                                                       priv->cancellable,
+	                                                       &error);
+	g_free (query);
+
+	if (error) {
+		g_warning ("Could not create statement: %s", error->message);
+		g_error_free (error);
+	}
+
+	return statement;
+}
+
+static TrackerSparqlStatement *
+ensure_remaining_items_query (TrackerDecorator *decorator)
+{
+	TrackerDecoratorPrivate *priv = decorator->priv;
 	gchar *clauses[] = {
 		"?urn",
 		"tracker:id(?urn)",
@@ -641,7 +664,10 @@ create_remaining_items_query (TrackerDecorator *decorator)
 		NULL
 	};
 
-	return create_query_string (decorator, clauses);
+	if (!priv->remaining_items_query)
+		priv->remaining_items_query = create_prepared_statement (decorator, clauses);
+
+	return priv->remaining_items_query;
 }
 
 static void
@@ -654,8 +680,8 @@ decorator_query_remaining_items_cb (GObject      *object,
 	TrackerSparqlCursor *cursor;
 	GError *error = NULL;
 
-	cursor = tracker_sparql_connection_query_finish (TRACKER_SPARQL_CONNECTION (object),
-							 result, &error);
+	cursor = tracker_sparql_statement_execute_finish (TRACKER_SPARQL_STATEMENT (object),
+	                                                  result, &error);
 
 	if (error || !tracker_sparql_cursor_next (cursor, NULL, &error)) {
 		decorator_notify_task_error (decorator, error);
@@ -681,20 +707,21 @@ decorator_query_remaining_items_cb (GObject      *object,
 static void
 decorator_query_remaining_items (TrackerDecorator *decorator)
 {
-	gchar *query, *clauses[] = { "COUNT(?urn)", NULL };
-	TrackerSparqlConnection *sparql_conn;
+	gchar *clauses[] = { "COUNT(?urn)", NULL };
 	TrackerDecoratorPrivate *priv;
 
 	priv = decorator->priv;
-	query = create_query_string (decorator, clauses);
 
-	if (query) {
-		sparql_conn = tracker_miner_get_connection (TRACKER_MINER (decorator));
-		tracker_sparql_connection_query_async (sparql_conn, query,
-						       priv->cancellable,
-		                                       decorator_query_remaining_items_cb,
-		                                       decorator);
-		g_free (query);
+	if (!priv->item_count_query)
+		priv->item_count_query = create_prepared_statement (decorator, clauses);
+
+	if (priv->item_count_query) {
+		tracker_sparql_statement_bind_int (priv->item_count_query,
+		                                   "offset", 0);
+		tracker_sparql_statement_execute_async (priv->item_count_query,
+		                                        priv->cancellable,
+		                                        decorator_query_remaining_items_cb,
+		                                        decorator);
 	} else {
 		decorator_notify_empty (decorator);
 	}
@@ -750,13 +777,12 @@ decorator_cache_items_cb (GObject      *object,
 {
 	TrackerDecorator *decorator = user_data;
 	TrackerDecoratorPrivate *priv;
-	TrackerSparqlConnection *conn;
 	TrackerSparqlCursor *cursor;
 	TrackerDecoratorInfo *info;
 	GError *error = NULL;
 
-	conn = TRACKER_SPARQL_CONNECTION (object);
-	cursor = tracker_sparql_connection_query_finish (conn, result, &error);
+	cursor = tracker_sparql_statement_execute_finish (TRACKER_SPARQL_STATEMENT (object),
+	                                                  result, &error);
 	priv = decorator->priv;
         priv->querying = FALSE;
 
@@ -798,16 +824,21 @@ decorator_cache_next_items (TrackerDecorator *decorator)
 	if (priv->n_remaining_items == 0) {
 		decorator_query_remaining_items (decorator);
 	} else {
-		TrackerSparqlConnection *sparql_conn;
-		gchar *query;
+		TrackerSparqlStatement *statement;
+		gint offset;
 
-		sparql_conn = tracker_miner_get_connection (TRACKER_MINER (decorator));
-		query = create_remaining_items_query (decorator);
-		tracker_sparql_connection_query_async (sparql_conn, query,
-						       priv->cancellable,
-						       decorator_cache_items_cb,
-						       decorator);
-		g_free (query);
+		offset = g_hash_table_size (priv->tasks);
+		if (priv->sparql_buffer)
+			offset += priv->sparql_buffer->len;
+		if (priv->commit_buffer)
+			offset += priv->commit_buffer->len;
+
+		statement = ensure_remaining_items_query (decorator);
+		tracker_sparql_statement_bind_int (statement, "offset", offset);
+		tracker_sparql_statement_execute_async (statement,
+		                                        priv->cancellable,
+		                                        decorator_cache_items_cb,
+		                                        decorator);
 	}
 }
 
@@ -989,6 +1020,9 @@ tracker_decorator_finalize (GObject *object)
 
 	decorator = TRACKER_DECORATOR (object);
 	priv = decorator->priv;
+
+	g_clear_object (&priv->remaining_items_query);
+	g_clear_object (&priv->item_count_query);
 
 	g_cancellable_cancel (priv->cancellable);
 	g_clear_object (&priv->cancellable);
