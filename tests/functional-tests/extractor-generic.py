@@ -65,12 +65,6 @@ class GenericExtractionTestCase(fixtures.TrackerExtractTestCase):
         # So we set that variable to our new name
         self._testMethodName = methodName
 
-    def runTest(self):
-        """
-        Empty function pointer, that should NEVER be called. It is required to exist by unittest.
-        """
-        assert False
-
     def __get_bugnumber(self):
         return self.spec['test'].get('Bugzilla')
 

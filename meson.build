@@ -55,7 +55,6 @@ avformat = dependency('libavformat', version: '>= 0.8.4', required: false)
 avutil = dependency('libavutil', version: '>= 0.8.4', required: false)
 dbus = dependency('dbus-1', version: '>= 1.3.1')
 exempi = dependency('exempi-2.0', version: '>= 2.1.0', required: get_option('xmp'))
-flac = dependency('flac', version: '>= 1.2.1', required: get_option('flac'))
 gexiv2 = dependency('gexiv2', required: get_option('raw'))
 gio = dependency('gio-2.0', version: '>=' + glib_required)
 gio_unix = dependency('gio-unix-2.0', version: '>=' + glib_required)
@@ -81,7 +80,6 @@ libpng = dependency('libpng', version: '>= 0.89', required: get_option('png'))
 libseccomp = dependency('libseccomp', version: '>= 2.0', required: false)
 libtiff = dependency('libtiff-4', required: get_option('tiff'))
 libxml2 = dependency('libxml-2.0', version: '>= 2.6', required: get_option('xml'))
-libvorbis = dependency('vorbisfile', version: '>= 0.22', required: get_option('vorbis'))
 poppler = dependency('poppler-glib', version: '>= 0.16.0', required: get_option('pdf'))
 totem_plparser = dependency('totem-plparser', required: get_option('playlist'))
 upower = dependency('upower-glib', version: '>= 0.9.0', required: false)
@@ -470,8 +468,6 @@ if have_tracker_extract
     '    Support RAW:                            ' + gexiv2.found().to_string(),
     '    Support TIFF:                           @0@ (xmp: @1@, exif: @2@, iptc: @3@)'.format(
         libtiff.found().to_string(), exempi.found().to_string(), libexif.found().to_string(), libiptcdata.found().to_string()),
-    '    Support Vorbis (ogg/etc):               ' + libvorbis.found().to_string(),
-    '    Support Flac:                           ' + flac.found().to_string(),
     '    Support MS & Open Office:               ' + libgsf.found().to_string(),
     '    Support XML / HTML:                     ' + libxml2.found().to_string(),
     '    Support embedded / sidecar XMP:         ' + exempi.found().to_string(),

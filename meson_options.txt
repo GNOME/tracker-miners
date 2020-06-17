@@ -37,8 +37,6 @@ option('cue', type: 'feature', value: 'auto',
        description: 'Support cue sheet parsing')
 option('exif', type: 'feature', value: 'auto',
        description: 'Support EXIF metadata')
-option('flac', type: 'feature', value: 'auto',
-       description: 'Support extracting metadata from Flac audio')
 option('gif', type: 'feature', value: 'auto',
        description: 'Support extracting metadata from GIF images')
 option('gsf', type: 'feature', value: 'auto',
@@ -59,8 +57,6 @@ option('raw', type: 'feature', value: 'auto',
        description: 'Support extracting metadata from RAW photos')
 option('tiff', type: 'feature', value: 'auto',
        description: 'Support extracting metadata from TIFF images')
-option('vorbis', type: 'feature', value: 'auto',
-       description: 'Support extracting metadata from Vorbis (ogg/etc) files')
 option('xml', type: 'feature', value: 'auto',
        description: 'Support extracting metadata from XML and HTML documents')
 option('xmp', type: 'feature', value: 'auto',
