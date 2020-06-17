@@ -25,7 +25,7 @@
 #include "tracker-priority-queue.h"
 #include "tracker-decorator-private.h"
 
-#define QUERY_BATCH_SIZE 100
+#define QUERY_BATCH_SIZE 200
 #define DEFAULT_BATCH_SIZE 200
 
 /**
