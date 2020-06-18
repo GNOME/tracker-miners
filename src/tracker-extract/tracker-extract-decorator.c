@@ -30,8 +30,6 @@ enum {
 	PROP_EXTRACTOR = 1
 };
 
-#define TRACKER_EXTRACT_DATA_SOURCE TRACKER_PREFIX_TRACKER "extractor-data-source"
-#define TRACKER_EXTRACT_FAILURE_DATA_SOURCE TRACKER_PREFIX_TRACKER "extractor-failure-data-source"
 #define MAX_EXTRACTING_FILES 1
 
 #define TRACKER_EXTRACT_DECORATOR_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), TRACKER_TYPE_EXTRACT_DECORATOR, TrackerExtractDecoratorPrivate))
@@ -724,7 +722,6 @@ tracker_extract_decorator_new (TrackerSparqlConnection  *connection,
 	return g_initable_new (TRACKER_TYPE_EXTRACT_DECORATOR,
 	                       cancellable, error,
 	                       "connection", connection,
-	                       "data-source", TRACKER_EXTRACT_DATA_SOURCE,
 	                       "class-names", supported_classes,
 	                       "extractor", extract,
 	                       NULL);
