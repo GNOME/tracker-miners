@@ -159,10 +159,8 @@ check_files (TrackerDecorator    *decorator,
              GAsyncReadyCallback  callback)
 {
 	TrackerSparqlConnection *sparql_conn;
-	const gchar *data_source;
 	GString *query;
 
-	data_source = tracker_decorator_get_data_source (decorator);
 	query = g_string_new ("SELECT tracker:id(?urn) tracker:id(?type) { ?urn ");
 
 	if (mount_point_urn) {
@@ -173,9 +171,8 @@ check_files (TrackerDecorator    *decorator,
 
 	g_string_append (query, " a nfo:FileDataObject ;"
 	                        " a ?type .");
-	g_string_append_printf (query,
-	                        "FILTER (! EXISTS { ?urn nie:dataSource <%s> } ",
-	                        data_source);
+	g_string_append (query,
+			 "FILTER (! EXISTS { ?urn tracker:extractorHash ?h } ");
 
 	_tracker_decorator_query_append_rdf_type_filter (decorator, query);
 

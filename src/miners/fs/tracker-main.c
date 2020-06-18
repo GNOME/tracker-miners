@@ -124,9 +124,10 @@ miner_reset_applications (TrackerMiner *miner)
 
 	sparql =
 		"DELETE { ?icon a rdfs:Resource } "
-		"WHERE { ?app a nfo:SoftwareApplication; nfo:softwareIcon ?icon } "
-		"DELETE { ?app nie:dataSource <" TRACKER_PREFIX_TRACKER "extractor-data-source> } "
-		"WHERE { ?app a nfo:SoftwareApplication } ";
+		"WHERE { ?app a nfo:SoftwareApplication; nfo:softwareIcon ?icon }; "
+		"DELETE { ?app tracker:extractorHash ?h } "
+		"WHERE { ?app a nfo:SoftwareApplication ; "
+		"             tracker:extractorHash ?h } ";
 
 	/* Execute a sync update, we don't want the apps miner to start before
 	 * we finish this. */

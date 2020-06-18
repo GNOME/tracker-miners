@@ -53,8 +53,6 @@
 #define LAST_CRAWL_FILENAME           "last-crawl.txt"
 #define NEED_MTIME_CHECK_FILENAME     "no-need-mtime-check.txt"
 
-#define TRACKER_EXTRACT_DATA_SOURCE TRACKER_PREFIX_TRACKER "extractor-data-source"
-
 #define DEFAULT_GRAPH "tracker:FileSystem"
 
 #define TRACKER_MINER_FILES_GET_PRIVATE(o) (tracker_miner_files_get_instance_private (TRACKER_MINER_FILES (o)))
@@ -76,10 +74,7 @@ struct TrackerMinerFilesPrivate {
 	TrackerStorage *storage;
 
 	TrackerExtractWatchdog *extract_watchdog;
-	gboolean checking_unextracted;
 	guint grace_period_timeout_id;
-	GCancellable *extract_check_cancellable;
-	gchar *extract_check_query;
 
 	GVolumeMonitor *volume_monitor;
 
@@ -93,6 +88,8 @@ struct TrackerMinerFilesPrivate {
 	gboolean disk_space_pause;
 
 	gboolean low_battery_pause;
+
+	gboolean start_extractor;
 
 #if defined(HAVE_UPOWER) || defined(HAVE_HAL)
 	TrackerPower *power;
@@ -275,43 +272,14 @@ tracker_miner_files_class_init (TrackerMinerFilesClass *klass)
 }
 
 static void
-check_unextracted_cb (GObject      *object,
-                      GAsyncResult *res,
-                      gpointer      user_data)
-{
-	TrackerMinerFiles *mf = user_data;
-	TrackerExtractWatchdog *watchdog = mf->private->extract_watchdog;
-	TrackerSparqlCursor *cursor;
-	GError *error = NULL;
-
-	mf->private->checking_unextracted = FALSE;
-	cursor = tracker_sparql_connection_query_finish (TRACKER_SPARQL_CONNECTION (object),
-	                                                 res, &error);
-	if (error) {
-		g_warning ("Could not check unextracted items: %s", error->message);
-		g_error_free (error);
-		return;
-	}
-
-	if (tracker_sparql_cursor_next (cursor, mf->private->extract_check_cancellable, NULL))
-		tracker_extract_watchdog_ensure_started (watchdog);
-	else
-		g_debug ("Not starting extractor. Nothing to do.");
-
-	g_object_unref (cursor);
-}
-
-static void
 tracker_miner_files_check_unextracted (TrackerMinerFiles *mf)
 {
-	if (mf->private->checking_unextracted)
+	if (!mf->private->start_extractor)
 		return;
 
-	mf->private->checking_unextracted = TRUE;
-	tracker_sparql_connection_query_async (tracker_miner_get_connection (TRACKER_MINER (mf)),
-					       mf->private->extract_check_query,
-	                                       mf->private->extract_check_cancellable,
-	                                       check_unextracted_cb, mf);
+	mf->private->start_extractor = FALSE;
+	g_debug ("Starting extractor");
+	tracker_extract_watchdog_ensure_started (mf->private->extract_watchdog);
 }
 
 static gboolean
@@ -382,21 +350,10 @@ tracker_miner_files_init (TrackerMinerFiles *mf)
 	priv->mtime_check = TRUE;
 	priv->quark_mount_point_uuid = g_quark_from_static_string ("tracker-mount-point-uuid");
 
-	priv->extract_check_cancellable = g_cancellable_new ();
-
 	rdf_types = tracker_extract_module_manager_get_all_rdf_types ();
 	rdf_types_str = g_strjoinv (",", rdf_types);
 	g_strfreev (rdf_types);
 
-	priv->extract_check_query = g_strdup_printf ("SELECT ?u { "
-						     "  ?u a nfo:FileDataObject ;"
-						     "     nie:dataSource/tracker:available true ; "
-	                                             "     nie:interpretedAs ?ie . "
-						     "  ?ie a ?class . "
-						     "  FILTER (?class IN (%s) && "
-						     "          NOT EXISTS { ?u nie:dataSource <" TRACKER_EXTRACT_DATA_SOURCE "> })"
-						     "} LIMIT 1",
-						     rdf_types_str);
 	g_free (rdf_types_str);
 }
 
@@ -749,9 +706,6 @@ miner_files_finalize (GObject *object)
 	mf = TRACKER_MINER_FILES (object);
 	priv = mf->private;
 
-	g_cancellable_cancel (priv->extract_check_cancellable);
-	g_object_unref (priv->extract_check_cancellable);
-	g_free (priv->extract_check_query);
 	g_free (priv->domain);
 
 	if (priv->grace_period_timeout_id != 0) {
@@ -2033,25 +1987,17 @@ miner_files_add_mount_info (TrackerMinerFiles *miner,
 }
 
 static TrackerResource *
-miner_files_create_information_element (TrackerMinerFiles *miner,
-                                        GFile             *file,
-                                        const gchar       *mime_type,
-                                        gboolean           is_directory)
+miner_files_create_folder_information_element (TrackerMinerFiles *miner,
+					       GFile             *file,
+					       const gchar       *mime_type,
+					       gboolean           is_directory)
 {
 	TrackerResource *resource, *file_resource;
-	GStrv rdf_types;
 	const gchar *urn = NULL;
 	gchar *uri;
-	gint i = 0;
-
-	rdf_types = tracker_extract_module_manager_get_rdf_types (mime_type);
-
-	if (!rdf_types)
-		return NULL;
 
 	/* Preserve URN for nfo:Folders */
-	if (is_directory)
-		urn = tracker_miner_fs_get_urn (TRACKER_MINER_FS (miner), file);
+	urn = tracker_miner_fs_get_urn (TRACKER_MINER_FS (miner), file);
 
 	resource = tracker_resource_new (urn);
 	tracker_resource_set_string (resource, "nie:mimeType", mime_type);
@@ -2081,13 +2027,6 @@ miner_files_create_information_element (TrackerMinerFiles *miner,
 	tracker_resource_add_take_relation (resource, "nie:isStoredAs", file_resource);
 	tracker_resource_add_uri (file_resource, "nie:interpretedAs",
 				  tracker_resource_get_identifier (resource));
-
-	while (rdf_types[i]) {
-		tracker_resource_add_uri (resource, "rdf:type", rdf_types[i]);
-		i++;
-	}
-
-	g_strfreev (rdf_types);
 
 	return resource;
 }
@@ -2154,15 +2093,15 @@ process_file_cb (GObject      *object,
                  gpointer      user_data)
 {
 	TrackerMinerFilesPrivate *priv;
-	TrackerResource *resource, *element_resource;
+	TrackerResource *resource, *folder_resource = NULL;
 	ProcessFileData *data;
-	const gchar *mime_type;
+	const gchar *mime_type, *graph;
 	gchar *parent_urn;
 	gchar *delete_properties_sparql = NULL, *mount_point_sparql;
 	GFileInfo *file_info;
 	guint64 time_;
 	GFile *file, *parent;
-	gchar *uri, *sparql_str, *sparql_update_str, *time_str, *ie_update_str = NULL;
+	gchar *uri, *sparql_str, *sparql_update_str, *time_str, *ie_update_str = NULL, *graph_file_str = NULL;
 	GError *error = NULL;
 	gboolean is_special;
 	gboolean is_directory;
@@ -2202,21 +2141,24 @@ process_file_cb (GObject      *object,
 	if (!is_directory &&
 	    tracker_miner_fs_get_urn (TRACKER_MINER_FS (data->miner), file)) {
 		/* Update: delete all information elements for the given data object
-		 * and delete dataSources, so we ensure the file is extracted again.
+		 * and delete extractorHash, so we ensure the file is extracted again.
 		 */
 		delete_properties_sparql =
 			g_strdup_printf ("DELETE {"
 			                 "  GRAPH ?g {"
-			                 "    <%s> nie:interpretedAs ?ie ; "
-			                 "         nie:dataSource ?ds . "
+			                 "    <%s> nie:interpretedAs ?ie . "
 			                 "    ?ie a rdfs:Resource . "
 			                 "  }"
 			                 "} WHERE {"
 			                 "  GRAPH ?g {"
 			                 "    <%s> nie:interpretedAs ?ie ."
-			                 "    OPTIONAL { <%s> nie:dataSource ?ds } "
 			                 "  }"
-			                 "} ",
+			                 "}; "
+					 "DELETE WHERE {"
+					 "  GRAPH " DEFAULT_GRAPH " {"
+					 "    <%s> tracker:extractorHash ?h ."
+					 "  }"
+					 "}",
 			                 uri, uri, uri);
 	}
 
@@ -2251,32 +2193,45 @@ process_file_cb (GObject      *object,
 	/* The URL of the DataObject (because IE = DO, this is correct) */
 	tracker_resource_set_string (resource, "nie:url", uri);
 
-	element_resource = miner_files_create_information_element (data->miner,
-	                                                           file,
-	                                                           mime_type,
-	                                                           is_directory);
+	if (is_directory) {
+		folder_resource =
+			miner_files_create_folder_information_element (data->miner,
+								       file,
+								       mime_type,
+								       is_directory);
+	}
 
-	miner_files_add_to_datasource (data->miner, file, resource, element_resource);
+	miner_files_add_to_datasource (data->miner, file, resource, folder_resource);
 
 	mount_point_sparql = update_mount_point_sparql (data);
 	sparql_update_str = tracker_resource_print_sparql_update (resource, NULL, DEFAULT_GRAPH);
 
-	if (element_resource) {
-		const gchar *graph;
-
-		graph = tracker_extract_module_manager_get_graph (mime_type);
-		ie_update_str = tracker_resource_print_sparql_update (element_resource,
+	if (folder_resource) {
+		ie_update_str = tracker_resource_print_sparql_update (folder_resource,
 		                                                      NULL,
-		                                                      graph ?
-		                                                      graph :
 		                                                      DEFAULT_GRAPH);
-		g_object_unref (element_resource);
+		g_object_unref (folder_resource);
 	}
 
-	sparql_str = g_strdup_printf ("%s %s %s %s",
+	graph = tracker_extract_module_manager_get_graph (mime_type);
+
+	if (graph) {
+		TrackerResource *graph_file;
+
+		/* This mimetype will be extracted by some module, pre-fill the
+		 * nfo:FileDataObject in that graph.
+		 */
+		graph_file = tracker_resource_new (uri);
+		tracker_resource_add_uri (graph_file, "rdf:type", "nfo:FileDataObject");
+		graph_file_str = tracker_resource_print_sparql_update (graph_file,
+								       NULL, graph);
+	}
+
+	sparql_str = g_strdup_printf ("%s %s %s %s %s",
 	                              delete_properties_sparql ? delete_properties_sparql : "",
 	                              sparql_update_str,
 	                              ie_update_str ? ie_update_str : "",
+				      graph_file_str ? graph_file_str : "",
 	                              mount_point_sparql ? mount_point_sparql : "");
 	g_free (ie_update_str);
 	g_free (delete_properties_sparql);
@@ -2313,6 +2268,7 @@ miner_files_process_file (TrackerMinerFS *fs,
 
 	priv = TRACKER_MINER_FILES (fs)->private;
 	priv->extraction_queue = g_list_prepend (priv->extraction_queue, data);
+	priv->start_extractor = TRUE;
 
 	attrs = G_FILE_ATTRIBUTE_STANDARD_TYPE ","
 		G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE ","

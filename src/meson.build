@@ -1,9 +1,7 @@
 # Shared common code
 subdir('libtracker-miners-common')
-subdir('libtracker-miner')
-
-# Internal data extraction helpers
 subdir('libtracker-extract')
+subdir('libtracker-miner')
 
 # Public data extract tool & modules
 if get_option('extract')

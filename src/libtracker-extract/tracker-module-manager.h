@@ -46,6 +46,7 @@ GStrv tracker_extract_module_manager_get_all_rdf_types (void);
 
 GStrv     tracker_extract_module_manager_get_rdf_types (const gchar *mimetype);
 const gchar * tracker_extract_module_manager_get_graph (const gchar *mimetype);
+const gchar * tracker_extract_module_manager_get_hash  (const gchar *mimetype);
 
 GModule * tracker_extract_module_manager_get_module (const gchar                 *mimetype,
                                                      const gchar                **rule_out,

@@ -36,6 +36,7 @@ typedef struct {
 	GList *block_patterns;
 	GStrv fallback_rdf_types;
 	gchar *graph;
+	gchar *hash;
 } RuleInfo;
 
 typedef struct {
@@ -124,6 +125,7 @@ load_extractor_rule (GKeyFile    *key_file,
 
 	rule.fallback_rdf_types = g_key_file_get_string_list (key_file, "ExtractorRule", "FallbackRdfTypes", NULL, NULL);
 	rule.graph = g_key_file_get_string (key_file, "ExtractorRule", "Graph", NULL);
+	rule.hash = g_key_file_get_string (key_file, "ExtractorRule", "Hash", NULL);
 
 	/* Construct the rule */
 	rule.module_path = g_intern_string (module_path);
@@ -568,6 +570,27 @@ tracker_extract_module_manager_get_graph (const gchar *mimetype)
 
 		if (r_info->graph)
 			return r_info->graph;
+	}
+
+	return NULL;
+}
+
+const gchar *
+tracker_extract_module_manager_get_hash (const gchar *mimetype)
+{
+	GList *l, *list;
+
+	if (!tracker_extract_module_manager_init ()) {
+		return NULL;
+	}
+
+	list = lookup_rules (mimetype);
+
+	for (l = list; l; l = l->next) {
+		RuleInfo *r_info = l->data;
+
+		if (r_info->graph)
+			return r_info->hash;
 	}
 
 	return NULL;

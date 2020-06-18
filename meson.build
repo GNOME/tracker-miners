@@ -108,6 +108,8 @@ if get_option('man')
   xsltproc = find_program('xsltproc')
 endif
 
+sha256sum = find_program('sha256sum')
+
 add_project_arguments('-Wformat', '-Wformat-security', language: 'c')
 
 # There are various gchar vs. unsigned char warnings that occur in extract

@@ -116,7 +116,15 @@ foreach module : modules
     install: true,
     install_dir: tracker_extract_modules_dir)
 
-  install_data(rules, install_dir: tracker_extract_rules_dir)
+  hash = run_command('calculate-hash.sh', sources)
+
+  foreach rule : rules
+    configure_file(input: rule,
+                   output: '@PLAINNAME@',
+                   install: true,
+                   install_dir: tracker_extract_rules_dir,
+                   configuration: { 'hash': hash.stdout() })
+  endforeach
 
   enabled_rule_files += rules
 endforeach

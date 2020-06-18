@@ -29,7 +29,7 @@ miner_sources = (
 libtracker_miner_private = static_library(
     'tracker-miner-private',
     miner_enums[0], miner_enums[1], private_sources,
-    dependencies: [tracker_miners_common_dep, tracker_sparql],
+    dependencies: [tracker_miners_common_dep, tracker_sparql, tracker_extract_dep],
     c_args: tracker_c_args,
 )
 

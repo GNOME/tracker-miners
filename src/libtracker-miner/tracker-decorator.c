@@ -25,7 +25,7 @@
 #include "tracker-priority-queue.h"
 #include "tracker-decorator-private.h"
 
-#define QUERY_BATCH_SIZE 100
+#define QUERY_BATCH_SIZE 200
 #define DEFAULT_BATCH_SIZE 200
 
 /**
@@ -68,7 +68,6 @@ struct _SparqlUpdate {
 
 struct _TrackerDecoratorPrivate {
 	TrackerNotifier *notifier;
-	gchar *data_source;
 
 	GArray *classes; /* Array of ClassInfo */
 	gchar **class_names;
@@ -88,17 +87,20 @@ struct _TrackerDecoratorPrivate {
 	GTimer *timer;
 	GQueue next_elem_queue; /* Queue of incoming tasks */
 
+	TrackerSparqlStatement *remaining_items_query;
+	TrackerSparqlStatement *item_count_query;
+
 	GCancellable *cancellable;
 
 	gint batch_size;
+	gint n_updates;
 
 	guint processing : 1;
 	guint querying   : 1;
 };
 
 enum {
-	PROP_DATA_SOURCE = 1,
-	PROP_CLASS_NAMES,
+	PROP_CLASS_NAMES = 1,
 	PROP_COMMIT_BATCH_SIZE,
 	PROP_PRIORITY_RDF_TYPES,
 };
@@ -347,6 +349,8 @@ decorator_commit_cb (GObject      *object,
 	priv = decorator->priv;
 	conn = TRACKER_SPARQL_CONNECTION (object);
 
+	priv->n_updates--;
+
 	if (!tracker_sparql_connection_update_array_finish (conn, result, &error)) {
 		g_warning ("There was an error pushing metadata: %s\n", error->message);
 
@@ -401,6 +405,7 @@ decorator_commit_info (TrackerDecorator *decorator)
 	/* Move sparql buffer to commit buffer */
 	priv->commit_buffer = priv->sparql_buffer;
 	priv->sparql_buffer = NULL;
+	priv->n_updates++;
 	array = g_ptr_array_new ();
 
 	for (i = 0; i < priv->commit_buffer->len; i++) {
@@ -550,8 +555,6 @@ decorator_task_done (GObject      *object,
 		priv->n_remaining_items--;
 	priv->n_processed_items++;
 
-	decorator_check_commit (decorator);
-
 	if (priv->n_remaining_items == 0) {
 		decorator_finish (decorator);
 		decorator_rebuild_cache (decorator);
@@ -578,127 +581,17 @@ decorator_cancel_active_tasks (TrackerDecorator *decorator)
 	g_hash_table_remove_all (priv->tasks);
 }
 
-static void
-query_append_id (GString *string,
-                 gint     id)
-{
-	if (string->len > 1 && string->str[string->len - 1] != '(')
-		g_string_append_c (string, ',');
-
-	g_string_append_printf (string, "%d", id);
-}
-
-static void
-query_add_blacklisted_filter (TrackerDecorator *decorator,
-                              GString          *query)
-{
-	TrackerDecoratorPrivate *priv = decorator->priv;
-	GSequenceIter *iter;
-
-	if (g_sequence_get_length (priv->blacklist_items) == 0)
-		return;
-
-	g_string_append (query, "&& tracker:id(?urn) NOT IN (");
-
-	iter = g_sequence_get_begin_iter (priv->blacklist_items);
-
-	while (!g_sequence_iter_is_end (iter)) {
-		query_append_id (query, GPOINTER_TO_INT (g_sequence_get (iter)));
-		iter = g_sequence_iter_next (iter);
-	}
-
-	g_string_append (query, ")");
-}
-
-static void
-query_add_update_buffer_ids (GString *query,
-                             GArray  *commit_buffer)
-{
-	SparqlUpdate *update;
-	gint i;
-
-	for (i = 0; i < commit_buffer->len; i++) {
-		update = &g_array_index (commit_buffer, SparqlUpdate, i);
-		query_append_id (query, update->id);
-	}
-}
-
-static void
-query_add_processing_filter (TrackerDecorator *decorator,
-                             GString          *query)
-{
-	TrackerDecoratorPrivate *priv = decorator->priv;
-
-	if ((!priv->sparql_buffer || priv->sparql_buffer->len == 0) &&
-	    (!priv->commit_buffer || priv->commit_buffer->len == 0))
-	    return;
-
-	g_string_append (query, "&& tracker:id(?urn) NOT IN (");
-
-	if (priv->sparql_buffer && priv->sparql_buffer->len > 0)
-		query_add_update_buffer_ids (query, priv->sparql_buffer);
-	if (priv->commit_buffer && priv->commit_buffer->len > 0)
-		query_add_update_buffer_ids (query, priv->commit_buffer);
-
-	g_string_append (query, ")");
-}
-
-static void
-query_add_id_filter (GString  *query,
-                     GArray   *ids)
-{
-	gint i;
-
-	if (!ids || ids->len == 0)
-		return;
-
-	g_string_append (query, "&& tracker:id(?urn) IN (");
-
-	for (i = 0; i < ids->len; i++) {
-		if (i != 0)
-			g_string_append (query, ",");
-
-		g_string_append_printf (query, "%d",
-		                        g_array_index (ids, gint, i));
-	}
-
-	g_string_append (query, ")");
-}
-
-static void
-query_append_current_tasks_filter (TrackerDecorator *decorator,
-				   GString          *query)
-{
-	TrackerDecoratorPrivate *priv = decorator->priv;
-	GHashTableIter iter;
-	gint i = 0, id;
-	GTask *task;
-
-	if (g_hash_table_size (priv->tasks) == 0)
-		return;
-
-	g_string_append (query, "&& tracker:id(?urn) NOT IN (");
-	g_hash_table_iter_init (&iter, priv->tasks);
-
-	while (g_hash_table_iter_next (&iter, NULL, (gpointer *) &task)) {
-		if (i != 0)
-			g_string_append (query, ",");
-
-		id = GPOINTER_TO_INT (g_task_get_task_data (task));
-		g_string_append_printf (query, "%d", id);
-		i++;
-	}
-
-	g_string_append (query, ")");
-}
-
 static gchar *
 create_query_string (TrackerDecorator  *decorator,
-                     gchar            **select_clauses,
-                     gboolean           for_prepended)
+                     gchar            **select_clauses)
 {
-	TrackerDecoratorPrivate *priv = decorator->priv;
-	ClassInfo *prev = NULL, *cur;
+	const gchar *graphs[] = {
+		"tracker:Audio",
+		"tracker:Pictures",
+		"tracker:Video",
+		"tracker:Software",
+		"tracker:Documents",
+	};
 	GString *query;
 	gint i;
 
@@ -708,58 +601,71 @@ create_query_string (TrackerDecorator  *decorator,
 		g_string_append_printf (query, "%s ", select_clauses[i]);
 	}
 
-	g_string_append (query, "{ SELECT ?urn WHERE {");
+	g_string_append (query, "{ ");
 
-	for (i = 0; i < priv->classes->len; i++) {
-		cur = &g_array_index (priv->classes, ClassInfo, i);
-
-		if (!prev || prev->priority != cur->priority) {
-			if (prev)
-				g_string_append (query, "))} UNION ");
-
-			g_string_append_printf (query,
-			                        "{ ?urn a rdfs:Resource;"
-			                        "       a ?type ;"
-			                        "       nie:isStoredAs ?do . "
-			                        "  ?do nie:dataSource/tracker:available true ."
-			                        "  FILTER (! EXISTS { ?do nie:dataSource <%s> } ",
-			                        priv->data_source);
-
-			query_add_blacklisted_filter (decorator, query);
-			query_add_processing_filter (decorator, query);
-
-			if (for_prepended && priv->prepended_ids->len > 0) {
-				query_add_id_filter (query, priv->prepended_ids);
-				g_array_set_size (priv->prepended_ids, 0);
-			}
-
-			query_append_current_tasks_filter (decorator, query);
-			g_string_append (query, " && ?type IN (");
-		} else {
-			g_string_append (query, ",");
+	for (i = 0; i < G_N_ELEMENTS (graphs); i++) {
+		if (i > 0) {
+			g_string_append (query, "UNION ");
 		}
 
-		g_string_append_printf (query, "%s", cur->class_name);
-		prev = cur;
+		g_string_append_printf (query,
+		                        "{ GRAPH %s { ?urn a nfo:FileDataObject } } ",
+		                        graphs[i]);
 	}
 
-	g_string_append_printf (query, "))}} GROUP BY ?urn } LIMIT %d", QUERY_BATCH_SIZE);
+	g_string_append_printf (query,
+	                        "FILTER (NOT EXISTS {"
+	                        "  GRAPH tracker:FileSystem { ?urn tracker:extractorHash ?hash }"
+	                        "})"
+	                        "} OFFSET ~offset LIMIT %d",
+	                        QUERY_BATCH_SIZE);
 
 	return g_string_free (query, FALSE);
 }
 
-static gchar *
-create_remaining_items_query (TrackerDecorator *decorator)
+static TrackerSparqlStatement *
+create_prepared_statement (TrackerDecorator  *decorator,
+                           gchar            **select_clauses)
 {
+	TrackerDecoratorPrivate *priv = decorator->priv;
+	TrackerSparqlConnection *sparql_conn;
+	TrackerSparqlStatement *statement;
+	GError *error = NULL;
+	gchar *query;
+
+	query = create_query_string (decorator, select_clauses);
+
+	sparql_conn = tracker_miner_get_connection (TRACKER_MINER (decorator));
+	statement = tracker_sparql_connection_query_statement (sparql_conn,
+	                                                       query,
+	                                                       priv->cancellable,
+	                                                       &error);
+	g_free (query);
+
+	if (error) {
+		g_warning ("Could not create statement: %s", error->message);
+		g_error_free (error);
+	}
+
+	return statement;
+}
+
+static TrackerSparqlStatement *
+ensure_remaining_items_query (TrackerDecorator *decorator)
+{
+	TrackerDecoratorPrivate *priv = decorator->priv;
 	gchar *clauses[] = {
 		"?urn",
 		"tracker:id(?urn)",
-		"nie:isStoredAs(?urn)",
+		"?urn",
 		"nie:mimeType(?urn)",
 		NULL
 	};
 
-	return create_query_string (decorator, clauses, TRUE);
+	if (!priv->remaining_items_query)
+		priv->remaining_items_query = create_prepared_statement (decorator, clauses);
+
+	return priv->remaining_items_query;
 }
 
 static void
@@ -772,8 +678,8 @@ decorator_query_remaining_items_cb (GObject      *object,
 	TrackerSparqlCursor *cursor;
 	GError *error = NULL;
 
-	cursor = tracker_sparql_connection_query_finish (TRACKER_SPARQL_CONNECTION (object),
-							 result, &error);
+	cursor = tracker_sparql_statement_execute_finish (TRACKER_SPARQL_STATEMENT (object),
+	                                                  result, &error);
 
 	if (error || !tracker_sparql_cursor_next (cursor, NULL, &error)) {
 		decorator_notify_task_error (decorator, error);
@@ -799,20 +705,21 @@ decorator_query_remaining_items_cb (GObject      *object,
 static void
 decorator_query_remaining_items (TrackerDecorator *decorator)
 {
-	gchar *query, *clauses[] = { "COUNT(?urn)", NULL };
-	TrackerSparqlConnection *sparql_conn;
+	gchar *clauses[] = { "COUNT(?urn)", NULL };
 	TrackerDecoratorPrivate *priv;
 
 	priv = decorator->priv;
-	query = create_query_string (decorator, clauses, FALSE);
 
-	if (query) {
-		sparql_conn = tracker_miner_get_connection (TRACKER_MINER (decorator));
-		tracker_sparql_connection_query_async (sparql_conn, query,
-						       priv->cancellable,
-		                                       decorator_query_remaining_items_cb,
-		                                       decorator);
-		g_free (query);
+	if (!priv->item_count_query)
+		priv->item_count_query = create_prepared_statement (decorator, clauses);
+
+	if (priv->item_count_query) {
+		tracker_sparql_statement_bind_int (priv->item_count_query,
+		                                   "offset", 0);
+		tracker_sparql_statement_execute_async (priv->item_count_query,
+		                                        priv->cancellable,
+		                                        decorator_query_remaining_items_cb,
+		                                        decorator);
 	} else {
 		decorator_notify_empty (decorator);
 	}
@@ -868,15 +775,16 @@ decorator_cache_items_cb (GObject      *object,
 {
 	TrackerDecorator *decorator = user_data;
 	TrackerDecoratorPrivate *priv;
-	TrackerSparqlConnection *conn;
 	TrackerSparqlCursor *cursor;
 	TrackerDecoratorInfo *info;
 	GError *error = NULL;
 
-	conn = TRACKER_SPARQL_CONNECTION (object);
-	cursor = tracker_sparql_connection_query_finish (conn, result, &error);
+	cursor = tracker_sparql_statement_execute_finish (TRACKER_SPARQL_STATEMENT (object),
+	                                                  result, &error);
 	priv = decorator->priv;
         priv->querying = FALSE;
+
+	decorator_commit_info (decorator);
 
 	if (error) {
 		decorator_notify_task_error (decorator, error);
@@ -904,6 +812,7 @@ decorator_cache_next_items (TrackerDecorator *decorator)
 	TrackerDecoratorPrivate *priv = decorator->priv;
 
 	if (priv->querying ||
+	    priv->n_updates > 1 ||
 	    g_hash_table_size (priv->tasks) > 0 ||
 	    !g_queue_is_empty (&priv->item_cache))
 		return;
@@ -913,16 +822,21 @@ decorator_cache_next_items (TrackerDecorator *decorator)
 	if (priv->n_remaining_items == 0) {
 		decorator_query_remaining_items (decorator);
 	} else {
-		TrackerSparqlConnection *sparql_conn;
-		gchar *query;
+		TrackerSparqlStatement *statement;
+		gint offset;
 
-		sparql_conn = tracker_miner_get_connection (TRACKER_MINER (decorator));
-		query = create_remaining_items_query (decorator);
-		tracker_sparql_connection_query_async (sparql_conn, query,
-						       priv->cancellable,
-						       decorator_cache_items_cb,
-						       decorator);
-		g_free (query);
+		offset = g_hash_table_size (priv->tasks);
+		if (priv->sparql_buffer)
+			offset += priv->sparql_buffer->len;
+		if (priv->commit_buffer)
+			offset += priv->commit_buffer->len;
+
+		statement = ensure_remaining_items_query (decorator);
+		tracker_sparql_statement_bind_int (statement, "offset", offset);
+		tracker_sparql_statement_execute_async (statement,
+		                                        priv->cancellable,
+		                                        decorator_cache_items_cb,
+		                                        decorator);
 	}
 }
 
@@ -937,9 +851,6 @@ tracker_decorator_get_property (GObject    *object,
 	priv = TRACKER_DECORATOR (object)->priv;
 
 	switch (param_id) {
-	case PROP_DATA_SOURCE:
-		g_value_set_string (value, priv->data_source);
-		break;
 	case PROP_CLASS_NAMES:
 		g_value_set_boxed (value, priv->class_names);
 		break;
@@ -995,9 +906,6 @@ tracker_decorator_set_property (GObject      *object,
 	priv = decorator->priv;
 
 	switch (param_id) {
-	case PROP_DATA_SOURCE:
-		priv->data_source = g_value_dup_string (value);
-		break;
 	case PROP_CLASS_NAMES:
 		decorator_set_classes (decorator, g_value_get_boxed (value));
 		break;
@@ -1020,6 +928,7 @@ notifier_events_cb (TrackerDecorator *decorator,
 		    GPtrArray        *events,
 		    TrackerNotifier  *notifier)
 {
+	TrackerDecoratorPrivate *priv = decorator->priv;
 	gboolean check_added = FALSE;
 	gint64 id;
 	gint i;
@@ -1045,7 +954,7 @@ notifier_events_cb (TrackerDecorator *decorator,
 		}
 	}
 
-	if (check_added)
+	if (check_added && !priv->querying && priv->n_updates == 0)
 		decorator_cache_next_items (decorator);
 }
 
@@ -1085,17 +994,6 @@ tracker_decorator_initable_iface_init (GInitableIface *iface)
 }
 
 static void
-tracker_decorator_constructed (GObject *object)
-{
-	TrackerDecoratorPrivate *priv;
-
-	G_OBJECT_CLASS (tracker_decorator_parent_class)->constructed (object);
-
-	priv = TRACKER_DECORATOR (object)->priv;
-	g_assert (priv->data_source);
-}
-
-static void
 tracker_decorator_finalize (GObject *object)
 {
 	TrackerDecoratorPrivate *priv;
@@ -1103,6 +1001,9 @@ tracker_decorator_finalize (GObject *object)
 
 	decorator = TRACKER_DECORATOR (object);
 	priv = decorator->priv;
+
+	g_clear_object (&priv->remaining_items_query);
+	g_clear_object (&priv->item_count_query);
 
 	g_cancellable_cancel (priv->cancellable);
 	g_clear_object (&priv->cancellable);
@@ -1124,7 +1025,6 @@ tracker_decorator_finalize (GObject *object)
 	g_clear_pointer (&priv->sparql_buffer, g_array_unref);
 	g_clear_pointer (&priv->commit_buffer, g_array_unref);
 	g_sequence_free (priv->blacklist_items);
-	g_free (priv->data_source);
 	g_timer_destroy (priv->timer);
 
 	G_OBJECT_CLASS (tracker_decorator_parent_class)->finalize (object);
@@ -1181,7 +1081,6 @@ tracker_decorator_class_init (TrackerDecoratorClass *klass)
 
 	object_class->get_property = tracker_decorator_get_property;
 	object_class->set_property = tracker_decorator_set_property;
-	object_class->constructed = tracker_decorator_constructed;
 	object_class->finalize = tracker_decorator_finalize;
 
 	miner_class->paused = tracker_decorator_paused;
@@ -1189,15 +1088,6 @@ tracker_decorator_class_init (TrackerDecoratorClass *klass)
 	miner_class->started = tracker_decorator_started;
 	miner_class->stopped = tracker_decorator_stopped;
 
-	g_object_class_install_property (object_class,
-	                                 PROP_DATA_SOURCE,
-	                                 g_param_spec_string ("data-source",
-	                                                      "Data source URN",
-	                                                      "nie:DataSource to use in this decorator",
-	                                                      NULL,
-	                                                      G_PARAM_READWRITE |
-	                                                      G_PARAM_CONSTRUCT_ONLY |
-	                                                      G_PARAM_STATIC_STRINGS));
 	g_object_class_install_property (object_class,
 	                                 PROP_CLASS_NAMES,
 	                                 g_param_spec_boxed ("class-names",
@@ -1282,29 +1172,6 @@ tracker_decorator_init (TrackerDecorator *decorator)
 	g_queue_init (&priv->next_elem_queue);
 	g_queue_init (&priv->item_cache);
 	priv->tasks = g_hash_table_new (NULL, NULL);
-}
-
-/**
- * tracker_decorator_get_data_source:
- * @decorator: a #TrackerDecorator.
- *
- * The unique string identifying this #TrackerDecorator that has
- * extracted the extended metadata. This is essentially an identifier
- * so it's clear WHO has extracted this extended metadata.
- *
- * Returns: a const gchar* or #NULL if an error happened.
- *
- * Since: 0.18
- **/
-const gchar *
-tracker_decorator_get_data_source (TrackerDecorator *decorator)
-{
-	TrackerDecoratorPrivate *priv;
-
-	g_return_val_if_fail (TRACKER_IS_DECORATOR (decorator), NULL);
-
-	priv = decorator->priv;
-	return priv->data_source;
 }
 
 /**
