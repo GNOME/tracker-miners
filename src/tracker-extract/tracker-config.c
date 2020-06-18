@@ -44,6 +44,7 @@ static void     config_constructed          (GObject       *object);
 enum {
 	PROP_0,
 	PROP_MAX_BYTES,
+	PROP_TEXT_ALLOWLIST,
 	PROP_WAIT_FOR_MINER_FS,
 };
 
@@ -70,6 +71,13 @@ tracker_config_class_init (TrackerConfigClass *klass)
 	                                                   G_PARAM_READWRITE));
 
 	g_object_class_install_property (object_class,
+	                                 PROP_TEXT_ALLOWLIST,
+	                                 g_param_spec_boxed ("text-allowlist",
+	                                                     "Text file allowlist",
+	                                                     "Filename patterns for plain text documents that should be indexed",
+	                                                     G_TYPE_STRV,
+	                                                     G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+	g_object_class_install_property (object_class,
 	                                 PROP_WAIT_FOR_MINER_FS,
 	                                 g_param_spec_boolean ("wait-for-miner-fs",
 	                                                       "Wait for FS miner to be done before extracting",
@@ -92,6 +100,7 @@ config_set_property (GObject      *object,
 	switch (param_id) {
 	/* We don't care about these... we don't save anyway. */
 	case PROP_MAX_BYTES:
+	case PROP_TEXT_ALLOWLIST:
 	case PROP_WAIT_FOR_MINER_FS:
 		break;
 
@@ -115,6 +124,10 @@ config_get_property (GObject    *object,
 		                 tracker_config_get_max_bytes (config));
 		break;
 
+	case PROP_TEXT_ALLOWLIST:
+		g_value_take_boxed (value, tracker_gslist_to_string_list (config->text_allowlist));
+		break;
+
 	case PROP_WAIT_FOR_MINER_FS:
 		g_value_set_boolean (value,
 		                     tracker_config_get_wait_for_miner_fs (config));
@@ -127,13 +140,41 @@ config_get_property (GObject    *object,
 }
 
 static void
+config_set_text_allowlist_conveniences (TrackerConfig *config)
+{
+	GSList *l;
+	GSList *patterns = NULL;
+
+	g_slist_foreach (config->text_allowlist_patterns,
+	                 (GFunc) g_pattern_spec_free,
+	                 NULL);
+	g_slist_free (config->text_allowlist_patterns);
+
+	for (l = config->text_allowlist; l; l = l->next) {
+		GPatternSpec *spec;
+		const gchar *str = l->data;
+
+		if (str) {
+			spec = g_pattern_spec_new (l->data);
+			patterns = g_slist_prepend (patterns, spec);
+		}
+	}
+
+	config->text_allowlist_patterns = g_slist_reverse (patterns);
+}
+
+static void
 config_finalize (GObject *object)
 {
-	/* For now we do nothing here, we left this override in for
-	 * future expansion.
-	 */
+	TrackerConfig *config = TRACKER_CONFIG (object);
+
+	g_slist_foreach (config->text_allowlist_patterns,
+	                 (GFunc) g_pattern_spec_free,
+	                 NULL);
+	g_slist_free (config->text_allowlist);
 
 	(G_OBJECT_CLASS (tracker_config_parent_class)->finalize) (object);
+
 }
 
 static void
@@ -166,6 +207,9 @@ config_constructed (GObject *object)
 	 * unintended open() calls.
 	 */
 	TRACKER_CONFIG (settings)->max_bytes = g_settings_get_int (settings, "max-bytes");
+	TRACKER_CONFIG (settings)->text_allowlist = tracker_string_list_to_gslist (g_settings_get_strv (settings, "text-allowlist"), -1);
+
+	config_set_text_allowlist_conveniences (TRACKER_CONFIG (settings));
 }
 
 TrackerConfig *
@@ -218,10 +262,28 @@ tracker_config_get_max_bytes (TrackerConfig *config)
 	return config->max_bytes;
 }
 
+GSList *
+tracker_config_get_text_allowlist (TrackerConfig *config)
+{
+	g_return_val_if_fail (TRACKER_IS_CONFIG (config), NULL);
+
+	return config->text_allowlist;
+}
+
 gboolean
 tracker_config_get_wait_for_miner_fs (TrackerConfig *config)
 {
 	g_return_val_if_fail (TRACKER_IS_CONFIG (config), FALSE);
 
 	return g_settings_get_boolean (G_SETTINGS (config), "wait-for-miner-fs");
+}
+
+
+/*
+ * Convenience functions
+ */
+GSList *
+tracker_config_get_text_allowlist_patterns (TrackerConfig *config)
+{
+	return config->text_allowlist_patterns;
 }
