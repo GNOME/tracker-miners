@@ -509,6 +509,7 @@ extractor_apply_general_metadata (MetadataExtractor     *extractor,
 	set_property_from_gst_tag (resource, "nie:license", tag_list, GST_TAG_LICENSE);
 	set_property_from_gst_tag (resource, "dc:coverage", tag_list, GST_TAG_LOCATION);
 	set_property_from_gst_tag (resource, "nie:comment", tag_list, GST_TAG_COMMENT);
+	set_property_from_gst_tag (resource, "nie:generator", tag_list, GST_TAG_ENCODER);
 
 	g_free (title_guaranteed);
 	g_free (performer_temp);
@@ -731,7 +732,6 @@ extract_track (TrackerResource      *track,
 
 	tracker_resource_add_uri (track, "rdf:type", "nmm:MusicPiece");
 	tracker_resource_add_uri (track, "rdf:type", "nfo:Audio");
-	tracker_resource_add_string (track, "nie:generator", TRACKER_PREFIX_TRACKER "extractor-data-source");
 
 	extractor_apply_general_metadata (extractor,
 	                                  toc_entry->tag_list,
