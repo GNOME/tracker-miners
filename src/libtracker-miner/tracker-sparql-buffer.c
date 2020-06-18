@@ -333,7 +333,6 @@ tracker_sparql_buffer_flush (TrackerSparqlBuffer *buffer,
 	tracker_sparql_connection_update_array_async (priv->connection,
 	                                              (gchar **) update_data->sparql_array->data,
 	                                              update_data->sparql_array->len,
-	                                              G_PRIORITY_DEFAULT,
 	                                              NULL,
 	                                              tracker_sparql_buffer_update_array_cb,
 	                                              update_data);
@@ -388,7 +387,6 @@ sparql_buffer_push_high_priority (TrackerSparqlBuffer *buffer,
 	tracker_task_pool_add (TRACKER_TASK_POOL (buffer), task);
 	tracker_sparql_connection_update_async (priv->connection,
 	                                        data->str,
-	                                        G_PRIORITY_HIGH,
 	                                        NULL,
 	                                        tracker_sparql_buffer_update_cb,
 	                                        update_data);

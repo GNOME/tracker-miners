@@ -132,7 +132,7 @@ miner_reset_applications (TrackerMiner *miner)
 	/* Execute a sync update, we don't want the apps miner to start before
 	 * we finish this. */
 	tracker_sparql_connection_update (tracker_miner_get_connection (miner),
-	                                  sparql, G_PRIORITY_HIGH,
+	                                  sparql,
 	                                  NULL, &error);
 
 	if (error) {

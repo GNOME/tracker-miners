@@ -717,8 +717,7 @@ daemon_run (void)
 			return EXIT_FAILURE;
 		}
 
-		notifier = tracker_sparql_connection_create_notifier (sparql_connection,
-								      TRACKER_NOTIFIER_FLAG_QUERY_URN);
+		notifier = tracker_sparql_connection_create_notifier (sparql_connection);
 		g_signal_connect (notifier, "events",
 				  G_CALLBACK (notifier_events_cb), sparql_connection);
 		g_object_unref (sparql_connection);

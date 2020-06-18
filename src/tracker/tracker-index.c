@@ -212,7 +212,7 @@ import_turtle_files (void)
 		uri = g_file_get_uri (file);
 		query = g_strdup_printf ("LOAD <%s>", uri);
 		tracker_sparql_connection_update (connection, query,
-						  G_PRIORITY_DEFAULT, NULL,
+						  NULL,
 						  &error);
 		g_free (query);
 		g_free (uri);

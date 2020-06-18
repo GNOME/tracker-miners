@@ -841,7 +841,6 @@ set_up_mount_point (TrackerMinerFiles *miner,
 	} else {
 		tracker_sparql_connection_update_async (tracker_miner_get_connection (TRACKER_MINER (miner)),
 		                                        queries->str,
-		                                        G_PRIORITY_LOW,
 		                                        NULL,
 		                                        set_up_mount_point_cb,
 		                                        NULL);
@@ -1031,7 +1030,6 @@ init_mount_points (TrackerMinerFiles *miner_files)
 	if (accumulator->str[0] != '\0') {
 		tracker_sparql_connection_update_async (tracker_miner_get_connection (miner),
 		                                        accumulator->str,
-		                                        G_PRIORITY_LOW,
 		                                        NULL,
 		                                        init_mount_points_cb,
 		                                        miner);
@@ -2798,7 +2796,6 @@ miner_files_in_removable_media_remove_by_type (TrackerMinerFiles  *miner,
 
 		tracker_sparql_connection_update_async (tracker_miner_get_connection (TRACKER_MINER (miner)),
 		                                        queries->str,
-		                                        G_PRIORITY_LOW,
 		                                        NULL,
 		                                        remove_files_in_removable_media_cb,
 		                                        NULL);
@@ -2846,7 +2843,6 @@ miner_files_in_removable_media_remove_by_date (TrackerMinerFiles  *miner,
 
 	tracker_sparql_connection_update_async (tracker_miner_get_connection (TRACKER_MINER (miner)),
 	                                        queries->str,
-	                                        G_PRIORITY_LOW,
 	                                        NULL,
 	                                        remove_files_in_removable_media_cb,
 	                                        NULL);

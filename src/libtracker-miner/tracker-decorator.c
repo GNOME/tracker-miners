@@ -419,7 +419,6 @@ decorator_commit_info (TrackerDecorator *decorator)
 	tracker_sparql_connection_update_array_async (sparql_conn,
 	                                              (gchar **) array->pdata,
 	                                              array->len,
-	                                              G_PRIORITY_DEFAULT,
 						      priv->cancellable,
 	                                              decorator_commit_cb,
 	                                              decorator);
@@ -977,7 +976,7 @@ tracker_decorator_initable_init (GInitable     *initable,
 		return FALSE;
 
 	conn = tracker_miner_get_connection (TRACKER_MINER (decorator));
-	priv->notifier = tracker_sparql_connection_create_notifier (conn, 0);
+	priv->notifier = tracker_sparql_connection_create_notifier (conn);
 	g_signal_connect_swapped (priv->notifier, "events",
 				  G_CALLBACK (notifier_events_cb),
 				  decorator);

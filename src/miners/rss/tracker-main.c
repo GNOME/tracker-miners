@@ -194,7 +194,6 @@ main (int argc, char **argv)
 
 		tracker_sparql_connection_update (connection,
 		                                  query->str,
-		                                  G_PRIORITY_DEFAULT,
 		                                  NULL,
 		                                  &error);
 		g_string_free (query, TRUE);

@@ -104,8 +104,7 @@ delete_info_recursively (GFile *file)
 	                         "}", uri, uri);
 	g_free (uri);
 
-	tracker_sparql_connection_update (connection, query,
-	                                  G_PRIORITY_DEFAULT, NULL, &error);
+	tracker_sparql_connection_update (connection, query, NULL, &error);
 	g_free (query);
 
 	if (error)

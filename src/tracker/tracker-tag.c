@@ -699,7 +699,7 @@ add_tag_for_urns (TrackerSparqlConnection *connection,
 					 tag_escaped);
 	}
 
-	tracker_sparql_connection_update (connection, query, 0, NULL, &error);
+	tracker_sparql_connection_update (connection, query, NULL, &error);
 	g_free (query);
 
 	if (error) {
@@ -742,7 +742,7 @@ add_tag_for_urns (TrackerSparqlConnection *connection,
 		                         tag_escaped,
 		                         filter ? filter : "");
 
-		tracker_sparql_connection_update (connection, query, 0, NULL, &error);
+		tracker_sparql_connection_update (connection, query, NULL, &error);
 		g_strfreev (urns_strv);
 		g_free (filter);
 		g_free (query);
@@ -875,7 +875,7 @@ remove_tag_for_urns (TrackerSparqlConnection *connection,
 
 	g_free (tag_escaped);
 
-	tracker_sparql_connection_update (connection, query, 0, NULL, &error);
+	tracker_sparql_connection_update (connection, query, NULL, &error);
 	g_free (query);
 
 	if (error) {
