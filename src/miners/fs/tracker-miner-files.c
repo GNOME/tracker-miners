@@ -2141,21 +2141,24 @@ process_file_cb (GObject      *object,
 	if (!is_directory &&
 	    tracker_miner_fs_get_urn (TRACKER_MINER_FS (data->miner), file)) {
 		/* Update: delete all information elements for the given data object
-		 * and delete dataSources, so we ensure the file is extracted again.
+		 * and delete extractorHash, so we ensure the file is extracted again.
 		 */
 		delete_properties_sparql =
 			g_strdup_printf ("DELETE {"
 			                 "  GRAPH ?g {"
-			                 "    <%s> nie:interpretedAs ?ie ; "
-			                 "         nie:dataSource ?ds . "
+			                 "    <%s> nie:interpretedAs ?ie . "
 			                 "    ?ie a rdfs:Resource . "
 			                 "  }"
 			                 "} WHERE {"
 			                 "  GRAPH ?g {"
 			                 "    <%s> nie:interpretedAs ?ie ."
-			                 "    OPTIONAL { <%s> nie:dataSource ?ds } "
 			                 "  }"
-			                 "} ",
+			                 "}; "
+					 "DELETE WHERE {"
+					 "  GRAPH " DEFAULT_GRAPH " {"
+					 "    <%s> tracker:extractorHash ?h ."
+					 "  }"
+					 "}",
 			                 uri, uri, uri);
 	}
 
