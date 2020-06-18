@@ -9,7 +9,7 @@ cc = meson.get_compiler('c')
 # This is the X.Y used in -llibtracker-FOO-X.Y
 tracker_api_version = '3.0'
 tracker_api_major = tracker_api_version.split('.')[0]
-tracker_versioned_name = 'tracker-miners-@0@'.format(tracker_api_major)
+tracker_versioned_name = 'tracker@0@-miners'.format(tracker_api_major)
 
 libdir = join_paths(get_option('prefix'), get_option('libdir'))
 datadir = join_paths(get_option('prefix'), get_option('datadir'))
@@ -389,13 +389,16 @@ srcinc = include_directories('src/')
 
 build_root = meson.current_build_dir()
 
-tracker_internal_libs_dir = join_paths(get_option('prefix'), get_option('libdir'), tracker_versioned_name)
+# We use tracker-miners-3.0 rather than tracker3-miners inside the lib64
+# directory, following the existing convention in that directory.
+tracker_api_versioned_name = 'tracker-miners-@0@'.format(tracker_api_version)
+tracker_internal_libs_dir = join_paths(get_option('prefix'), get_option('libdir'), tracker_api_versioned_name)
 tracker_install_rpath = ':'.join([tracker_internal_libs_dir, libdir])
 
-tracker_extract_modules_dir = join_paths(get_option('prefix'), get_option('libdir'), tracker_versioned_name, 'extract-modules')
+tracker_extract_modules_dir = join_paths(get_option('prefix'), get_option('libdir'), tracker_api_versioned_name, 'extract-modules')
+tracker_writeback_modules_dir = join_paths(get_option('prefix'), get_option('libdir'), tracker_api_versioned_name, 'writeback-modules')
 tracker_extract_rules_dir = join_paths(get_option('prefix'), get_option('datadir'), tracker_versioned_name, 'extract-rules')
 tracker_miner_services_dir = join_paths(get_option('prefix'), get_option('datadir'), tracker_versioned_name, 'miners')
-tracker_writeback_modules_dir = join_paths(get_option('prefix'), get_option('libdir'), tracker_versioned_name, 'writeback-modules')
 
 tracker_uninstalled_extract_rules_dir = join_paths(meson.current_build_dir(), 'src', 'tracker-extract', 'uninstalled-rules')
 tracker_uninstalled_writeback_modules_dir = join_paths(meson.current_build_dir(), 'src', 'tracker-writeback')

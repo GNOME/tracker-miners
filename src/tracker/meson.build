@@ -24,7 +24,7 @@ foreach m: modules
         ],
         install: true,
         install_rpath: tracker_install_rpath,
-        install_dir: join_paths(get_option('libexecdir'), 'tracker-@0@'.format(tracker_api_major)),
+        install_dir: join_paths(get_option('libexecdir'), 'tracker@0@'.format(tracker_api_major)),
         dependencies: [tracker_sparql, tracker_miners_common_dep],
         include_directories: [commoninc, configinc, srcinc],
     )
