@@ -36,7 +36,6 @@
 #include "tracker-dbus.h"
 #include "tracker-miner-manager.h"
 
-static gchar **reindex_mime_types;
 static gboolean index_file;
 static gboolean backup;
 static gboolean restore;
@@ -48,13 +47,9 @@ static gchar **filenames;
 	 (index_file || \
 	  backup || \
 	  restore || \
-	  import) || \
-	 reindex_mime_types)
+	  import))
 
 static GOptionEntry entries[] = {
-	{ "reindex-mime-type", 'm', 0, G_OPTION_ARG_STRING_ARRAY, &reindex_mime_types,
-	  N_("Tell miners to reindex files which match the mime type supplied (for new extractors), use -m MIME1 -m MIME2"),
-	  N_("MIME") },
 	{ "file", 'f', 0, G_OPTION_ARG_NONE, &index_file,
 	  N_("Tell miners to (re)index a given file"),
 	  N_("FILE") },
@@ -108,37 +103,6 @@ get_uri_from_arg (const gchar *arg)
 	}
 
 	return uri;
-}
-
-static int
-reindex_mimes (void)
-{
-	GError *error = NULL;
-	TrackerMinerManager *manager;
-
-	/* Auto-start the miners here if we need to */
-	manager = tracker_miner_manager_new_full (TRUE, &error);
-	if (!manager) {
-		g_printerr (_("Could not reindex mimetypes, manager could not be created, %s"),
-		            error ? error->message : _("No error given"));
-		g_printerr ("\n");
-		g_clear_error (&error);
-		return EXIT_FAILURE;
-	}
-
-	tracker_miner_manager_reindex_by_mimetype (manager, (GStrv) reindex_mime_types, &error);
-	if (error) {
-		g_printerr ("%s: %s\n",
-		            _("Could not reindex mimetypes"),
-		            error->message);
-		g_error_free (error);
-		return EXIT_FAILURE;
-	}
-
-	g_print ("%s\n", _("Reindexing mime types was successful"));
-	g_object_unref (manager);
-
-	return EXIT_SUCCESS;
 }
 
 static gint
@@ -353,10 +317,6 @@ restore_index (void)
 static int
 index_run (void)
 {
-	if (reindex_mime_types) {
-		return reindex_mimes ();
-	}
-
 	if (index_file) {
 		return index_or_reindex_file ();
 	}
@@ -453,8 +413,6 @@ main (int argc, const char **argv)
 		failed = _("Missing one or more files which are required");
 	} else if ((backup || restore) && (filenames && g_strv_length (filenames) > 1)) {
 		failed = _("Only one file can be used with --backup and --restore");
-	} else if (actions > 0 && (reindex_mime_types && g_strv_length (reindex_mime_types) > 0)) {
-		failed = _("Actions (--backup, --restore, --index-file and --import) can not be used with --reindex-mime-type");
 	} else {
 		failed = NULL;
 	}
