@@ -1,0 +1,5 @@
+[ExtractorRule]
+MimeTypes=application/vnd.nintendo.snes.rom;application/x-amiga-disk-format;application/x-atari-2600-rom;application/x-atari-7800-rom;application/x-atari-lynx-rom;application/x-dc-rom;application/x-doom-wad;application/x-fds-disk;application/x-gameboy-color-rom;application/x-gameboy-rom;application/x-gamecube-rom;application/x-gamegear-rom;application/x-gba-rom;application/x-genesis-32x-rom;application/x-genesis-rom;application/x-n64-rom;application/x-neo-geo-pocket-color-rom;application/x-neo-geo-pocket-rom;application/x-nes-rom;application/x-nintendo-ds-rom;application/x-pc-engine-rom;application/x-saturn-rom;application/x-sega-cd-rom;application/x-sega-pico-rom;application/x-sg1000-rom;application/x-sms-rom;application/x-virtual-boy-rom;application/x-wii-rom;application/x-wii-wad;application/x-wonderswan-color-rom;application/x-wonderswan-rom;application/x-msx-rom;
+FallbackRdfTypes=nfo:GameImage;
+Graph=tracker:Software
+Hash=@hash@

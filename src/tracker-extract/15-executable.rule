@@ -1,0 +1,5 @@
+[ExtractorRule]
+MimeTypes=application/x-ms-dos-executable;
+FallbackRdfTypes=nfo:Executable;nfo:SoftwareApplication;
+Graph=tracker:Software
+Hash=@hash@
