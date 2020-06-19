@@ -24,7 +24,6 @@
 
 #include "tracker-extract-decorator.h"
 #include "tracker-extract-persistence.h"
-#include "tracker-extract-priority-dbus.h"
 
 enum {
 	PROP_EXTRACTOR = 1
@@ -50,10 +49,6 @@ struct _TrackerExtractDecoratorPrivate {
 
 	TrackerExtractPersistence *persistence;
 	GHashTable *recovery_files;
-
-	/* DBus name -> AppData */
-	GHashTable *apps;
-	TrackerExtractDBusPriority *iface;
 };
 
 typedef struct {
@@ -136,8 +131,6 @@ tracker_extract_decorator_finalize (GObject *object)
 	if (priv->timer)
 		g_timer_destroy (priv->timer);
 
-	g_object_unref (priv->iface);
-	g_hash_table_unref (priv->apps);
 	g_hash_table_unref (priv->recovery_files);
 
 	G_OBJECT_CLASS (tracker_extract_decorator_parent_class)->finalize (object);
@@ -392,162 +385,6 @@ tracker_extract_decorator_finished (TrackerDecorator *decorator)
 	g_free (time_str);
 }
 
-static gboolean
-strv_contains (const gchar * const *strv,
-               const gchar         *needle)
-{
-	guint i;
-
-	for (i = 0; strv[i] != NULL; i++) {
-		if (g_str_equal (strv[i], needle))
-			return TRUE;
-	}
-
-	return FALSE;
-}
-
-static void
-string_array_add (GPtrArray   *array,
-                  const gchar *str)
-{
-	guint i;
-
-	for (i = 0; i < array->len; i++) {
-		if (g_str_equal (g_ptr_array_index (array, i), str))
-			return;
-	}
-
-	g_ptr_array_add (array, (gchar *) str);
-}
-
-static void
-priority_changed (TrackerExtractDecorator *decorator)
-{
-	TrackerExtractDecoratorPrivate *priv;
-	GPtrArray                      *array;
-	GHashTableIter                  iter;
-	gpointer                        value;
-
-	priv = tracker_extract_decorator_get_instance_private (decorator);
-
-	/* Construct an strv removing dups */
-	array = g_ptr_array_new ();
-	g_hash_table_iter_init (&iter, priv->apps);
-	while (g_hash_table_iter_next (&iter, NULL, &value)) {
-		AppData *data = value;
-		guint i;
-
-		for (i = 0; data->rdf_types[i] != NULL; i++) {
-			string_array_add (array, data->rdf_types[i]);
-		}
-	}
-	g_ptr_array_add (array, NULL);
-
-	tracker_decorator_set_priority_rdf_types (TRACKER_DECORATOR (decorator),
-	                                          (const gchar * const *) array->pdata);
-
-	g_ptr_array_unref (array);
-}
-
-static void
-app_data_destroy (AppData *data)
-{
-	g_bus_unwatch_name (data->watch_id);
-	g_strfreev (data->rdf_types);
-	g_slice_free (AppData, data);
-}
-
-static void
-name_vanished_cb (GDBusConnection *connection,
-                  const gchar     *name,
-                  gpointer         user_data)
-{
-	TrackerExtractDecorator        *decorator = user_data;
-	TrackerExtractDecoratorPrivate *priv;
-
-	priv = tracker_extract_decorator_get_instance_private (TRACKER_EXTRACT_DECORATOR (decorator));
-	g_hash_table_remove (priv->apps, name);
-	priority_changed (decorator);
-}
-
-static gboolean
-handle_set_rdf_types_cb (TrackerExtractDBusPriority *iface,
-                         GDBusMethodInvocation      *invocation,
-                         const gchar * const        *rdf_types,
-                         TrackerExtractDecorator    *decorator)
-{
-	TrackerExtractDecoratorPrivate *priv;
-	const gchar *sender;
-	GDBusConnection *conn;
-	AppData *data;
-	guint i;
-
-	priv = tracker_extract_decorator_get_instance_private (TRACKER_EXTRACT_DECORATOR (decorator));
-	sender = g_dbus_method_invocation_get_sender (invocation);
-	conn = g_dbus_method_invocation_get_connection (invocation);
-
-	if (rdf_types[0] == NULL) {
-		g_hash_table_remove (priv->apps, sender);
-		goto out;
-	}
-
-	/* Verify all types are supported */
-	for (i = 0; rdf_types[i] != NULL; i++) {
-		if (!strv_contains (supported_classes, rdf_types[i])) {
-			g_dbus_method_invocation_return_error (invocation,
-			                                       TRACKER_DBUS_ERROR,
-			                                       TRACKER_DBUS_ERROR_ASSERTION_FAILED,
-			                                       "Unsupported rdf:type %s",
-			                                       rdf_types[i]);
-			return TRUE;
-		}
-	}
-
-	data = g_hash_table_lookup (priv->apps, sender);
-	if (data == NULL) {
-		data = g_slice_new0 (AppData);
-		data->watch_id = g_bus_watch_name_on_connection (conn,
-		                                                 sender,
-		                                                 G_BUS_NAME_WATCHER_FLAGS_NONE,
-		                                                 NULL,
-		                                                 name_vanished_cb,
-		                                                 decorator, NULL);
-		g_hash_table_insert (priv->apps,
-		                     g_strdup (sender),
-		                     data);
-	} else {
-		g_strfreev (data->rdf_types);
-	}
-
-	data->rdf_types = g_strdupv ((GStrv) rdf_types);
-
-out:
-	priority_changed (decorator);
-
-	tracker_extract_dbus_priority_complete_set_rdf_types (iface, invocation);
-
-	return TRUE;
-}
-
-static gboolean
-handle_clear_rdf_types_cb (TrackerExtractDBusPriority *iface,
-                           GDBusMethodInvocation      *invocation,
-                           TrackerExtractDecorator    *decorator)
-{
-	TrackerExtractDecoratorPrivate *priv;
-	const gchar *sender;
-
-	priv = tracker_extract_decorator_get_instance_private (TRACKER_EXTRACT_DECORATOR (decorator));
-	sender = g_dbus_method_invocation_get_sender (invocation);
-
-	g_hash_table_remove (priv->apps, sender);
-	priority_changed (decorator);
-
-	tracker_extract_dbus_priority_complete_clear_rdf_types (iface, invocation);
-
-	return TRUE;
-}
-
 static void
 tracker_extract_decorator_class_init (TrackerExtractDecoratorClass *klass)
 {
@@ -660,32 +497,8 @@ tracker_extract_decorator_initable_init (GInitable     *initable,
 	decorator = TRACKER_EXTRACT_DECORATOR (initable);
 	priv = tracker_extract_decorator_get_instance_private (TRACKER_EXTRACT_DECORATOR (decorator));
 
-	priv->apps = g_hash_table_new_full (g_str_hash,
-	                                    g_str_equal,
-	                                    g_free,
-	                                    (GDestroyNotify) app_data_destroy);
-
-	priv->iface = tracker_extract_dbus_priority_skeleton_new ();
-	g_signal_connect (priv->iface, "handle-set-rdf-types",
-	                  G_CALLBACK (handle_set_rdf_types_cb),
-	                  decorator);
-	g_signal_connect (priv->iface, "handle-clear-rdf-types",
-	                  G_CALLBACK (handle_clear_rdf_types_cb),
-	                  decorator);
-
-	tracker_extract_dbus_priority_set_supported_rdf_types (priv->iface,
-	                                                       supported_classes);
-
 	conn = g_bus_get_sync (TRACKER_IPC_BUS, NULL, error);
 	if (conn == NULL) {
-		ret = FALSE;
-		goto out;
-	}
-
-	if (!g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (priv->iface),
-	                                       conn,
-	                                       "/org/freedesktop/Tracker3/Extract/Priority",
-	                                       error)) {
 		ret = FALSE;
 		goto out;
 	}
