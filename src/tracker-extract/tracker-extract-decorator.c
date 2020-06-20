@@ -49,6 +49,7 @@ struct _TrackerExtractDecoratorPrivate {
 
 	TrackerExtractPersistence *persistence;
 	GHashTable *recovery_files;
+	GDBusProxy *index_proxy;
 };
 
 typedef struct {
@@ -117,6 +118,7 @@ tracker_extract_decorator_finalize (GObject *object)
 		g_timer_destroy (priv->timer);
 
 	g_hash_table_unref (priv->recovery_files);
+	g_clear_object (&priv->index_proxy);
 
 	G_OBJECT_CLASS (tracker_extract_decorator_parent_class)->finalize (object);
 }
@@ -469,6 +471,31 @@ tracker_extract_decorator_init (TrackerExtractDecorator *decorator)
 	                                              (GDestroyNotify) g_object_unref);
 }
 
+static void
+update_graphs_from_proxy (TrackerExtractDecorator *decorator,
+                          GDBusProxy              *proxy)
+{
+	const gchar **graphs = NULL;
+	GVariant *v;
+
+	v = g_dbus_proxy_get_cached_property (proxy, "Graphs");
+	if (v)
+		graphs = g_variant_get_strv (v, NULL);
+
+	tracker_decorator_set_priority_graphs (TRACKER_DECORATOR (decorator),
+	                                       graphs);
+	g_free (graphs);
+}
+
+static void
+proxy_properties_changed_cb (GDBusProxy *proxy,
+                             GVariant   *changed_properties,
+                             GStrv       invalidated_properties,
+                             gpointer    user_data)
+{
+	update_graphs_from_proxy (user_data, proxy);
+}
+
 static gboolean
 tracker_extract_decorator_initable_init (GInitable     *initable,
                                          GCancellable  *cancellable,
@@ -487,6 +514,23 @@ tracker_extract_decorator_initable_init (GInitable     *initable,
 		ret = FALSE;
 		goto out;
 	}
+
+	priv->index_proxy = g_dbus_proxy_new_sync (conn,
+	                                           G_DBUS_PROXY_FLAGS_DO_NOT_AUTO_START,
+	                                           NULL,
+	                                           "org.freedesktop.Tracker3.Miner.Files.Index",
+	                                           "/org/freedesktop/Tracker3/Miner/Files/Proxy",
+	                                           "org.freedesktop.Tracker3.Miner.Files.Proxy",
+	                                           cancellable,
+	                                           error);
+	if (!priv->index_proxy) {
+		ret = FALSE;
+		goto out;
+	}
+
+	g_signal_connect (priv->index_proxy, "g-properties-changed",
+	                  G_CALLBACK (proxy_properties_changed_cb), decorator);
+	update_graphs_from_proxy (decorator, priv->index_proxy);
 
 	/* Chainup to parent's init last, to have a chance to export our
 	 * DBus interface before RequestName returns. Otherwise our iface
