@@ -24,6 +24,7 @@
 #include <libtracker-miner/tracker-miner.h>
 
 #include "tracker-dbus-files-index.h"
+#include "tracker-dbus-files-proxy.h"
 #include "tracker-miner-files-index.h"
 #include "tracker-miner-files-peer-listener.h"
 
@@ -37,6 +38,7 @@
 typedef struct {
 	TrackerMinerFilesPeerListener *peer_listener;
 	TrackerDBusMinerFilesIndex *skeleton;
+	TrackerDBusMinerFilesProxy *proxy_skeleton;
 	GDBusConnection *d_connection;
 	GArray *indexed_files;
 	GStrv graphs;
@@ -102,6 +104,7 @@ index_finalize (GObject *object)
 	TrackerMinerFilesIndexPrivate *priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (object);
 
 	g_object_unref (priv->skeleton);
+	g_object_unref (priv->proxy_skeleton);
 
 	if (priv->d_connection) {
 		g_object_unref (priv->d_connection);
@@ -121,7 +124,8 @@ update_indexed_files (TrackerMinerFilesIndex *index)
 
 	priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (index);
 
-	tracker_dbus_miner_files_index_set_indexed_files (priv->skeleton, (const gchar * const *) priv->indexed_files->data);
+	tracker_dbus_miner_files_proxy_set_indexed_files (priv->proxy_skeleton,
+	                                                  (const gchar * const *) priv->indexed_files->data);
 }
 
 static void
@@ -196,7 +200,8 @@ peer_listener_graphs_changed (TrackerMinerFilesPeerListener *listener,
 	g_strfreev (priv->graphs);
 	priv->graphs = g_strdupv (graphs);
 
-	tracker_dbus_miner_files_index_set_graphs (priv->skeleton, (const gchar * const *) priv->graphs);
+	tracker_dbus_miner_files_proxy_set_graphs (priv->proxy_skeleton,
+	                                           (const gchar * const *) priv->graphs);
 }
 
 static void
@@ -212,6 +217,8 @@ tracker_miner_files_index_init (TrackerMinerFilesIndex *object)
 	TrackerMinerFilesIndexPrivate *priv;
 
 	priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (object);
+
+	priv->proxy_skeleton = tracker_dbus_miner_files_proxy_skeleton_new ();
 
 	priv->skeleton = tracker_dbus_miner_files_index_skeleton_new ();
 	g_signal_connect (priv->skeleton, "handle-index-file",
@@ -260,6 +267,18 @@ tracker_miner_files_index_new (void)
 	                                       &error)) {
 		g_critical ("Could not register the D-Bus object %s, %s",
 		            full_path,
+		            error ? error->message : "no error given.");
+		g_clear_error (&error);
+		g_object_unref (miner);
+		return NULL;
+	}
+
+	if (!g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (priv->proxy_skeleton),
+	                                       priv->d_connection,
+	                                       "/org/freedesktop/Tracker3/Miner/Files/Proxy",
+	                                       &error)) {
+		g_critical ("Could not register the D-Bus object %s, %s",
+		            TRACKER_MINER_DBUS_NAME_PREFIX "Files.Proxy",
 		            error ? error->message : "no error given.");
 		g_clear_error (&error);
 		g_object_unref (miner);
