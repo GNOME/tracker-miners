@@ -1,0 +1,9 @@
+<node>
+  <interface name='org.freedesktop.Tracker3.Miner.Files.Index'>
+    <method name='IndexFile'>
+      <arg type='s' name='file_uri' direction='in' />
+      <arg type='as' name='graphs' direction='in' />
+    </method>
+    <property name='Graphs' type='as' access='read' />
+  </interface>
+</node>
