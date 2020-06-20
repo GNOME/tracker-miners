@@ -36,6 +36,7 @@ enum {
 enum {
 	WATCH_FILE,
 	UNWATCH_FILE,
+	GRAPHS_CHANGED,
 	N_SIGNALS
 };
 
@@ -43,6 +44,7 @@ static guint signals[N_SIGNALS] = { 0 };
 
 typedef struct {
 	gchar *dbus_name;
+	GPtrArray *graphs;
 	GPtrArray *files; /* Array of GFiles, actually owned by FilePeersData */
 	guint watch_id;
 } PeerFilesData;
@@ -56,6 +58,7 @@ typedef struct {
 	GDBusConnection *d_connection;
 	GHashTable *peer_files; /* dbus name -> PeerFilesData */
 	GHashTable *file_peers; /* GFile -> FilePeersData */
+	GStrv graphs;
 } TrackerMinerFilesPeerListenerPrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (TrackerMinerFilesPeerListener,
@@ -84,6 +87,7 @@ peer_files_data_new (const gchar                   *dbus_name,
 	data = g_slice_new0 (PeerFilesData);
 	data->dbus_name = g_strdup (dbus_name);
 	data->files = g_ptr_array_new ();
+	data->graphs = g_ptr_array_new_with_free_func (g_free);
 	data->watch_id = g_bus_watch_name_on_connection (priv->d_connection,
 	                                                 dbus_name, 0, NULL,
 	                                                 on_app_disappeared_cb,
@@ -96,6 +100,7 @@ peer_files_data_free (PeerFilesData *data)
 {
 	g_bus_unwatch_name (data->watch_id);
 	g_ptr_array_unref (data->files);
+	g_ptr_array_unref (data->graphs);
 	g_free (data->dbus_name);
 	g_slice_free (PeerFilesData, data);
 }
@@ -119,6 +124,17 @@ peer_files_data_remove_file (PeerFilesData *data,
 
 		g_ptr_array_remove_index (data->files, i);
 		break;
+	}
+}
+
+static void
+peer_files_data_add_graphs (PeerFilesData       *data,
+                            const gchar * const *graphs)
+{
+	gint i;
+
+	for (i = 0; graphs[i] != NULL; i++) {
+		g_ptr_array_add (data->graphs, g_strdup (graphs[i]));
 	}
 }
 
@@ -254,6 +270,12 @@ tracker_miner_files_peer_listener_class_init (TrackerMinerFilesPeerListenerClass
 		              G_SIGNAL_RUN_LAST, 0,
 		              NULL, NULL, NULL,
 		              G_TYPE_NONE, 1, G_TYPE_FILE);
+	signals[GRAPHS_CHANGED] =
+		g_signal_new ("graphs-changed",
+		              G_OBJECT_CLASS_TYPE (object_class),
+		              G_SIGNAL_RUN_LAST, 0,
+		              NULL, NULL, NULL,
+		              G_TYPE_NONE, 1, G_TYPE_STRV);
 }
 
 static void
@@ -291,10 +313,45 @@ unwatch_file (TrackerMinerFilesPeerListener *listener,
 	g_object_unref (file);
 }
 
+static void
+update_graphs (TrackerMinerFilesPeerListener *listener)
+{
+	TrackerMinerFilesPeerListenerPrivate *priv;
+	PeerFilesData *peer_data;
+	GHashTableIter iter;
+	const gchar *graph;
+	GHashTable *ht;
+	GArray *array;
+	gint i;
+
+	priv = tracker_miner_files_peer_listener_get_instance_private (listener);
+
+	ht = g_hash_table_new (g_str_hash, g_str_equal);
+	array = g_array_new (TRUE, TRUE, sizeof (char *));
+	g_hash_table_iter_init (&iter, priv->peer_files);
+
+	while (g_hash_table_iter_next (&iter, NULL, (gpointer *) &peer_data)) {
+		for (i = 0; i < peer_data->graphs->len; i++) {
+			g_hash_table_add (ht, g_ptr_array_index (peer_data->graphs, i));
+		}
+	}
+
+	g_hash_table_iter_init (&iter, ht);
+
+	while (g_hash_table_iter_next (&iter, (gpointer *) &graph, NULL)) {
+		g_array_append_val (array, graph);
+	}
+
+	g_signal_emit (listener, signals[GRAPHS_CHANGED], 0, array->data);
+	g_hash_table_unref (ht);
+	g_array_free (array, TRUE);
+}
+
 void
 tracker_miner_files_peer_listener_add_watch (TrackerMinerFilesPeerListener *listener,
                                              const gchar                   *dbus_name,
-                                             GFile                         *file)
+                                             GFile                         *file,
+                                             const gchar * const           *graphs)
 {
 	TrackerMinerFilesPeerListenerPrivate *priv;
 	PeerFilesData *peer_data;
@@ -329,7 +386,10 @@ tracker_miner_files_peer_listener_add_watch (TrackerMinerFilesPeerListener *list
 	}
 
 	peer_files_data_add_file (peer_data, file_data->file);
+	peer_files_data_add_graphs (peer_data, graphs);
 	file_peers_data_add_dbus_name (file_data, peer_data->dbus_name);
+
+	update_graphs (listener);
 }
 
 void
@@ -361,6 +421,8 @@ tracker_miner_files_peer_listener_remove_watch (TrackerMinerFilesPeerListener *l
 
 	if (file_data->peers->len == 0)
 		unwatch_file (listener, file_data->file);
+
+	update_graphs (listener);
 }
 
 void
@@ -398,6 +460,7 @@ tracker_miner_files_peer_listener_remove_dbus_name (TrackerMinerFilesPeerListene
 	}
 
 	g_hash_table_remove (priv->peer_files, dbus_name);
+	update_graphs (listener);
 }
 
 void
@@ -438,6 +501,7 @@ tracker_miner_files_peer_listener_remove_file (TrackerMinerFilesPeerListener *li
 	}
 
 	unwatch_file (listener, file);
+	update_graphs (listener);
 }
 
 gboolean

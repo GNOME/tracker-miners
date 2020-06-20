@@ -50,7 +50,8 @@ TrackerMinerFilesPeerListener *
 
 void     tracker_miner_files_peer_listener_add_watch    (TrackerMinerFilesPeerListener *listener,
                                                          const gchar                   *dbus_name,
-                                                         GFile                         *file);
+                                                         GFile                         *file,
+                                                         const gchar * const           *graphs);
 void     tracker_miner_files_peer_listener_remove_watch (TrackerMinerFilesPeerListener *listener,
                                                          const gchar                   *dbus_name,
                                                          GFile                         *file);
