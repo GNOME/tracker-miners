@@ -11,9 +11,17 @@ tracker_index_deps = [
 ]
 
 dbus_index_files_interface = files('org.freedesktop.Tracker3.Miner.Files.Index.xml')
+dbus_index_proxy_interface = files('org.freedesktop.Tracker3.Miner.Files.Proxy.xml')
 
-index_files_built_sources = gnome.gdbus_codegen('tracker-dbus-files-index',
+built_sources = []
+built_sources += gnome.gdbus_codegen('tracker-dbus-files-index',
     dbus_index_files_interface,
+    interface_prefix: 'org.freedesktop.Tracker3',
+    namespace: 'TrackerDBus',
+)
+
+built_sources += gnome.gdbus_codegen('tracker-dbus-files-proxy',
+    dbus_index_proxy_interface,
     interface_prefix: 'org.freedesktop.Tracker3',
     namespace: 'TrackerDBus',
 )
@@ -23,7 +31,7 @@ install_data(dbus_index_files_interface,
 )
 
 executable('tracker-index-@0@'.format(tracker_api_major),
-    sources + index_files_built_sources,
+    sources + built_sources,
     dependencies: tracker_index_deps,
     c_args: tracker_c_args,
     install: true,

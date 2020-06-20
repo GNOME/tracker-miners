@@ -1,0 +1,6 @@
+<node>
+  <interface name='org.freedesktop.Tracker3.Miner.Files.Proxy'>
+    <property name='Graphs' type='as' access='read' />
+    <property name='IndexedFiles' type='as' access='read' />
+  </interface>
+</node>
