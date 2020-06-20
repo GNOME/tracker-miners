@@ -35,10 +35,10 @@
 #undef REQUIRE_LOCATION_IN_CONFIG
 
 typedef struct {
-	TrackerMinerFiles *files_miner;
 	TrackerMinerFilesPeerListener *peer_listener;
 	TrackerDBusMinerFilesIndex *skeleton;
 	GDBusConnection *d_connection;
+	GArray *indexed_files;
 	GStrv graphs;
 	gchar *full_name;
 	gchar *full_path;
@@ -51,14 +51,6 @@ enum {
 
 #define TRACKER_MINER_FILES_INDEX_GET_PRIVATE(o) (tracker_miner_files_index_get_instance_private (TRACKER_MINER_FILES_INDEX (o)))
 
-static void     index_set_property        (GObject              *object,
-                                           guint                 param_id,
-                                           const GValue         *value,
-                                           GParamSpec           *pspec);
-static void     index_get_property        (GObject              *object,
-                                           guint                 param_id,
-                                           GValue               *value,
-                                           GParamSpec           *pspec);
 static void     index_finalize            (GObject              *object);
 
 G_DEFINE_TYPE_WITH_PRIVATE(TrackerMinerFilesIndex, tracker_miner_files_index, G_TYPE_OBJECT)
@@ -102,57 +94,6 @@ tracker_miner_files_index_class_init (TrackerMinerFilesIndexClass *klass)
 	object_class = G_OBJECT_CLASS (klass);
 
 	object_class->finalize = index_finalize;
-	object_class->set_property = index_set_property;
-	object_class->get_property = index_get_property;
-
-	g_object_class_install_property (object_class,
-	                                 PROP_FILES_MINER,
-	                                 g_param_spec_object ("files-miner",
-	                                                      "files-miner",
-	                                                      "The FS Miner",
-	                                                      TRACKER_TYPE_MINER_FILES,
-	                                                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
-}
-
-static void
-index_set_property (GObject      *object,
-                    guint         param_id,
-                    const GValue *value,
-                    GParamSpec   *pspec)
-{
-	TrackerMinerFilesIndexPrivate *priv;
-
-	priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (object);
-
-	switch (param_id) {
-	case PROP_FILES_MINER:
-		priv->files_miner = g_value_dup_object (value);
-		break;
-	default:
-		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, param_id, pspec);
-		break;
-	}
-}
-
-
-static void
-index_get_property (GObject    *object,
-                    guint       param_id,
-                    GValue     *value,
-                    GParamSpec *pspec)
-{
-	TrackerMinerFilesIndexPrivate *priv;
-
-	priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (object);
-
-	switch (param_id) {
-	case PROP_FILES_MINER:
-		g_value_set_object (value, priv->files_miner);
-		break;
-	default:
-		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, param_id, pspec);
-		break;
-	}
 }
 
 static void
@@ -167,11 +108,20 @@ index_finalize (GObject *object)
 	}
 
 	g_clear_object (&priv->peer_listener);
+	g_array_unref (priv->indexed_files);
 	g_free (priv->full_name);
 	g_free (priv->full_path);
 	g_strfreev (priv->graphs);
+}
 
-	g_object_unref (priv->files_miner);
+static void
+update_indexed_files (TrackerMinerFilesIndex *index)
+{
+	TrackerMinerFilesIndexPrivate *priv;
+
+	priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (index);
+
+	tracker_dbus_miner_files_index_set_indexed_files (priv->skeleton, (const gchar * const *) priv->indexed_files->data);
 }
 
 static void
@@ -184,10 +134,6 @@ tracker_miner_files_index_handle_index_file (TrackerDBusMinerFilesIndex *skeleto
 	TrackerMinerFilesIndexPrivate *priv;
 	TrackerDBusRequest *request;
 	GFile *file;
-	GFileInfo *file_info;
-	gboolean is_dir;
-	gboolean do_checks = FALSE;
-	GError *internal_error;
 
 	priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (index);
 
@@ -197,88 +143,15 @@ tracker_miner_files_index_handle_index_file (TrackerDBusMinerFilesIndex *skeleto
 
 	file = g_file_new_for_uri (file_uri);
 
-	file_info = g_file_query_info (file,
-	                               G_FILE_ATTRIBUTE_STANDARD_TYPE,
-	                               G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
-	                               NULL, NULL);
-
-	if (!file_info) {
-		internal_error = g_error_new_literal (TRACKER_MINER_INDEX_ERROR,
-		                                      TRACKER_MINER_INDEX_ERROR_FILE_NOT_FOUND,
-		                                      "File does not exist");
-		tracker_dbus_request_end (request, internal_error);
-		g_dbus_method_invocation_return_gerror (invocation, internal_error);
-
-		g_error_free (internal_error);
-
-		g_object_unref (file);
-
-		return;
+	if (!tracker_miner_files_peer_listener_is_file_watched (priv->peer_listener, file)) {
+		gchar *uri = g_strdup (file_uri);
+		g_array_append_val (priv->indexed_files, uri);
+		update_indexed_files (index);
 	}
 
-	is_dir = (g_file_info_get_file_type (file_info) == G_FILE_TYPE_DIRECTORY);
-	g_object_unref (file_info);
-
-#ifdef REQUIRE_LOCATION_IN_CONFIG
-	do_checks = TRUE;
-	if (!tracker_miner_files_is_file_eligible (priv->files_miner, file)) {
-		internal_error = g_error_new_literal (TRACKER_MINER_INDEX_ERROR,
-		                                      TRACKER_MINER_INDEX_ERROR_NOT_ELIGIBLE,
-		                                      "File is not eligible to be indexed");
-		tracker_dbus_request_end (request, internal_error);
-		g_dbus_method_invocation_return_gerror (invocation, internal_error);
-
-		g_error_free (internal_error);
-
-		g_object_unref (file);
-
-		return;
-	}
-#endif /* REQUIRE_LOCATION_IN_CONFIG */
-
-	if (is_dir) {
-		TrackerIndexingTree *indexing_tree;
-		TrackerDirectoryFlags flags;
-		gboolean is_watched, needs_watch = FALSE;
-		GFile *root;
-
-		indexing_tree = tracker_miner_fs_get_indexing_tree (TRACKER_MINER_FS (priv->files_miner));
-		root = tracker_indexing_tree_get_root (indexing_tree, file, &flags);
-
-		/* If the directory had already subscribers, we want to add all
-		 * further watches, so the directory survives as long as there's
-		 * watchers.
-		 */
-		is_watched = tracker_miner_files_peer_listener_is_file_watched (priv->peer_listener, file);
-
-		/* Check whether the requested dir is not over a (recursively)
-		 * watched directory already, in that case we don't add the
-		 * directory (nor add a watch if we're positive it comes from
-		 * config).
-		 */
-		if (!root ||
-		    (!(flags & TRACKER_DIRECTORY_FLAG_RECURSE) &&
-		     !g_file_equal (root, file) &&
-		     !g_file_has_parent (file, root))) {
-			tracker_indexing_tree_add (indexing_tree, file,
-			                           TRACKER_DIRECTORY_FLAG_RECURSE |
-			                           TRACKER_DIRECTORY_FLAG_PRIORITY |
-			                           TRACKER_DIRECTORY_FLAG_CHECK_MTIME |
-			                           TRACKER_DIRECTORY_FLAG_MONITOR);
-			needs_watch = TRUE;
-		} else {
-			tracker_indexing_tree_notify_update (indexing_tree, file, TRUE);
-		}
-
-		if (is_watched || needs_watch) {
-			tracker_miner_files_peer_listener_add_watch (priv->peer_listener,
-			                                             g_dbus_method_invocation_get_sender (invocation),
-			                                             file, graphs);
-		}
-	} else {
-		tracker_miner_fs_check_file (TRACKER_MINER_FS (priv->files_miner),
-		                             file, G_PRIORITY_HIGH, do_checks);
-	}
+	tracker_miner_files_peer_listener_add_watch (priv->peer_listener,
+	                                             g_dbus_method_invocation_get_sender (invocation),
+	                                             file, graphs);
 
 	tracker_dbus_request_end (request, NULL);
 	g_dbus_method_invocation_return_value (invocation, NULL);
@@ -291,12 +164,25 @@ peer_listener_unwatch_file (TrackerMinerFilesPeerListener *listener,
                             GFile                         *file,
                             gpointer                       user_data)
 {
-	TrackerMinerFilesIndexPrivate *priv;
-	TrackerIndexingTree *indexing_tree;
+	TrackerMinerFilesIndex *index = user_data;
+	TrackerMinerFilesIndexPrivate *priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (index);
+	gchar *uri;
+	gint i;
 
-	priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (user_data);
-	indexing_tree = tracker_miner_fs_get_indexing_tree (TRACKER_MINER_FS (priv->files_miner));
-	tracker_indexing_tree_remove (indexing_tree, file);
+	uri = g_file_get_uri (file);
+
+	for (i = 0; i < priv->indexed_files->len; i++) {
+		const gchar *indexed_uri;
+
+		indexed_uri = g_array_index (priv->indexed_files, gchar*, i);
+
+		if (g_strcmp0 (uri, indexed_uri) == 0) {
+			g_array_remove_index (priv->indexed_files, i);
+			break;
+		}
+	}
+
+	update_indexed_files (index);
 }
 
 static void
@@ -314,14 +200,10 @@ peer_listener_graphs_changed (TrackerMinerFilesPeerListener *listener,
 }
 
 static void
-indexing_tree_directory_remove (TrackerIndexingTree *indexing_tree,
-                                GFile               *file,
-                                gpointer             user_data)
+string_clear (gpointer data)
 {
-	TrackerMinerFilesIndexPrivate *priv;
-
-	priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (user_data);
-	tracker_miner_files_peer_listener_remove_file (priv->peer_listener, file);
+	gchar **ptr = data;
+	g_free (*ptr);
 }
 
 static void
@@ -335,24 +217,24 @@ tracker_miner_files_index_init (TrackerMinerFilesIndex *object)
 	g_signal_connect (priv->skeleton, "handle-index-file",
 	                  G_CALLBACK (tracker_miner_files_index_handle_index_file),
 	                  object);
+	priv->indexed_files = g_array_new (TRUE, TRUE, sizeof (gchar *));
+	g_array_set_clear_func (priv->indexed_files, string_clear);
 }
 
 TrackerMinerFilesIndex *
-tracker_miner_files_index_new (TrackerMinerFiles *miner_files)
+tracker_miner_files_index_new (void)
 {
 	GObject *miner;
 	TrackerMinerFilesIndexPrivate *priv;
 	gchar *full_path, *full_name;
 	GError *error = NULL;
-	TrackerIndexingTree *indexing_tree;
 
 	miner = g_object_new (TRACKER_TYPE_MINER_FILES_INDEX,
-	                      "files-miner", miner_files,
 	                      NULL);
 
 	priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (miner);
 
-	priv->d_connection = g_bus_get_sync (TRACKER_IPC_BUS, NULL, &error);
+	priv->d_connection = g_bus_get_sync (G_BUS_TYPE_SESSION, NULL, &error);
 
 	if (!priv->d_connection) {
 		g_critical ("Could not connect to the D-Bus session bus, %s",
@@ -391,10 +273,6 @@ tracker_miner_files_index_new (TrackerMinerFiles *miner_files)
 	                  G_CALLBACK (peer_listener_unwatch_file), miner);
 	g_signal_connect (priv->peer_listener, "graphs-changed",
 	                  G_CALLBACK (peer_listener_graphs_changed), miner);
-
-	indexing_tree = tracker_miner_fs_get_indexing_tree (TRACKER_MINER_FS (miner_files));
-	g_signal_connect (indexing_tree, "directory-removed",
-	                  G_CALLBACK (indexing_tree_directory_remove), miner);
 
 	return (TrackerMinerFilesIndex *) miner;
 }

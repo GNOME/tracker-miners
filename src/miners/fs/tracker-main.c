@@ -37,7 +37,6 @@
 
 #include "tracker-config.h"
 #include "tracker-miner-files.h"
-#include "tracker-miner-files-index.h"
 
 #define ABOUT	  \
 	"Tracker " PACKAGE_VERSION "\n"
@@ -784,7 +783,6 @@ main (gint argc, gchar *argv[])
 {
 	TrackerConfig *config;
 	TrackerMiner *miner_files;
-	TrackerMinerFilesIndex *miner_files_index;
 	GOptionContext *context;
 	GError *error = NULL;
 	gboolean do_mtime_checking;
@@ -916,14 +914,6 @@ main (gint argc, gchar *argv[])
 		return EXIT_FAILURE;
 	}
 
-	/* Create new TrackerMinerFilesIndex object */
-	miner_files_index = tracker_miner_files_index_new (TRACKER_MINER_FILES (miner_files));
-	if (!miner_files_index) {
-		g_object_unref (miner_files);
-		g_object_unref (config);
-		return EXIT_FAILURE;
-	}
-
 	/* Request DBus name */
 	dbus_name = tracker_domain_ontology_get_domain (domain_ontology, DBUS_NAME_SUFFIX);
 
@@ -991,7 +981,6 @@ main (gint argc, gchar *argv[])
 
 	g_main_loop_unref (main_loop);
 	g_object_unref (config);
-	g_object_unref (miner_files_index);
 
 	g_object_unref (miner_files);
 

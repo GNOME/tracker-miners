@@ -1,0 +1,5 @@
+[D-BUS Service]
+Name=org.freedesktop.Tracker3.Miner.Files.Index
+Exec=@libexecdir@/tracker-index-3
+SystemdService=tracker-index-3.service
+
