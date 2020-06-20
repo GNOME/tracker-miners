@@ -23,20 +23,9 @@
 #include <libtracker-sparql/tracker-sparql.h>
 #include <libtracker-miner/tracker-miner.h>
 
+#include "tracker-dbus-files-index.h"
 #include "tracker-miner-files-index.h"
 #include "tracker-miner-files-peer-listener.h"
-
-
-static const gchar introspection_xml[] =
-  "<node>"
-  "  <interface name='org.freedesktop.Tracker3.Miner.Files.Index'>"
-  "    <method name='IndexFile'>"
-  "      <arg type='s' name='file_uri' direction='in' />"
-  "      <arg type='as' name='graphs' direction='in' />"
-  "    </method>"
-  "    <property name='Graphs' type='as' access='read' />"
-  "  </interface>"
-  "</node>";
 
 /* If defined, then a file provided to be indexed MUST be a child in
  * an configured path. if undefined, any file can be indexed, however
@@ -48,9 +37,8 @@ static const gchar introspection_xml[] =
 typedef struct {
 	TrackerMinerFiles *files_miner;
 	TrackerMinerFilesPeerListener *peer_listener;
+	TrackerDBusMinerFilesIndex *skeleton;
 	GDBusConnection *d_connection;
-	GDBusNodeInfo *introspection_data;
-	guint registration_id;
 	gchar *full_name;
 	gchar *full_path;
 } TrackerMinerFilesIndexPrivate;
@@ -171,14 +159,7 @@ index_finalize (GObject *object)
 {
 	TrackerMinerFilesIndexPrivate *priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (object);
 
-	if (priv->registration_id != 0) {
-		g_dbus_connection_unregister_object (priv->d_connection,
-		                                     priv->registration_id);
-	}
-
-	if (priv->introspection_data) {
-		g_dbus_node_info_unref (priv->introspection_data);
-	}
+	g_object_unref (priv->skeleton);
 
 	if (priv->d_connection) {
 		g_object_unref (priv->d_connection);
@@ -192,10 +173,11 @@ index_finalize (GObject *object)
 }
 
 static void
-handle_method_call_index_file (TrackerMinerFilesIndex *miner,
-                               GDBusMethodInvocation  *invocation,
-                               GVariant               *parameters,
-                               gboolean                watch_source)
+tracker_miner_files_index_handle_index_file (TrackerDBusMinerFilesIndex *skeleton,
+                                             GDBusMethodInvocation      *invocation,
+                                             const gchar                *file_uri,
+                                             const gchar * const        *graphs,
+                                             TrackerMinerFilesIndex     *index)
 {
 	TrackerMinerFilesIndexPrivate *priv;
 	TrackerDBusRequest *request;
@@ -204,12 +186,8 @@ handle_method_call_index_file (TrackerMinerFilesIndex *miner,
 	gboolean is_dir;
 	gboolean do_checks = FALSE;
 	GError *internal_error;
-	const gchar *file_uri;
-	const gchar * const *graphs;
 
-	priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (miner);
-
-	g_variant_get (parameters, "(&s^a&s)", &file_uri, &graphs);
+	priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (index);
 
 	tracker_gdbus_async_return_if_fail (file_uri != NULL, invocation);
 
@@ -290,7 +268,7 @@ handle_method_call_index_file (TrackerMinerFilesIndex *miner,
 			tracker_indexing_tree_notify_update (indexing_tree, file, TRUE);
 		}
 
-		if (watch_source && (is_watched || needs_watch)) {
+		if (is_watched || needs_watch) {
 			tracker_miner_files_peer_listener_add_watch (priv->peer_listener,
 			                                             g_dbus_method_invocation_get_sender (invocation),
 			                                             file);
@@ -304,28 +282,6 @@ handle_method_call_index_file (TrackerMinerFilesIndex *miner,
 	g_dbus_method_invocation_return_value (invocation, NULL);
 
 	g_object_unref (file);
-}
-
-static void
-handle_method_call (GDBusConnection       *connection,
-                    const gchar           *sender,
-                    const gchar           *object_path,
-                    const gchar           *interface_name,
-                    const gchar           *method_name,
-                    GVariant              *parameters,
-                    GDBusMethodInvocation *invocation,
-                    gpointer               user_data)
-{
-	TrackerMinerFilesIndex *miner = user_data;
-
-	tracker_gdbus_async_return_if_fail (miner != NULL, invocation);
-	tracker_gdbus_async_return_if_fail (TRACKER_IS_MINER_FILES_INDEX (miner), invocation);
-
-	if (g_strcmp0 (method_name, "IndexFile") == 0) {
-		handle_method_call_index_file (miner, invocation, parameters, TRUE);
-	} else {
-		g_assert_not_reached ();
-	}
 }
 
 static void
@@ -352,36 +308,17 @@ indexing_tree_directory_remove (TrackerIndexingTree *indexing_tree,
 	tracker_miner_files_peer_listener_remove_file (priv->peer_listener, file);
 }
 
-static GVariant *
-handle_get_property (GDBusConnection  *connection,
-                     const gchar      *sender,
-                     const gchar      *object_path,
-                     const gchar      *interface_name,
-                     const gchar      *property_name,
-                     GError          **error,
-                     gpointer          user_data)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-
-static gboolean
-handle_set_property (GDBusConnection  *connection,
-                     const gchar      *sender,
-                     const gchar      *object_path,
-                     const gchar      *interface_name,
-                     const gchar      *property_name,
-                     GVariant         *value,
-                     GError          **error,
-                     gpointer          user_data)
-{
-	g_assert_not_reached ();
-	return TRUE;
-}
-
 static void
 tracker_miner_files_index_init (TrackerMinerFilesIndex *object)
 {
+	TrackerMinerFilesIndexPrivate *priv;
+
+	priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (object);
+
+	priv->skeleton = tracker_dbus_miner_files_index_skeleton_new ();
+	g_signal_connect (priv->skeleton, "handle-index-file",
+	                  G_CALLBACK (tracker_miner_files_index_handle_index_file),
+	                  object);
 }
 
 TrackerMinerFilesIndex *
@@ -392,11 +329,6 @@ tracker_miner_files_index_new (TrackerMinerFiles *miner_files)
 	gchar *full_path, *full_name;
 	GError *error = NULL;
 	TrackerIndexingTree *indexing_tree;
-	GDBusInterfaceVTable interface_vtable = {
-		handle_method_call,
-		handle_get_property,
-		handle_set_property
-	};
 
 	miner = g_object_new (TRACKER_TYPE_MINER_FILES_INDEX,
 	                      "files-miner", miner_files,
@@ -414,14 +346,6 @@ tracker_miner_files_index_new (TrackerMinerFiles *miner_files)
 		return NULL;
 	}
 
-	priv->introspection_data = g_dbus_node_info_new_for_xml (introspection_xml, &error);
-	if (!priv->introspection_data) {
-		g_critical ("Could not create node info from introspection XML, %s",
-		            error ? error->message : "no error given.");
-		g_clear_error (&error);
-		return NULL;
-	}
-
 	full_name = g_strconcat (TRACKER_MINER_DBUS_NAME_PREFIX, "Files.Index", NULL);
 	priv->full_name = full_name;
 
@@ -432,16 +356,10 @@ tracker_miner_files_index_new (TrackerMinerFiles *miner_files)
 	g_debug ("  Path:'%s'", full_path);
 	g_debug ("  Object Type:'%s'", G_OBJECT_TYPE_NAME (miner));
 
-	priv->registration_id =
-		g_dbus_connection_register_object (priv->d_connection,
-		                                   full_path,
-		                                   priv->introspection_data->interfaces[0],
-		                                   &interface_vtable,
-		                                   miner,
-		                                   NULL,
-		                                   &error);
-
-	if (error) {
+	if (!g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (priv->skeleton),
+	                                       priv->d_connection,
+	                                       full_path,
+	                                       &error)) {
 		g_critical ("Could not register the D-Bus object %s, %s",
 		            full_path,
 		            error ? error->message : "no error given.");
