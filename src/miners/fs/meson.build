@@ -3,8 +3,6 @@ sources = [
     'tracker-extract-watchdog.c',
     'tracker-main.c',
     'tracker-miner-files.c',
-    'tracker-miner-files-index.c',
-    'tracker-miner-files-peer-listener.c',
     'tracker-storage.c',
 ]
 
@@ -22,20 +20,8 @@ elif battery_detection_library_name == 'hal'
   tracker_miner_fs_deps += hal
 endif
 
-dbus_index_files_interface = files('org.freedesktop.Tracker3.Miner.Files.Index.xml')
-
-index_files_built_sources = gnome.gdbus_codegen('tracker-dbus-files-index',
-    dbus_index_files_interface,
-    interface_prefix: 'org.freedesktop.Tracker3',
-    namespace: 'TrackerDBus',
-)
-
-install_data(dbus_index_files_interface,
-    install_dir: join_paths(get_option('prefix'), get_option('datadir'), 'dbus-1', 'interfaces')
-)
-
 executable('tracker-miner-fs-@0@'.format(tracker_api_major),
-    sources + index_files_built_sources,
+    sources,
     dependencies: tracker_miner_fs_deps,
     c_args: tracker_c_args,
     install: true,

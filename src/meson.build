@@ -11,6 +11,9 @@ endif
 # Public miners
 subdir('miners')
 
+# Proxy
+subdir('tracker-index')
+
 # Public metadata writeback tool & modiles
 if get_option('writeback')
   subdir('tracker-writeback')

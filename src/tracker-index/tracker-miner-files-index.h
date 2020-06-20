@@ -22,8 +22,6 @@
 
 #include <glib-object.h>
 
-#include "tracker-miner-files.h"
-
 G_BEGIN_DECLS
 
 #define TRACKER_TYPE_MINER_FILES_INDEX            (tracker_miner_files_index_get_type ())
@@ -45,7 +43,7 @@ struct TrackerMinerFilesIndexClass {
 };
 
 GType                   tracker_miner_files_index_get_type (void);
-TrackerMinerFilesIndex *tracker_miner_files_index_new      (TrackerMinerFiles *miner_files);
+TrackerMinerFilesIndex *tracker_miner_files_index_new      (void);
 
 G_END_DECLS
 

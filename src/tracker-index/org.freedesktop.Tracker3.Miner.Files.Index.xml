@@ -5,5 +5,6 @@
       <arg type='as' name='graphs' direction='in' />
     </method>
     <property name='Graphs' type='as' access='read' />
+    <property name='IndexedFiles' type='as' access='read' />
   </interface>
 </node>
