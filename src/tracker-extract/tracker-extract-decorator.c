@@ -56,21 +56,6 @@ typedef struct {
 	gchar **rdf_types;
 } AppData;
 
-/* Preferably classes with tracker:notify true, if an
- * extractor module handles new ones, it must be added
- * here.
- */
-static const gchar *supported_classes[] = {
-	"nfo:Document",
-	"nfo:Audio",
-	"nfo:Image",
-	"nfo:Video",
-	"nfo:FilesystemImage",
-	"nmm:Playlist",
-	"nfo:SoftwareApplication",
-	NULL
-};
-
 static GInitableIface *parent_initable_iface;
 
 static void decorator_get_next_file (TrackerDecorator *decorator);
@@ -535,7 +520,6 @@ tracker_extract_decorator_new (TrackerSparqlConnection  *connection,
 	return g_initable_new (TRACKER_TYPE_EXTRACT_DECORATOR,
 	                       cancellable, error,
 	                       "connection", connection,
-	                       "class-names", supported_classes,
 	                       "extractor", extract,
 	                       NULL);
 }
