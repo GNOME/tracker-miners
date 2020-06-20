@@ -39,6 +39,7 @@ typedef struct {
 	TrackerMinerFilesPeerListener *peer_listener;
 	TrackerDBusMinerFilesIndex *skeleton;
 	GDBusConnection *d_connection;
+	GStrv graphs;
 	gchar *full_name;
 	gchar *full_path;
 } TrackerMinerFilesIndexPrivate;
@@ -168,6 +169,7 @@ index_finalize (GObject *object)
 	g_clear_object (&priv->peer_listener);
 	g_free (priv->full_name);
 	g_free (priv->full_path);
+	g_strfreev (priv->graphs);
 
 	g_object_unref (priv->files_miner);
 }
@@ -271,7 +273,7 @@ tracker_miner_files_index_handle_index_file (TrackerDBusMinerFilesIndex *skeleto
 		if (is_watched || needs_watch) {
 			tracker_miner_files_peer_listener_add_watch (priv->peer_listener,
 			                                             g_dbus_method_invocation_get_sender (invocation),
-			                                             file);
+			                                             file, graphs);
 		}
 	} else {
 		tracker_miner_fs_check_file (TRACKER_MINER_FS (priv->files_miner),
@@ -295,6 +297,20 @@ peer_listener_unwatch_file (TrackerMinerFilesPeerListener *listener,
 	priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (user_data);
 	indexing_tree = tracker_miner_fs_get_indexing_tree (TRACKER_MINER_FS (priv->files_miner));
 	tracker_indexing_tree_remove (indexing_tree, file);
+}
+
+static void
+peer_listener_graphs_changed (TrackerMinerFilesPeerListener *listener,
+			      GStrv                          graphs,
+			      gpointer                       user_data)
+{
+	TrackerMinerFilesIndexPrivate *priv;
+
+	priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (user_data);
+	g_strfreev (priv->graphs);
+	priv->graphs = g_strdupv (graphs);
+
+	tracker_dbus_miner_files_index_set_graphs (priv->skeleton, (const gchar * const *) priv->graphs);
 }
 
 static void
@@ -373,6 +389,8 @@ tracker_miner_files_index_new (TrackerMinerFiles *miner_files)
 	priv->peer_listener = tracker_miner_files_peer_listener_new (priv->d_connection);
 	g_signal_connect (priv->peer_listener, "unwatch-file",
 	                  G_CALLBACK (peer_listener_unwatch_file), miner);
+	g_signal_connect (priv->peer_listener, "graphs-changed",
+	                  G_CALLBACK (peer_listener_graphs_changed), miner);
 
 	indexing_tree = tracker_miner_fs_get_indexing_tree (TRACKER_MINER_FS (miner_files));
 	g_signal_connect (indexing_tree, "directory-removed",
