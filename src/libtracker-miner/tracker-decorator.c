@@ -71,6 +71,8 @@ struct _TrackerDecoratorPrivate {
 
 	GQueue item_cache; /* Queue of TrackerDecoratorInfo */
 
+	GStrv priority_graphs;
+
 	/* Arrays of tracker IDs */
 	GArray *prepended_ids;
 	GSequence *blocklist_items;
@@ -573,10 +575,13 @@ decorator_cancel_active_tasks (TrackerDecorator *decorator)
 	g_hash_table_remove_all (priv->tasks);
 }
 
-static gchar *
-create_query_string (TrackerDecorator  *decorator,
-                     gchar            **select_clauses)
+static gboolean
+append_graph_patterns (TrackerDecorator *decorator,
+                       GString          *query,
+                       gboolean          priority,
+                       gboolean          first)
 {
+	TrackerDecoratorPrivate *priv = decorator->priv;
 	const gchar *graphs[] = {
 		"tracker:Audio",
 		"tracker:Pictures",
@@ -584,7 +589,32 @@ create_query_string (TrackerDecorator  *decorator,
 		"tracker:Software",
 		"tracker:Documents",
 	};
+	gint i;
+
+	for (i = 0; i < G_N_ELEMENTS (graphs); i++) {
+		if (priority !=
+		    (priv->priority_graphs &&
+		     g_strv_contains ((const gchar * const *) priv->priority_graphs, graphs[i])))
+			continue;
+
+		if (!first)
+			g_string_append (query, "UNION ");
+
+		g_string_append_printf (query,
+		                        "{ GRAPH %s { ?urn a nfo:FileDataObject } } ",
+		                        graphs[i]);
+		first = FALSE;
+	}
+
+	return first;
+}
+
+static gchar *
+create_query_string (TrackerDecorator  *decorator,
+                     gchar            **select_clauses)
+{
 	GString *query;
+	gboolean first;
 	gint i;
 
 	query = g_string_new ("SELECT ");
@@ -595,15 +625,9 @@ create_query_string (TrackerDecorator  *decorator,
 
 	g_string_append (query, "{ ");
 
-	for (i = 0; i < G_N_ELEMENTS (graphs); i++) {
-		if (i > 0) {
-			g_string_append (query, "UNION ");
-		}
-
-		g_string_append_printf (query,
-		                        "{ GRAPH %s { ?urn a nfo:FileDataObject } } ",
-		                        graphs[i]);
-	}
+	/* Add priority graphs first, so they come up first in the query */
+	first = append_graph_patterns (decorator, query, TRUE, TRUE);
+	append_graph_patterns (decorator, query, FALSE, first);
 
 	g_string_append_printf (query,
 	                        "FILTER (NOT EXISTS {"
@@ -957,6 +981,7 @@ tracker_decorator_finalize (GObject *object)
 
 	g_clear_object (&priv->remaining_items_query);
 	g_clear_object (&priv->item_count_query);
+	g_strfreev (priv->priority_graphs);
 
 	g_cancellable_cancel (priv->cancellable);
 	g_clear_object (&priv->cancellable);
@@ -1289,6 +1314,17 @@ tracker_decorator_next_finish (TrackerDecorator  *decorator,
 	g_return_val_if_fail (!error || !*error, NULL);
 
 	return g_task_propagate_pointer (G_TASK (result), error);
+}
+
+void
+tracker_decorator_set_priority_graphs (TrackerDecorator    *decorator,
+                                       const gchar * const *graphs)
+{
+	TrackerDecoratorPrivate *priv = decorator->priv;
+
+	g_strfreev (priv->priority_graphs);
+	priv->priority_graphs = g_strdupv ((gchar **) graphs);
+	decorator_rebuild_cache (decorator);
 }
 
 /**
