@@ -59,6 +59,14 @@ def test_environment(tmpdir):
     }
 
 
+def cli_dir():
+    return config['TEST_CLI_DIR']
+
+
+def cli_subcommands_dir():
+    return config['TEST_CLI_SUBCOMMANDS_DIR']
+
+
 # This path is used for test data for tests which expect filesystem monitoring
 # to work. For this reason we must avoid it being on a tmpfs filesystem. Note
 # that this MUST NOT be a hidden directory, as Tracker is hardcoded to ignore

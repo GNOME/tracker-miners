@@ -402,6 +402,7 @@ tracker_writeback_modules_dir = join_paths(get_option('prefix'), get_option('lib
 tracker_extract_rules_dir = join_paths(get_option('prefix'), get_option('datadir'), tracker_versioned_name, 'extract-rules')
 tracker_miner_services_dir = join_paths(get_option('prefix'), get_option('datadir'), tracker_versioned_name, 'miners')
 
+tracker_uninstalled_cli_subcommands_dir = meson.current_build_dir() / 'src' / 'tracker' / 'subcommands'
 tracker_uninstalled_extract_rules_dir = join_paths(meson.current_build_dir(), 'src', 'tracker-extract', 'uninstalled-rules')
 tracker_uninstalled_writeback_modules_dir = join_paths(meson.current_build_dir(), 'src', 'tracker-writeback')
 uninstalled_tracker_extract_path = join_paths(meson.current_build_dir(), 'src', 'tracker-extract', 'tracker-extract-3')
@@ -431,7 +432,7 @@ meson.add_install_script('meson_integration_commands.sh', glib_compile_schemas.p
 run_uninstalled_conf = configuration_data()
 run_uninstalled_conf.set('tracker_sparql_uninstalled_dir', tracker_sparql_uninstalled_dir)
 run_uninstalled_conf.set('tracker_uninstalled_cli_dir', tracker_uninstalled_cli_dir)
-run_uninstalled_conf.set('tracker_uninstalled_cli_subcommands_dir', meson.current_build_dir() / 'src' / 'tracker' / 'subcommands')
+run_uninstalled_conf.set('tracker_uninstalled_cli_subcommands_dir', tracker_uninstalled_cli_subcommands_dir)
 run_uninstalled_conf.set('tracker_uninstalled_domain_rule', meson.current_build_dir() / 'tests' / 'functional-tests' / 'test-domain.rule')
 run_uninstalled_conf.set('tracker_uninstalled_extract_rules_dir', tracker_uninstalled_extract_rules_dir)
 run_uninstalled_conf.set('tracker_uninstalled_extractors_dir', meson.current_build_dir() / 'src' / 'tracker-extract')

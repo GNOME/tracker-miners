@@ -29,6 +29,7 @@ gi.require_version('Gio', '2.0')
 from gi.repository import GLib, Gio
 from gi.repository import Tracker
 
+import contextlib
 import errno
 import json
 import logging
@@ -37,6 +38,7 @@ import pathlib
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import unittest as ut
 
@@ -139,7 +141,10 @@ class TrackerMinerTest(ut.TestCase):
 
     def await_document_inserted(self, path, content=None):
         """Wraps await_insert() context manager."""
-        url = self.uri(path)
+        if isinstance(path, pathlib.Path):
+            url = path.as_uri()
+        else:
+            url = self.uri(path)
 
         expected = [
             'a nfo:Document',
@@ -456,3 +461,53 @@ class TrackerWritebackTest (TrackerMinerTest):
         raise Exception(
             "Timeout waiting for %s to be updated (mtime has not changed)" %
             filename)
+
+
+class CliError(Exception):
+    pass
+
+
+class TrackerCommandLineTestCase(TrackerMinerTest):
+    def setUp(self):
+        super(TrackerCommandLineTestCase, self).setUp()
+
+        extra_env = cfg.test_environment(self.workdir)
+        extra_env['LANG'] = 'en_GB.utf8'
+
+        self.env = os.environ.copy()
+        self.env.update(extra_env)
+
+        path = self.env.get('PATH', []).split(':')
+        self.env['PATH'] = ':'.join([cfg.cli_dir()] + path)
+        self.env['TRACKER_CLI_SUBCOMMANDS_DIR'] = cfg.cli_subcommands_dir()
+
+    @contextlib.contextmanager
+    def tmpdir(self):
+        try:
+            dirpath = tempfile.mkdtemp()
+            yield pathlib.Path(dirpath)
+        finally:
+            shutil.rmtree(dirpath, ignore_errors=True)
+
+    def data_path(self, filename):
+        test_data = pathlib.Path(__file__).parent.joinpath('test-data')
+        return test_data.joinpath(filename)
+
+    def run_cli(self, command):
+        command = [str(c) for c in command]
+        log.info("Running: %s", ' '.join(command))
+        result = subprocess.run(command, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, env=self.env)
+
+        if len(result.stdout) > 0:
+            log.debug("stdout: %s", result.stdout)
+        if len(result.stderr) > 0:
+            log.debug("stderr: %s", result.stderr)
+
+        if result.returncode != 0:
+            raise CliError('\n'.join([
+                "CLI command failed.",
+                "Command: %s" % ' '.join(command),
+                "Error: %s" % result.stderr.decode('utf-8')]))
+
+        return result.stdout.decode('utf-8')
