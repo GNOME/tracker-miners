@@ -226,36 +226,65 @@ extract_gst_date_time (gchar       *buf,
 {
 	GstDateTime *date_time = NULL;
 	GDate *date = NULL;
-	gboolean ret = FALSE;
+	gboolean ret = FALSE, use_datetime = FALSE, use_date = FALSE;
 
 	buf[0] = '\0';
 
-	if (gst_tag_list_get_date_time (tag_list, tag_date_time, &date_time)) {
-		gboolean complete;
+	/* See https://gitlab.gnome.org/GNOME/tracker-miners/-/issues/16 for why
+	 * this code looks at both GST_TAG_DATE_TIME and GST_TAG_DATE
+	 */
+	gst_tag_list_get_date_time (tag_list, tag_date_time, &date_time);
+	gst_tag_list_get_date (tag_list, tag_date, &date);
 
-		ret = gst_date_time_has_year (date_time);
-		complete = get_gst_date_time_to_buf (date_time, buf, size);
-		gst_date_time_unref (date_time);
+	if (date_time && date) {
+		if (!gst_date_time_has_year (date_time) ||
+		    !gst_date_time_has_month (date_time) ||
+		    !gst_date_time_has_day (date_time)) {
+			use_date = TRUE;
+		} else if (gst_date_time_get_year (date_time) == g_date_get_year (date) &&
+			   gst_date_time_get_month (date_time) == g_date_get_month (date) &&
+			   gst_date_time_get_day (date_time) == g_date_get_day (date)) {
+			/* Dates are equal, prefer datetime as it has more precission */
+			use_datetime = TRUE;
+		} else {
+			/* Dates are dissimilar, prefer date alone as it's
+			 * traditionally preferred for "release" dates
+			 */
+			use_date = TRUE;
+		}
+	} else if (date_time) {
+		use_datetime = TRUE;
+	} else {
+		use_date = TRUE;
+	}
 
-		if (!complete) {
+	if (date_time && use_datetime) {
+		ret = get_gst_date_time_to_buf (date_time, buf, size);
+
+		if (!ret) {
 			g_debug ("GstDateTime was not complete, parts of the date/time were missing (e.g. hours, minutes, seconds)");
-		}
-	} else if (gst_tag_list_get_date (tag_list, tag_date, &date)) {
-		if (date && g_date_valid (date)) {
-			if (date->julian)
-				ret = g_date_valid_julian (date->julian_days);
-			if (date->dmy)
-				ret = g_date_valid_dmy (date->day, date->month, date->year);
-		}
+			use_date = TRUE;
 
-		if (ret) {
+			/* Return success even if the DATE tag is empty, as we have at
+			 * least some information from the DATE_TIME tag. */
+			ret = TRUE;
+		}
+	}
+
+	if (date && use_date) {
+		if (g_date_valid (date)) {
 			/* GDate does not carry time zone information, assume UTC */
 			g_date_strftime (buf, size, "%Y-%m-%dT%H:%M:%SZ", date);
+			ret = TRUE;
 		}
 	}
 
 	if (date) {
 		g_date_free (date);
+	}
+
+	if (date_time) {
+		gst_date_time_unref (date_time);
 	}
 
 	return ret;

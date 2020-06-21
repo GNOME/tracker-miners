@@ -316,8 +316,15 @@ tracker_extract_new_music_album_disc (const char      *album_title,
 	if (album_artist_name)
 		g_string_append_printf (shared, ":%s", album_artist_name);
 
-	if (date)
-		g_string_append_printf (shared, ":%s", date);
+	if (date) {
+		g_string_append_c (shared, ':');
+
+		/* Only use date from ISO8601 string */
+		if (strlen (date) > 10)
+			g_string_append_len (shared, date, 10);
+		else
+			g_string_append (shared, date);
+	}
 
 	album_uri = g_string_new ("urn:album:");
 	g_string_append (album_uri, shared->str);
