@@ -31,7 +31,7 @@
             "nmm:artistName": "Ab"
         },
         "nmm:musicAlbum": {
-            "@id": "urn:album:SinCos:2008-01-01T00:00:00+00:00",
+            "@id": "urn:album:SinCos:2008-01-01",
             "@type": "nmm:MusicAlbum",
             "nie:title": "SinCos",
             "tracker:hasExternalReference": [
@@ -44,9 +44,9 @@
             ]
         },
         "nmm:musicAlbumDisc": {
-            "@id": "urn:album-disc:SinCos:2008-01-01T00:00:00+00:00:Disc1",
+            "@id": "urn:album-disc:SinCos:2008-01-01:Disc1",
             "@type": "nmm:MusicAlbumDisc",
-            "nmm:albumDiscAlbum": "urn:album:SinCos:2008-01-01T00:00:00+00:00",
+            "nmm:albumDiscAlbum": "urn:album:SinCos:2008-01-01",
             "nmm:setNumber": 1
         },
         "tracker:hasExternalReference": [

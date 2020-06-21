@@ -40,8 +40,8 @@ class FlacCuesheetTest(fixtures.TrackerExtractTestCase):
             'nie:title': 'Only Shallow',
             'nmm:trackNumber': 1,
             'nfo:sampleRate': 44100,
-            'nmm:musicAlbum': 'urn:album:Loveless:My%20Bloody%20Valentine:1991-01-01T00:00:00Z',
-            'nmm:musicAlbumDisc': 'urn:album-disc:Loveless:My%20Bloody%20Valentine:1991-01-01T00:00:00Z:Disc1',
+            'nmm:musicAlbum': 'urn:album:Loveless:My%20Bloody%20Valentine:1991-01-01',
+            'nmm:musicAlbumDisc': 'urn:album-disc:Loveless:My%20Bloody%20Valentine:1991-01-01:Disc1',
             'nie:isStoredAs': {
                 '@id': audio_uri,
                 'nie:interpretedAs': [
@@ -55,16 +55,16 @@ class FlacCuesheetTest(fixtures.TrackerExtractTestCase):
                         'nie:isStoredAs': audio_uri,
                         'nie:title': 'Loomer',
                         'nmm:musicAlbum': {
-                            '@id': 'urn:album:Loveless:My%20Bloody%20Valentine:1991-01-01T00:00:00Z',
+                            '@id': 'urn:album:Loveless:My%20Bloody%20Valentine:1991-01-01',
                             'nie:title': 'Loveless',
                             'nmm:albumTrackCount': 2,
                             '@type': 'nmm:MusicAlbum',
                             'nmm:albumArtist': ['urn:artist:My%20Bloody%20Valentine']
                         },
                         'nmm:musicAlbumDisc': {
-                            '@id': 'urn:album-disc:Loveless:My%20Bloody%20Valentine:1991-01-01T00:00:00Z:Disc1',
+                            '@id': 'urn:album-disc:Loveless:My%20Bloody%20Valentine:1991-01-01:Disc1',
                             'nmm:setNumber': 1,
-                            'nmm:albumDiscAlbum': 'urn:album:Loveless:My%20Bloody%20Valentine:1991-01-01T00:00:00Z',
+                            'nmm:albumDiscAlbum': 'urn:album:Loveless:My%20Bloody%20Valentine:1991-01-01',
                             '@type': 'nmm:MusicAlbumDisc'
                         }
                     }
