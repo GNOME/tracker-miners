@@ -103,6 +103,13 @@ initialize_signal_handler (void)
 #endif /* G_OS_WIN32 */
 }
 
+static void
+files_index_close_cb (GMainLoop *main_loop)
+{
+	g_debug ("No further watched folders, closing");
+	g_main_loop_quit (main_loop);
+}
+
 int
 main (gint argc, gchar *argv[])
 {
@@ -153,6 +160,8 @@ main (gint argc, gchar *argv[])
 	main_loop = g_main_loop_new (NULL, FALSE);
 
 	index = tracker_miner_files_index_new ();
+	g_signal_connect (index, "close",
+	                  G_CALLBACK (files_index_close_cb), main_loop);
 
 	/* Request DBus name */
 	if (!tracker_dbus_request_name (connection,
