@@ -45,6 +45,8 @@
 
 G_DEFINE_QUARK (TrackerExtractError, tracker_extract_error)
 
+#define DEADLINE_SECONDS 30
+
 extern gboolean debug;
 
 typedef struct {
@@ -88,6 +90,7 @@ typedef struct {
 	GModule *module;
 
 	guint signal_id;
+	guint timeout_id;
 	guint success : 1;
 } TrackerExtractTask;
 
@@ -347,6 +350,19 @@ task_cancellable_cancelled_cb (GCancellable       *cancellable,
 	g_mutex_unlock (&priv->task_mutex);
 }
 
+static gboolean
+task_deadline_cb (gpointer user_data)
+{
+	TrackerExtractTask *task = user_data;
+
+	g_warning ("File '%s' took too long to process. Shutting down everything",
+	           task->file);
+
+	if (task->cancellable)
+		g_cancellable_cancel (task->cancellable);
+	_exit (0);
+}
+
 static TrackerExtractTask *
 extract_task_new (TrackerExtract *extract,
                   const gchar    *uri,
@@ -392,6 +408,15 @@ extract_task_new (TrackerExtract *extract,
 	task->mimetype = mimetype_used;
 	task->extract = extract;
 
+	if (task->res) {
+		GSource *source;
+
+		source = g_timeout_source_new_seconds (DEADLINE_SECONDS);
+		g_source_set_callback (source, task_deadline_cb, task, NULL);
+		task->timeout_id =
+			g_source_attach (source, g_task_get_context (G_TASK (task->res)));
+	}
+
 	if (task->cancellable) {
 		task->signal_id = g_cancellable_connect (cancellable,
 		                                         G_CALLBACK (task_cancellable_cancelled_cb),
@@ -409,6 +434,9 @@ extract_task_free (TrackerExtractTask *task)
 	}
 
 	notify_task_finish (task, task->success);
+
+	if (task->timeout_id)
+		g_source_remove (task->timeout_id);
 
 	if (task->res) {
 		g_object_unref (task->res);
