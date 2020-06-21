@@ -97,28 +97,11 @@ def remove_monitored_test_dir(path):
                 pass
 
 
-def get_environment_boolean(variable):
-    '''Parse a yes/no boolean passed through the environment.'''
-
-    value = os.environ.get(variable, 'no').lower()
-    if value in ['no', '0', 'false']:
-        return False
-    elif value in ['yes', '1', 'true']:
-        return True
-    else:
-        raise RuntimeError('Unexpected value for %s: %s' %
-                           (variable, value))
-
-
 def get_environment_int(variable, default=0):
     try:
         return int(os.environ.get(variable))
     except (TypeError, ValueError):
         return default
-
-
-def tests_verbose():
-    return get_environment_boolean('TRACKER_TESTS_VERBOSE')
 
 
 # Timeout when awaiting resources. For developers, we want a short default
@@ -127,24 +110,34 @@ def tests_verbose():
 AWAIT_TIMEOUT = get_environment_int('TRACKER_TESTS_AWAIT_TIMEOUT', default=10)
 
 
-DEBUG_TESTS_NO_CLEANUP = 1
+DEBUG_TESTS = 1
+DEBUG_TESTS_NO_CLEANUP = 2
 
 _debug_flags = None
 def get_debug_flags():
     """Parse the TRACKER_DEBUG environment variable and return flags."""
     global _debug_flags
     if _debug_flags is None:
+        flag_tests = GLib.DebugKey()
+        flag_tests.key = 'tests'
+        flag_tests.value = DEBUG_TESTS
+
         flag_tests_no_cleanup = GLib.DebugKey()
         flag_tests_no_cleanup.key = 'tests-no-cleanup'
         flag_tests_no_cleanup.value = DEBUG_TESTS_NO_CLEANUP
 
-        flags = [flag_tests_no_cleanup]
+        flags = [flag_tests, flag_tests_no_cleanup]
         flags_str = os.environ.get('TRACKER_DEBUG', '')
 
         _debug_flags = GLib.parse_debug_string(flags_str, flags)
     return _debug_flags
 
 
+def tests_verbose():
+    """True if TRACKER_DEBUG=tests"""
+    return (get_debug_flags() & DEBUG_TESTS)
+
+
 def tests_no_cleanup():
     """True if TRACKER_DEBUG=tests-no-cleanup"""
-    return(get_debug_flags() & DEBUG_TESTS_NO_CLEANUP)
+    return (get_debug_flags() & DEBUG_TESTS_NO_CLEANUP)
