@@ -90,7 +90,7 @@ if get_option('ps')
 endif
 
 if get_option('text')
-  modules += [['extract-text', 'tracker-extract-text.c', ['15-source-code.rule', '90-text-generic.rule'], []]]
+  modules += [['extract-text', 'tracker-extract-text.c', ['15-text.rule'], []]]
 endif
 
 if libtiff.found()

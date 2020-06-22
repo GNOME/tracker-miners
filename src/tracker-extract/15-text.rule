@@ -1,6 +1,6 @@
 [ExtractorRule]
 ModulePath=libextract-text.so
-MimeTypes=text/*
+MimeTypes=text/plain;text/markdown
 FallbackRdfTypes=nfo:Document;nfo:PlainTextDocument;
 Graph=tracker:Documents
 Hash=@hash@

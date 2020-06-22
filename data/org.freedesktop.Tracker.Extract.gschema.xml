@@ -26,6 +26,13 @@ Boston, MA  02110-1301, USA.
       <default>1048576</default>
     </key>
 
+    <key name="text-allowlist" type="as">
+      <summary>Text file allowlist</summary>
+      <description>Filename patterns for plain text documents that should be indexed</description>
+      <default>[ '*.txt', '*.md', '*.mdwn' ]</default>
+    </key>
+
+
     <key name="wait-for-miner-fs" type="b">
       <summary>Wait for FS miner to be done before extracting</summary>
       <description>When true, tracker-extract will wait for tracker-miner-fs to be done crawling before extracting meta-data. This option is useful on constrained environment where it is important to list files as fast as possible and can wait to get meta-data later.</description>
