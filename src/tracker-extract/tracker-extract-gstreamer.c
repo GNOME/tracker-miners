@@ -628,6 +628,7 @@ extractor_apply_audio_metadata (MetadataExtractor     *extractor,
 
 	#if defined GST_TAG_ACOUSTID_FINGERPRINT
 		GValue acoustid_fingerprint = G_VALUE_INIT;
+		gboolean have_acoustid_fingerprint;
 	#endif
 
 	set_property_from_gst_tag (audio, "nmm:trackNumber", tag_list, GST_TAG_TRACK_NUMBER);
@@ -660,16 +661,16 @@ extractor_apply_audio_metadata (MetadataExtractor     *extractor,
 	#endif
 
 	#if defined GST_TAG_ACOUSTID_FINGERPRINT
-		gst_tag_list_copy_value (&acoustid_fingerprint, tag_list, GST_TAG_ACOUSTID_FINGERPRINT);
-		if (acoustid_fingerprint) {
+		have_acoustid_fingerprint = gst_tag_list_copy_value (&acoustid_fingerprint, tag_list, GST_TAG_ACOUSTID_FINGERPRINT);
+		if (have_acoustid_fingerprint) {
 			TrackerResource *hash_resource = tracker_resource_new (NULL);
 
 			tracker_resource_set_uri (hash_resource, "rdf:type", "nfo:FileHash");
-			tracker_resource_set_string (hash_resource, "nfo:hashValue", acoustid_fingerprint);
+			tracker_resource_set_gvalue (hash_resource, "nfo:hashValue", &acoustid_fingerprint);
 			tracker_resource_set_string (hash_resource, "nfo:hashAlgorithm", "chromaprint");
 
 			tracker_resource_add_take_relation (audio, "nfo:hasHash", hash_resource);
-			g_free (acoustid_fingerprint);
+			g_value_unset (&acoustid_fingerprint);
 		}
 	#endif
 
