@@ -12,7 +12,7 @@
         "nfo:genre": "Rock",
         "nfo:sampleRate": "44100",
         "nie:comment": "no comment",
-        "nie:contentCreated": "2020-01-01",
+        "nie:contentCreated": "2020-01-01T00:00:00+00:00",
         "nie:copyright": "none",
         "nie:title": "track title",
         "nmm:trackNumber": "12",
@@ -43,7 +43,7 @@
             ]
         },
         "nmm:musicAlbumDisc": {
-            "@id": "urn:album-disc:awesome%20album:my%20album%20artist:2020-01-01",
+            "@id": "urn:album-disc:awesome%20album:my%20album%20artist:2020-01-01:Disc1",
             "@type": "nmm:MusicAlbumDisc",
             "nmm:setNumber": 1
         },
@@ -73,10 +73,12 @@
                 "tracker:referenceIdentifier": "dfgj-432-iu7"
             }
         ],
-        "nfo:hasHash": {
-            "@type": "nfo:hasHash",
-            "nfo:hashAlgorithm": "chromaprint",
-            "nfo:hashValue": "123453215"
-        }
+        "nfo:hasHash": [
+            {
+                "@type": "nfo:hasHash",
+                "nfo:hashAlgorithm": "chromaprint",
+                "nfo:hashValue": "123453215"
+            }
+        ]
     }
 }

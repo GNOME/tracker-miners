@@ -358,12 +358,8 @@ class TrackerExtractTestCase(ut.TestCase):
                         raise AssertionError("Expected a list property for %s, but got a %s: %s" % (
                             prop, type(result[prop]).__name__, result[prop]))
 
-                    # FIXME: depending on the gstreamer version we link to, we may extract different
-                    # nfo:hasHash and tracker:hasExternalReference. Those tags should probably be
-                    # handled in separate tests that we can disable entirely with build-time checks.
-                    # This check should be restored once we can thoroughly compare outputs again.
-                    #self.assertEqual(len(expected_value), len(result[prop]),
-                    #                    error_wrong_length % (prop, filename, spec_filename))
+                    self.assertEqual(len(expected_value), len(result[prop]),
+                                        error_wrong_length % (prop, filename, spec_filename))
 
                     for i in range(0, len(expected_value)):
                         if isinstance(expected_value[i], dict):

@@ -38,9 +38,9 @@ extractor_tests = [
   'desktop/link-wikipedia-tracker'
 ]
 
-# Gstreamer 1.18 introduced support for some additionnals
+# Gstreamer 1.17/1.18 introduced support for some additional
 # MusicBrainz tags
-if gstreamer.found() and gstreamer.version() >= '1.18.0'
+if gstreamer.found() and gstreamer.version() >= '1.17.0'
   extractor_tests += 'audio/flac-musicbrainz'
   extractor_tests += 'audio/vorbis-musicbrainz'
 else
