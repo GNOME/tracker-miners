@@ -576,6 +576,67 @@ writeback_gstreamer_set (TagElements  *element,
 	return TRUE;
 }
 
+static void
+handle_musicbrainz_tags (TrackerResource     *resource,
+			 const gchar         *prop,
+			 TagElements         *element,
+			 const gchar * const *allowed_tags)
+{
+	GList *references, *r;
+
+	references = tracker_resource_get_values (resource, prop);
+
+	for (r = references; r; r = r->next) {
+		TrackerResource *ref;
+		GValue *value, val = G_VALUE_INIT;
+		const gchar *source, *identifier;
+
+		value = r->data;
+
+		if (!G_VALUE_HOLDS (value, TRACKER_TYPE_RESOURCE))
+			continue;
+
+		ref = g_value_get_object (value);
+
+		source = tracker_resource_get_first_uri (ref, "tracker:referenceSource");
+		identifier = tracker_resource_get_first_string (ref, "tracker:referenceIdentifier");
+
+		if (!source || !g_strv_contains (allowed_tags, source))
+			continue;
+
+		if (g_strcmp0 (source, "https://musicbrainz.org/doc/Recording") == 0) {
+			g_value_init (&val, G_TYPE_STRING);
+			g_value_set_string (&val, identifier);
+			writeback_gstreamer_set (element, GST_TAG_MUSICBRAINZ_TRACKID, &val);
+			g_value_unset (&val);
+		} else if (g_strcmp0 (source, "https://musicbrainz.org/doc/Release") == 0) {
+			g_value_init (&val, G_TYPE_STRING);
+			g_value_set_string (&val, identifier);
+			writeback_gstreamer_set (element, GST_TAG_MUSICBRAINZ_ALBUMID, &val);
+			g_value_unset (&val);
+#ifdef GST_TAG_MUSICBRAINZ_RELEASETRACKID
+		} else if (g_strcmp0 (source, "https://musicbrainz.org/doc/Track") == 0) {
+			g_value_init (&val, G_TYPE_STRING);
+			g_value_set_string (&val, identifier);
+			writeback_gstreamer_set (element, GST_TAG_MUSICBRAINZ_RELEASETRACKID, &val);
+			g_value_unset (&val);
+#endif
+#ifdef GST_TAG_MUSICBRAINZ_RELEASEGROUPID
+		} else if (g_strcmp0 (source, "https://musicbrainz.org/doc/Release_Group") == 0) {
+			g_value_init (&val, G_TYPE_STRING);
+			g_value_set_string (&val, identifier);
+			writeback_gstreamer_set (element, GST_TAG_MUSICBRAINZ_RELEASEGROUPID, &val);
+			g_value_unset (&val);
+#endif
+		} else if (g_strcmp0 (source, "https://musicbrainz.org/doc/Artist") == 0) {
+			g_value_init (&val, G_TYPE_STRING);
+			g_value_set_string (&val, identifier);
+			writeback_gstreamer_set (element, GST_TAG_MUSICBRAINZ_ARTISTID, &val);
+			g_value_unset (&val);
+		}
+	}
+}
+
 static gboolean
 writeback_gstreamer_write_file_metadata (TrackerWritebackFile  *writeback,
                                          GFile                 *file,
@@ -640,12 +701,20 @@ writeback_gstreamer_write_file_metadata (TrackerWritebackFile  *writeback,
 		if (g_strcmp0 (prop, "nmm:performer") == 0) {
 			TrackerResource *performer;
 			const gchar *name = NULL;
+			const gchar *mb_tags[] = {
+				"https://musicbrainz.org/doc/Artist",
+				NULL,
+			};
 
 			performer = tracker_resource_get_first_relation (resource, prop);
 
 			if (performer) {
 				name = tracker_resource_get_first_string (performer,
 				                                          "nmm:artistName");
+
+				handle_musicbrainz_tags (performer,
+							 "tracker:hasExternalReference",
+							 element, mb_tags);
 			}
 
 			if (name) {
@@ -790,12 +859,22 @@ writeback_gstreamer_write_file_metadata (TrackerWritebackFile  *writeback,
 			disc = tracker_resource_get_first_relation (resource, prop);
 
 			if (disc) {
+				const gchar *mb_tags[] = {
+					"https://musicbrainz.org/doc/Release",
+					"https://musicbrainz.org/doc/Release_Group",
+					NULL,
+				};
+
 				number = tracker_resource_get_first_int (disc,
 				                                         "nmm:setNumber");
 				g_value_init (&val, G_TYPE_INT);
 				g_value_set_int (&val, number);
 				writeback_gstreamer_set (element, GST_TAG_ALBUM_VOLUME_NUMBER, &val);
 				g_value_unset (&val);
+
+				handle_musicbrainz_tags (disc,
+							 "tracker:hasExternalReference",
+							 element, mb_tags);
 			}
 		}
 
@@ -858,6 +937,16 @@ writeback_gstreamer_write_file_metadata (TrackerWritebackFile  *writeback,
 
 			g_string_free (keyword_str, TRUE);
 			g_list_free (keywords);
+		}
+
+		if (g_strcmp0 (prop, "tracker:hasExternalReference") == 0) {
+			const gchar *mb_tags[] = {
+				"https://musicbrainz.org/doc/Recording",
+				"https://musicbrainz.org/doc/Track",
+				NULL,
+			};
+
+			handle_musicbrainz_tags (resource, prop, element, mb_tags);
 		}
 	}
 
