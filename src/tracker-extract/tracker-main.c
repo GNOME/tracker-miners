@@ -462,6 +462,8 @@ main (int argc, char *argv[])
 	g_object_unref (proxy);
 	g_object_unref (connection);
 	tracker_domain_ontology_unref (domain_ontology);
+	tracker_sparql_connection_close (sparql_connection);
+	g_object_unref (sparql_connection);
 
 	g_object_unref (config);
 

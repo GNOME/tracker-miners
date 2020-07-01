@@ -999,6 +999,9 @@ main (gint argc, gchar *argv[])
 	g_object_unref (connection);
 	tracker_domain_ontology_unref (domain_ontology);
 
+	tracker_sparql_connection_close (sparql_conn);
+	g_object_unref (sparql_conn);
+
 	g_print ("\nOK\n\n");
 
 	return EXIT_SUCCESS;
