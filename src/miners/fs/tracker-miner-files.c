@@ -377,6 +377,7 @@ miner_files_initable_init (GInitable     *initable,
 	GSList *mounts = NULL;
 	GSList *dirs;
 	GSList *m;
+	gchar *domain_name;
 
 	/* Chain up parent's initable callback before calling child's one */
 	if (!miner_files_initable_parent_iface->init (initable, cancellable, &inner_error)) {
@@ -644,9 +645,11 @@ miner_files_initable_init (GInitable     *initable,
 
 	disk_space_check_start (mf);
 
-	mf->private->extract_watchdog = tracker_extract_watchdog_new (mf->private->domain);
+	domain_name = tracker_domain_ontology_get_domain (mf->private->domain_ontology, NULL);
+	mf->private->extract_watchdog = tracker_extract_watchdog_new (domain_name);
 	g_signal_connect (mf->private->extract_watchdog, "lost",
 	                  G_CALLBACK (on_extractor_lost), mf);
+	g_free (domain_name);
 
 	return TRUE;
 }
