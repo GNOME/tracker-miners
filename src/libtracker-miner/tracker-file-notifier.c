@@ -252,22 +252,9 @@ crawler_check_directory_contents_cb (TrackerCrawler *crawler,
 								     parent, children);
 	}
 
-	if (process) {
-		TrackerDirectoryFlags parent_flags;
-		gboolean add_monitor;
-
-		tracker_indexing_tree_get_root (priv->indexing_tree,
-		                                parent, &parent_flags);
-
-		add_monitor = (parent_flags & TRACKER_DIRECTORY_FLAG_MONITOR) != 0;
-
-		if (add_monitor) {
-			tracker_monitor_add (priv->monitor, parent);
-		} else {
-			tracker_monitor_remove (priv->monitor, parent);
-		}
-	} else {
+	if (!process) {
 		priv->current_index_root->current_dir_content_filtered = TRUE;
+		tracker_monitor_remove (priv->monitor, parent);
 	}
 
 	return process;
@@ -529,8 +516,16 @@ crawl_directory_in_current_root (TrackerFileNotifier *notifier)
 		return FALSE;
 
 	while (!g_queue_is_empty (priv->current_index_root->pending_dirs)) {
+		TrackerDirectoryFlags flags;
+
 		directory = g_queue_pop_head (priv->current_index_root->pending_dirs);
 		priv->current_index_root->current_dir = directory;
+
+		tracker_indexing_tree_get_root (priv->indexing_tree,
+		                                directory, &flags);
+
+		if ((flags & TRACKER_DIRECTORY_FLAG_MONITOR) != 0)
+			tracker_monitor_add (priv->monitor, directory);
 
 		/* Begin crawling the directory non-recursively.
 		 *
@@ -548,6 +543,7 @@ crawl_directory_in_current_root (TrackerFileNotifier *notifier)
 			return TRUE;
 		}
 
+		tracker_monitor_remove (priv->monitor, directory);
 		g_object_unref (directory);
 	}
 
