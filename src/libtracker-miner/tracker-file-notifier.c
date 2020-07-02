@@ -894,7 +894,8 @@ notifier_queue_root (TrackerFileNotifier   *notifier,
 		priv->pending_index_roots = g_list_append (priv->pending_index_roots, data);
 	}
 
-	notifier_check_next_root (notifier);
+	if (!priv->current_index_root)
+		notifier_check_next_root (notifier);
 }
 
 /* This function ensures to issue ::file-created for all
