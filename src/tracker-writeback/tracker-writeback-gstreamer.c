@@ -948,6 +948,29 @@ writeback_gstreamer_write_file_metadata (TrackerWritebackFile  *writeback,
 
 			handle_musicbrainz_tags (resource, prop, element, mb_tags);
 		}
+
+		if (g_strcmp0 (prop, "nfo:hasHash") == 0) {
+			TrackerResource *hash;
+			const gchar *value = NULL, *algorithm;
+
+			hash = tracker_resource_get_first_relation (resource, prop);
+
+			if (hash) {
+				algorithm = tracker_resource_get_first_string (hash,
+									       "nfo:hashAlgorithm");
+				value = tracker_resource_get_first_string (hash,
+									   "nfo:hashValue");
+			}
+
+#ifdef GST_TAG_ACOUSTID_FINGERPRINT
+			if (value && algorithm && g_strcmp0 (algorithm, "chromaprint") == 0) {
+				g_value_init (&val, G_TYPE_STRING);
+				g_value_set_string (&val, value);
+				writeback_gstreamer_set (element, GST_TAG_ACOUSTID_FINGERPRINT, &val);
+				g_value_unset (&val);
+			}
+#endif
+		}
 	}
 
 	writeback_gstreamer_save (element, file, error);
