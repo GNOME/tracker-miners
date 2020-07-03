@@ -288,6 +288,7 @@ main (int argc, char **argv)
 	g_main_loop_run (loop);
 
 	g_main_loop_unref (loop);
+	tracker_sparql_connection_close (sparql_conn);
 	g_object_unref (sparql_conn);
 	g_object_unref (endpoint);
 	g_object_unref (miner);
