@@ -66,6 +66,9 @@ static gboolean do_crawling = FALSE;
 static gchar *domain_ontology_name = NULL;
 static gboolean dry_run = FALSE;
 
+static gboolean slept = TRUE;
+static gboolean graphs_ready = FALSE;
+
 static GOptionEntry entries[] = {
 	{ "initial-sleep", 's', 0,
 	  G_OPTION_ARG_INT, &initial_sleep,
@@ -373,13 +376,23 @@ miner_do_start (TrackerMiner *miner)
 	}
 }
 
+static void
+miner_maybe_start (TrackerMiner *miner)
+{
+	if (!slept || !graphs_ready)
+		return;
+
+	miner_do_start (miner);
+}
+
 static gboolean
 miner_start_idle_cb (gpointer data)
 {
 	TrackerMiner *miner = data;
 
 	miners_timeout_id = 0;
-	miner_do_start (miner);
+	slept = TRUE;
+	miner_maybe_start (miner);
 	return G_SOURCE_REMOVE;
 }
 
@@ -392,13 +405,13 @@ miner_start (TrackerMiner  *miner,
 
 	if (!do_mtime_checking) {
 		g_debug ("Avoiding initial sleep, no mtime check needed");
-		miner_do_start (miner);
+		miner_maybe_start (miner);
 		return;
 	}
 
 	/* If requesting to run as no-daemon, start right away */
 	if (no_daemon) {
-		miner_do_start (miner);
+		miner_maybe_start (miner);
 		return;
 	}
 
@@ -406,10 +419,11 @@ miner_start (TrackerMiner  *miner,
 	initial_sleep = tracker_config_get_initial_sleep (config);
 
 	if (initial_sleep <= 0) {
-		miner_do_start (miner);
+		miner_maybe_start (miner);
 		return;
 	}
 
+	slept = FALSE;
 	g_message ("Performing initial sleep of %d seconds",
 	           initial_sleep);
 	miners_timeout_id = g_timeout_add_seconds (initial_sleep,
@@ -480,6 +494,25 @@ dummy_log_handler (const gchar    *domain,
                    gpointer        user_data)
 {
 	return;
+}
+
+static void
+graphs_created_cb (GObject      *source,
+                   GAsyncResult *res,
+                   gpointer      user_data)
+{
+	TrackerMiner *miner = user_data;
+	GError *error = NULL;
+
+	tracker_sparql_connection_update_finish (TRACKER_SPARQL_CONNECTION (source),
+	                                         res, &error);
+	if (error) {
+		g_warning ("Could not create base graphs: %s", error->message);
+		g_error_free (error);
+	}
+
+	graphs_ready = TRUE;
+	miner_maybe_start (miner);
 }
 
 static void
@@ -980,6 +1013,16 @@ main (gint argc, gchar *argv[])
 	g_signal_connect (miner_files, "finished",
 			  G_CALLBACK (miner_finished_cb),
 			  NULL);
+
+	/* Preempt creation of graphs */
+	tracker_sparql_connection_update_async (tracker_miner_get_connection (miner_files),
+	                                        "CREATE SILENT GRAPH tracker:FileSystem; "
+	                                        "CREATE SILENT GRAPH tracker:Software; "
+	                                        "CREATE SILENT GRAPH tracker:Documents; "
+	                                        "CREATE SILENT GRAPH tracker:Pictures; "
+	                                        "CREATE SILENT GRAPH tracker:Audio; "
+	                                        "CREATE SILENT GRAPH tracker:Video ",
+	                                        NULL, graphs_created_cb, miner_files);
 
 	if (do_crawling)
 		miner_start (miner_files, config, do_mtime_checking);
