@@ -1937,6 +1937,26 @@ index_applications_changed_cb (GObject    *gobject,
 	}
 }
 
+static gchar *
+folder_urn_or_bnode (TrackerMinerFiles *mf,
+                     GFile             *file,
+                     gboolean          *is_iri)
+{
+	const gchar *urn;
+
+	if (is_iri)
+		*is_iri = FALSE;
+
+	urn = tracker_miner_fs_get_folder_urn (TRACKER_MINER_FS (mf), file);
+	if (urn) {
+		if (is_iri)
+			*is_iri = TRUE;
+		return g_strdup (urn);
+	}
+
+	return tracker_miner_fs_get_file_bnode (TRACKER_MINER_FS (mf), file);
+}
+
 static void
 miner_files_add_to_datasource (TrackerMinerFiles *mf,
                                GFile             *file,
@@ -1950,16 +1970,18 @@ miner_files_add_to_datasource (TrackerMinerFiles *mf,
 	if (tracker_indexing_tree_file_is_root (indexing_tree, file)) {
 		tracker_resource_set_relation (resource, "nie:dataSource", element_resource);
 	} else {
-		const gchar *root_urn = NULL;
+		gchar *identifier = NULL;
 		GFile *root;
 
 		root = tracker_indexing_tree_get_root (indexing_tree, file, NULL);
 
 		if (root)
-			root_urn = tracker_miner_fs_get_folder_urn (TRACKER_MINER_FS (mf), root);
+			identifier = folder_urn_or_bnode (mf, root, NULL);
 
-		if (root_urn)
-			tracker_resource_set_uri (resource, "nie:dataSource", root_urn);
+		if (identifier)
+			tracker_resource_set_uri (resource, "nie:dataSource", identifier);
+
+		g_free (identifier);
 	}
 }
 
@@ -1991,13 +2013,13 @@ miner_files_create_folder_information_element (TrackerMinerFiles *miner,
 					       gboolean           is_directory)
 {
 	TrackerResource *resource, *file_resource;
-	const gchar *urn = NULL;
-	gchar *uri;
+	gchar *urn, *uri;
 
 	/* Preserve URN for nfo:Folders */
-	urn = tracker_miner_fs_get_folder_urn (TRACKER_MINER_FS (miner), file);
-
+	urn = folder_urn_or_bnode (miner, file, NULL);
 	resource = tracker_resource_new (urn);
+	g_free (urn);
+
 	tracker_resource_set_string (resource, "nie:mimeType", mime_type);
 	tracker_resource_add_uri (resource, "rdf:type", "nie:InformationElement");
 
@@ -2094,7 +2116,7 @@ process_file_cb (GObject      *object,
 	TrackerResource *resource, *folder_resource = NULL;
 	ProcessFileData *data;
 	const gchar *mime_type, *graph;
-	const gchar *parent_urn;
+	gchar *parent_urn;
 	gchar *delete_properties_sparql = NULL, *mount_point_sparql;
 	GFileInfo *file_info;
 	guint64 time_;
@@ -2164,11 +2186,13 @@ process_file_cb (GObject      *object,
 	tracker_resource_add_uri (resource, "rdf:type", "nfo:FileDataObject");
 
 	parent = g_file_get_parent (file);
-	parent_urn = tracker_miner_fs_get_folder_urn (TRACKER_MINER_FS (data->miner), parent);
+	parent_urn = folder_urn_or_bnode (data->miner, parent, NULL);
 	g_object_unref (parent);
 
-	if (parent_urn)
+	if (parent_urn) {
 		tracker_resource_set_uri (resource, "nfo:belongsToContainer", parent_urn);
+		g_free (parent_urn);
+	}
 
 	tracker_resource_set_string (resource, "nfo:fileName",
 	                             g_file_info_get_display_name (file_info));
@@ -2443,7 +2467,6 @@ miner_files_move_file (TrackerMinerFS *fs,
                        gboolean        recursive)
 {
 	GString *sparql = g_string_new (NULL);
-	const gchar *new_parent_iri = NULL;
 	gchar *uri, *source_uri, *display_name, *container_clause = NULL;
 	gchar *path, *basename;
 	GFile *new_parent;
@@ -2459,10 +2482,23 @@ miner_files_move_file (TrackerMinerFS *fs,
 
 	/* Get new parent information */
 	new_parent = g_file_get_parent (file);
-	if (new_parent)
-		new_parent_iri = tracker_miner_fs_get_folder_urn (fs, new_parent);
-	if (new_parent_iri)
-		container_clause = g_strdup_printf ("; nfo:belongsToContainer <%s>", new_parent_iri);
+	if (new_parent) {
+		gchar *new_parent_id;
+		gboolean is_iri;
+
+		new_parent_id = folder_urn_or_bnode (TRACKER_MINER_FILES (fs),
+		                                     new_parent, &is_iri);
+
+		if (new_parent_id) {
+			container_clause =
+				g_strdup_printf ("; nfo:belongsToContainer %s%s%s",
+				                 is_iri ? "<" : "",
+				                 new_parent_id,
+				                 is_iri ? ">" : "");
+		}
+
+		g_free (new_parent_id);
+	}
 
 	g_string_append_printf (sparql,
 	                        "DELETE { "
