@@ -1536,8 +1536,7 @@ should_wait (TrackerMinerFS *fs,
 	GFile *parent;
 
 	/* Is the item already being processed? */
-	if (tracker_task_pool_find (fs->priv->task_pool, file) ||
-	    tracker_task_pool_find (TRACKER_TASK_POOL (fs->priv->sparql_buffer), file)) {
+	if (tracker_sparql_buffer_get_state (fs->priv->sparql_buffer, file) == TRACKER_BUFFER_STATE_FLUSHING) {
 		/* Yes, a previous event on same item currently
 		 * being processed */
 		fs->priv->item_queue_blocker = g_object_ref (file);
@@ -1547,8 +1546,7 @@ should_wait (TrackerMinerFS *fs,
 	/* Is the item's parent being processed right now? */
 	parent = g_file_get_parent (file);
 	if (parent) {
-		if (tracker_task_pool_find (fs->priv->task_pool, parent) ||
-		    tracker_task_pool_find (TRACKER_TASK_POOL (fs->priv->sparql_buffer), parent)) {
+		if (tracker_sparql_buffer_get_state (fs->priv->sparql_buffer, parent) == TRACKER_BUFFER_STATE_FLUSHING) {
 			/* Yes, a previous event on the parent of this item
 			 * currently being processed */
 			fs->priv->item_queue_blocker = parent;
@@ -1826,34 +1824,7 @@ miner_handle_next_item (TrackerMinerFS *fs)
 	case TRACKER_MINER_FS_EVENT_UPDATED:
 		parent = g_file_get_parent (file);
 
-		if (!parent ||
-		    tracker_indexing_tree_file_is_root (fs->priv->indexing_tree, file) ||
-		    !tracker_indexing_tree_get_root (fs->priv->indexing_tree, file, NULL) ||
-		    tracker_file_notifier_get_file_iri (fs->priv->file_notifier, parent, FALSE)) {
-			keep_processing = item_add_or_update (fs, file, priority, attributes_update);
-		} else {
-			gchar *uri;
-
-			/* We got an event on a file that has not its parent indexed
-			 * even though it should. Given item_queue_get_next_file()
-			 * above should return FALSE whenever the parent file is
-			 * being processed, this means the parent is neither
-			 * being processed nor indexed, no good.
-			 *
-			 * Bail out in these cases by removing all queued files
-			 * inside the missing file. Whatever it was, it shall
-			 * hopefully be fixed on next index.
-			 */
-			uri = g_file_get_uri (parent);
-			g_warning ("Parent '%s' not indexed yet", uri);
-			g_free (uri);
-
-			tracker_priority_queue_foreach_remove (fs->priv->items,
-							       (GEqualFunc) queue_event_is_equal_or_descendant,
-							       parent,
-							       (GDestroyNotify) queue_event_free);
-			keep_processing = TRUE;
-		}
+		keep_processing = item_add_or_update (fs, file, priority, attributes_update);
 
 		if (parent) {
 			g_object_unref (parent);
@@ -2547,4 +2518,27 @@ tracker_miner_fs_get_data_provider (TrackerMinerFS *fs)
 	g_return_val_if_fail (TRACKER_IS_MINER_FS (fs), NULL);
 
 	return fs->priv->data_provider;
+}
+
+gchar *
+tracker_miner_fs_get_file_bnode (TrackerMinerFS *fs,
+                                 GFile          *file)
+{
+	g_return_val_if_fail (TRACKER_IS_MINER_FS (fs), NULL);
+	g_return_val_if_fail (G_IS_FILE (file), NULL);
+
+	if (tracker_task_pool_find (fs->priv->task_pool, file) ||
+	    tracker_sparql_buffer_get_state (fs->priv->sparql_buffer, file) == TRACKER_BUFFER_STATE_QUEUED) {
+		gchar *uri, *bnode, *checksum;
+
+		uri = g_file_get_uri (file);
+		checksum = g_compute_checksum_for_string (G_CHECKSUM_MD5, uri, -1);
+		bnode = g_strdup_printf ("_:%s", checksum);
+		g_free (checksum);
+		g_free (uri);
+
+		return bnode;
+	}
+
+	return NULL;
 }

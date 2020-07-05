@@ -161,7 +161,8 @@ void                  tracker_miner_fs_notify_finish         (TrackerMinerFS  *f
 /* URNs */
 const gchar          *tracker_miner_fs_get_folder_urn        (TrackerMinerFS  *fs,
                                                               GFile           *file);
-
+gchar *               tracker_miner_fs_get_file_bnode        (TrackerMinerFS *fs,
+                                                              GFile          *file);
 
 /* Progress */
 gboolean              tracker_miner_fs_has_items_to_process  (TrackerMinerFS  *fs);
