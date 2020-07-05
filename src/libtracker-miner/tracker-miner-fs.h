@@ -83,7 +83,6 @@ struct _TrackerMinerFS {
  * @remove_file: Called when a file is removed.
  * @remove_children: Called when children have been removed.
  * @move_file: Called when a file has moved.
- * @filter_event: Called to filter the event happening to a file.
  * @padding: Reserved for future API improvements.
  *
  * Prototype for the abstract class, @process_file must be implemented
@@ -118,12 +117,6 @@ typedef struct {
 					       GFile                *dest,
 	                                       GFile                *source,
 	                                       gboolean              recursive);
-
-	gboolean (* filter_event)             (TrackerMinerFS          *fs,
-	                                       TrackerMinerFSEventType  type,
-	                                       GFile                   *file,
-	                                       GFile                   *source_file);
-
 	/* <Private> */
 	gpointer padding[20];
 } TrackerMinerFSClass;
@@ -166,11 +159,10 @@ void                  tracker_miner_fs_notify_finish         (TrackerMinerFS  *f
 							      GError          *error);
 
 /* URNs */
-const gchar          *tracker_miner_fs_get_urn               (TrackerMinerFS  *fs,
+const gchar          *tracker_miner_fs_get_folder_urn        (TrackerMinerFS  *fs,
                                                               GFile           *file);
-gchar                *tracker_miner_fs_query_urn             (TrackerMinerFS  *fs,
-                                                              GFile           *file);
-
+gchar *               tracker_miner_fs_get_file_bnode        (TrackerMinerFS *fs,
+                                                              GFile          *file);
 
 /* Progress */
 gboolean              tracker_miner_fs_has_items_to_process  (TrackerMinerFS  *fs);

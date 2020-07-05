@@ -417,9 +417,6 @@ sparql_buffer_push_to_pool (TrackerSparqlBuffer *buffer,
 
 	if (tracker_task_pool_limit_reached (TRACKER_TASK_POOL (buffer))) {
 		tracker_sparql_buffer_flush (buffer, "SPARQL buffer limit reached");
-	} else if (priv->tasks->len > tracker_task_pool_get_limit (TRACKER_TASK_POOL (buffer)) / 2) {
-		/* We've filled half of the buffer, flush it as we receive more tasks */
-		tracker_sparql_buffer_flush (buffer, "SPARQL buffer half-full");
 	}
 }
 
@@ -518,4 +515,26 @@ tracker_sparql_buffer_push_finish (TrackerSparqlBuffer  *buffer,
 		task = g_task_get_task_data (G_TASK (res));
 
 	return task;
+}
+
+TrackerSparqlBufferState
+tracker_sparql_buffer_get_state (TrackerSparqlBuffer *buffer,
+                                 GFile               *file)
+{
+	TrackerSparqlBufferPrivate *priv;
+	TrackerTask *task;
+
+	g_return_val_if_fail (TRACKER_IS_SPARQL_BUFFER (buffer), TRACKER_BUFFER_STATE_UNKNOWN);
+	g_return_val_if_fail (G_IS_FILE (file), TRACKER_BUFFER_STATE_UNKNOWN);
+
+	priv = tracker_sparql_buffer_get_instance_private (TRACKER_SPARQL_BUFFER (buffer));
+
+	task = tracker_task_pool_find (TRACKER_TASK_POOL (buffer), file);
+	if (!task)
+		return TRACKER_BUFFER_STATE_UNKNOWN;
+
+	if (priv->tasks && g_ptr_array_find (priv->tasks, task, NULL))
+		return TRACKER_BUFFER_STATE_QUEUED;
+
+	return TRACKER_BUFFER_STATE_FLUSHING;
 }

@@ -38,21 +38,20 @@ test_miner_process_file (TrackerMinerFS *miner,
 	GFileInfo *info;
 	GDateTime *modification_time;
 	gchar *sparql, *str;
-	gchar *urn;
+	const gchar *urn;
 	GFile *parent;
 
 	((TestMiner *) miner)->n_process_file++;
 	info = g_file_query_info (file, "standard::*,time::*", 0, NULL, &error);
 	g_assert_no_error (error);
 
-	urn = tracker_miner_fs_query_urn (miner, file);
-	if (g_strcmp0 (tracker_miner_fs_get_urn (miner, file), urn) != 0) {
+	urn = tracker_miner_fs_get_folder_urn (miner, file);
+	if (g_strcmp0 (tracker_miner_fs_get_folder_urn (miner, file), urn) != 0) {
 		g_critical ("File %s did not get up to date URN",
 		            g_file_get_uri (file));
 	}
-	g_free (urn);
 
-	resource = tracker_resource_new (tracker_miner_fs_get_urn (miner, file));
+	resource = tracker_resource_new (tracker_miner_fs_get_folder_urn (miner, file));
 
 	if (g_file_info_get_file_type (info) == G_FILE_TYPE_DIRECTORY) {
 		tracker_resource_add_uri (resource, "rdf:type", "nfo:Folder");
@@ -76,12 +75,11 @@ test_miner_process_file (TrackerMinerFS *miner,
 	g_free (str);
 
 	parent = g_file_get_parent (file);
-	urn = tracker_miner_fs_query_urn (miner, parent);
+	urn = tracker_miner_fs_get_folder_urn (miner, parent);
 	g_object_unref (parent);
 
 	if (urn) {
 		tracker_resource_set_string (resource, "nfo:belongsToContainer", urn);
-		g_free (urn);
 	}
 
 	sparql = tracker_resource_print_sparql_update (resource, NULL, "Graph");
@@ -156,18 +154,6 @@ test_miner_move_file (TrackerMinerFS *miner,
 	return sparql;
 }
 
-static gboolean
-test_miner_filter_event (TrackerMinerFS          *miner,
-                         TrackerMinerFSEventType  type,
-                         GFile                   *file,
-                         GFile                   *source_file)
-{
-	TestMiner *m = (TestMiner *) miner;
-
-	m->n_events++;
-	return FALSE;
-}
-
 static void
 test_miner_finished (TrackerMinerFS *miner,
                      gdouble         elapsed,
@@ -189,7 +175,6 @@ test_miner_class_init (TestMinerClass *klass)
 	fs_class->remove_file = test_miner_remove_file;
 	fs_class->remove_children = test_miner_remove_children;
 	fs_class->move_file = test_miner_move_file;
-	fs_class->filter_event = test_miner_filter_event;
 
 	fs_class->finished = test_miner_finished;
 }

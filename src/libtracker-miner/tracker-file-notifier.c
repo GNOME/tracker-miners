@@ -83,6 +83,7 @@ typedef struct {
 
 	TrackerSparqlStatement *content_query;
 	TrackerSparqlStatement *urn_query;
+	TrackerSparqlStatement *exists_query;
 
 	GTimer *timer;
 
@@ -703,12 +704,38 @@ sparql_urn_ensure_statement (TrackerFileNotifier  *notifier,
 		tracker_sparql_connection_query_statement (priv->connection,
 		                                           "SELECT ?ie "
 		                                           "{"
-		                                           "  ~file a nfo:FileDataObject ;"
-		                                           "        nie:interpretedAs ?ie ."
+		                                           "  GRAPH tracker:FileSystem {"
+		                                           "    ~file a nfo:FileDataObject ;"
+		                                           "          nie:interpretedAs ?ie ."
+							   "  }"
 		                                           "}",
 		                                           priv->cancellable,
 		                                           error);
 	return priv->urn_query;
+}
+
+static TrackerSparqlStatement *
+sparql_exists_ensure_statement (TrackerFileNotifier  *notifier,
+				GError              **error)
+{
+	TrackerFileNotifierPrivate *priv;
+
+	priv = tracker_file_notifier_get_instance_private (notifier);
+
+	if (priv->exists_query)
+		return priv->exists_query;
+
+	priv->exists_query =
+		tracker_sparql_connection_query_statement (priv->connection,
+		                                           "ASK "
+		                                           "{"
+		                                           "  GRAPH tracker:FileSystem {"
+		                                           "    ~file a nfo:FileDataObject ."
+							   "  }"
+		                                           "}",
+		                                           priv->cancellable,
+		                                           error);
+	return priv->exists_query;
 }
 
 static void
@@ -1060,6 +1087,12 @@ monitor_item_updated_cb (TrackerMonitor *monitor,
 	/* Fetch the interned copy */
 	canonical = tracker_file_system_get_file (priv->file_system,
 	                                          file, file_type, NULL);
+
+	if (is_directory) {
+		/* Ensure the folder iri is cached */
+		tracker_file_notifier_get_file_iri (notifier, canonical, TRUE);
+	}
+
 	g_signal_emit (notifier, signals[FILE_UPDATED], 0, canonical, FALSE);
 
 	if (!is_directory) {
@@ -1526,6 +1559,7 @@ tracker_file_notifier_finalize (GObject *object)
 
 	g_clear_object (&priv->content_query);
 	g_clear_object (&priv->urn_query);
+	g_clear_object (&priv->exists_query);
 
 	g_object_unref (priv->crawler);
 	g_object_unref (priv->monitor);
@@ -1941,6 +1975,66 @@ tracker_file_notifier_get_file_iri (TrackerFileNotifier *notifier,
 	}
 
 	return iri;
+}
+
+gboolean
+tracker_file_notifier_query_file_exists (TrackerFileNotifier *notifier,
+					 GFile               *file)
+{
+	TrackerFileNotifierPrivate *priv;
+	GFile *canonical;
+	gboolean found;
+
+	g_return_val_if_fail (TRACKER_IS_FILE_NOTIFIER (notifier), FALSE);
+	g_return_val_if_fail (G_IS_FILE (file), FALSE);
+
+	priv = tracker_file_notifier_get_instance_private (notifier);
+
+	if (G_UNLIKELY (priv->connection == NULL)) {
+		return FALSE;
+	}
+
+	canonical = tracker_file_system_get_file (priv->file_system,
+	                                          file,
+	                                          G_FILE_TYPE_REGULAR,
+	                                          NULL);
+	if (!canonical) {
+		return FALSE;
+	}
+
+	found = tracker_file_system_get_property_full (priv->file_system,
+	                                               canonical,
+						       quark_property_mimetype,
+						       NULL);
+
+	if (!found) {
+		TrackerSparqlCursor *cursor;
+		TrackerSparqlStatement *statement;
+		gchar *uri;
+
+		/* Fetch data for this file synchronously */
+		statement = sparql_exists_ensure_statement (notifier, NULL);
+		if (!statement)
+			return FALSE;
+
+		uri = g_file_get_uri (file);
+		tracker_sparql_statement_bind_string (statement, "file", uri);
+		g_free (uri);
+
+		cursor = tracker_sparql_statement_execute (statement, NULL, NULL);
+		if (!cursor)
+			return FALSE;
+
+		if (!tracker_sparql_cursor_next (cursor, NULL, NULL)) {
+			g_object_unref (cursor);
+			return FALSE;
+		}
+
+		found = tracker_sparql_cursor_get_boolean (cursor, 0);
+		g_object_unref (cursor);
+	}
+
+	return found;
 }
 
 static gboolean
