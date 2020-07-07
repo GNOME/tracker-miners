@@ -511,7 +511,7 @@ class TrackerCommandLineTestCase(TrackerMinerTest):
         path = self.env.get('PATH', []).split(':')
         self.env['PATH'] = ':'.join([cfg.cli_dir()] + path)
 
-        self.env['DBUS_SESSION_BUS_ADDRESS'] = self.sandbox.daemon.address
+        self.env['DBUS_SESSION_BUS_ADDRESS'] = self.sandbox.get_session_bus_address()
 
         self.tracker_cli = shutil.which('tracker3', path=self.env['PATH'])
 
