@@ -114,7 +114,12 @@ class MinerOnDemandTest(fixtures.TrackerMinerTest):
         ]
 
         with self.miner_fs.await_files_processed(expected):
-            self.miner_fs.index_location(testdir.as_uri())
+            self.miner_fs.index_location(testdir.as_uri(), ['await-miner-fs'])
+
+    def test_index_location_invalid_flag(self):
+        testdir = pathlib.Path(self.workdir).joinpath('test-not-monitored')
+        self.miner_fs.index_location(testdir.as_uri(), ['invalid-flag-which-should-trigger-an-error'])
+
 
 
 if __name__ == "__main__":

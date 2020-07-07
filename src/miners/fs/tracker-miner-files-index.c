@@ -40,11 +40,10 @@ static const gchar introspection_xml[] =
   "</node>";
 
 typedef struct {
+	GFile *file;
 	TrackerDBusRequest *request;
 	GDBusMethodInvocation *invocation;
-	TrackerSparqlConnection *connection;
-	TrackerMinerFiles *miner_files;
-} MimeTypesData;
+} AwaitMinerFsData;
 
 typedef struct {
 	TrackerMinerFiles *files_miner;
@@ -106,6 +105,30 @@ tracker_miner_index_error_quark (void)
 	                                    tracker_miner_index_error_entries,
 	                                    G_N_ELEMENTS (tracker_miner_index_error_entries));
 	return (GQuark) quark_volatile;
+}
+
+static AwaitMinerFsData *
+await_miner_fs_data_new (GFile                 *file,
+                         TrackerDBusRequest    *request,
+                         GDBusMethodInvocation *invocation)
+{
+	AwaitMinerFsData *data;
+
+	data = g_slice_new0 (AwaitMinerFsData);
+	data->file = g_object_ref (file);
+	data->request = g_object_ref (request);
+	data->invocation = g_object_ref (invocation);
+
+	return data;
+}
+
+static void
+await_miner_fs_data_free (AwaitMinerFsData *data)
+{
+	g_object_unref (data->file);
+	g_object_unref (data->request);
+	g_object_unref (data->invocation);
+	g_slice_free (AwaitMinerFsData, data);
 }
 
 static void
@@ -286,6 +309,30 @@ index_directory (TrackerMinerFilesIndex *miner,
 }
 
 static void
+await_miner_fs_files_processed_cb (TrackerMinerFS *miner_fs,
+                                   const gchar    *uri,
+                                   gboolean        success,
+                                   const gchar    *message,
+                                   gpointer        user_data)
+{
+	AwaitMinerFsData *data = user_data;
+	GFile *processed_file;
+
+	processed_file = g_file_new_for_uri (uri);
+
+	if (g_file_equal (data->file, processed_file)) {
+		/* We got the file, so the IndexLocation DBus method call can now return */
+
+		g_signal_handlers_disconnect_by_data (miner_fs, data);
+
+		tracker_dbus_request_end (data->request, NULL);
+
+		/* FIXME: return an error if success = FALSE ... */
+		g_dbus_method_invocation_return_value (data->invocation, NULL);
+	}
+}
+
+static void
 handle_method_call_index_location (TrackerMinerFilesIndex *miner,
                                    GDBusMethodInvocation  *invocation,
                                    GVariant               *parameters)
@@ -315,8 +362,6 @@ handle_method_call_index_location (TrackerMinerFilesIndex *miner,
 		return;
 	}
 
-	watch_for_caller = flags & TRACKER_INDEX_LOCATION_FLAG_WATCH_FOR_CALLER;
-
 	request = tracker_g_dbus_request_begin (invocation, "%s(uri:'%s')", __FUNCTION__, file_uri);
 
 	file = g_file_new_for_uri (file_uri);
@@ -336,8 +381,22 @@ handle_method_call_index_location (TrackerMinerFilesIndex *miner,
 		return;
 	}
 
+	watch_for_caller = flags & TRACKER_INDEX_LOCATION_FLAG_WATCH_FOR_CALLER;
+
 	is_dir = (g_file_info_get_file_type (file_info) == G_FILE_TYPE_DIRECTORY);
 	g_object_unref (file_info);
+
+	if (flags & TRACKER_INDEX_LOCATION_FLAG_AWAIT_MINER_FS) {
+		AwaitMinerFsData *data;
+
+		data = await_miner_fs_data_new (file, request, invocation);
+		g_signal_connect_data (TRACKER_MINER_FS (priv->files_miner),
+		                       "file-processed",
+		                       G_CALLBACK (await_miner_fs_files_processed_cb),
+		                       data,
+		                       (GClosureNotify) await_miner_fs_data_free,
+		                       0);
+	}
 
 	if (is_dir) {
 		index_directory (miner, file, invocation, watch_for_caller);
@@ -356,8 +415,12 @@ handle_method_call_index_location (TrackerMinerFilesIndex *miner,
 		}
 	}
 
-	tracker_dbus_request_end (request, NULL);
-	g_dbus_method_invocation_return_value (invocation, NULL);
+	if (flags & TRACKER_INDEX_LOCATION_FLAG_AWAIT_MINER_FS) {
+		/* DBus request will return in await_miner_fs_files_processed_cb */
+	} else {
+		tracker_dbus_request_end (request, NULL);
+		g_dbus_method_invocation_return_value (invocation, NULL);
+	}
 }
 
 static void
