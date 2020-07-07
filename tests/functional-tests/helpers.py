@@ -25,7 +25,9 @@ from gi.repository import Tracker
 
 import dataclasses
 import logging
+import os
 import pathlib
+import subprocess
 
 import trackertestutils.mainloop
 
@@ -127,6 +129,22 @@ class await_files_processed():
         return True
 
 
+def await_bus_name(connection, name):
+    loop = trackertestutils.mainloop.MainLoop()
+
+    def appeared_cb(connection, name, name_owner):
+        log.debug("%s appeared (owner: %s)", name, name_owner)
+        loop.quit()
+
+    def vanished_cb(connection, name):
+        log.debug("%s vanished", name)
+
+    Gio.bus_watch_name_on_connection(
+        connection, name, Gio.BusNameWatcherFlags.NONE, appeared_cb,
+        vanished_cb);
+    loop.run_checked()
+
+
 class MinerFsHelper ():
 
     MINERFS_BUSNAME = "org.freedesktop.Tracker3.Miner.Files"
@@ -151,6 +169,20 @@ class MinerFsHelper ():
             self.MINERFS_BUSNAME, self.MINERFS_INDEX_OBJ_PATH, self.MINER_INDEX_IFACE)
 
     def start(self):
+        if 'TRACKER_TESTS_MINER_FS_COMMAND' in os.environ:
+            # This can be used to manually run the miner-fs instead of using
+            # D-Bus autoactivation. Useful if you want to use a debugging tool.
+            # The process should exit when sandbox D-Bus daemon exits.
+            command = os.environ['TRACKER_TESTS_MINER_FS_COMMAND']
+            logging.info("Manually starting tracker-miner-fs using TRACKER_TESTS_MINER_FS_COMMAND %s", command)
+            p = subprocess.Popen(command, shell=True)
+            if p.poll():
+                raise RuntimeError("Error manually starting miner-fs")
+            # Wait for the process to connect to D-Bus. Autoactivation has a
+            # hard timeout of 25 seconds, which can be too short if running
+            # under Valgrind.
+            await_bus_name(self.bus, self.MINERFS_BUSNAME)
+
         self.miner_iface.Start()
 
     def stop(self):
