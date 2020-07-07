@@ -51,8 +51,12 @@ class TestCli(fixtures.TrackerCommandLineTestCase):
         # This will generate an invalid .mp3 file.
         testfile = self.create_test_file('test-data/content.mp3')
 
-        with self.assertRaises(fixtures.CliError) as e:
-            self.run_cli(['index', str(testfile)])
+        try:
+            with self.assertRaises(fixtures.CliError) as e:
+                output = self.run_cli(['index', str(testfile)])
+        except AssertionError as e:
+            print(f"CLI output:\n{output}")
+            raise
         #print(e.exception)
         #assert 'foo' in e.exception.args[0]
 
