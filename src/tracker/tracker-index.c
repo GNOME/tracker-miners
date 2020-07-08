@@ -99,7 +99,7 @@ print_indexing_status (GFile                 *root,
 			}
 		}
 
-		g_print (_("%i files were added to the index."),
+		g_print (_("%i files were added or updated."),
 		         tracker_indexing_status_get_n_indexed_files (status));
 		g_print ("\n");
 	}
