@@ -5,7 +5,7 @@
     <method name='IndexLocation'>"
       <arg type='s' name='uri' direction='in' />"
       <arg type='as' name='flags' direction='in'>"
-        <doc:doc><doc:summary>Allowed values: for-process, await-miner-fs, await-extract</doc:summary></doc:doc>
+        <doc:doc><doc:summary>Allowed values: watch-for-caller, await-miner-fs, await-extract</doc:summary></doc:doc>
       </arg>
     </method>
   </interface>

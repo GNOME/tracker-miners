@@ -263,7 +263,7 @@ handle_method_call_index_location (TrackerMinerFilesIndex *miner,
 		return;
 	}
 
-	watch_source = flags & TRACKER_INDEX_LOCATION_FLAG_FOR_PROCESS;
+	watch_source = flags & TRACKER_INDEX_LOCATION_FLAG_WATCH_FOR_CALLER;
 
 	request = tracker_g_dbus_request_begin (invocation, "%s(uri:'%s')", __FUNCTION__, file_uri);
 
@@ -343,7 +343,7 @@ handle_method_call_index_location (TrackerMinerFilesIndex *miner,
 		if (watch_source) {
 			internal_error = g_error_new_literal (TRACKER_MINER_INDEX_ERROR,
 			                                      TRACKER_MINER_INDEX_ERROR_DIRECTORIES_ONLY,
-			                                      "Only directories can be processed in `for-process` mode");
+			                                      "Only directories can be processed in `watch-for-caller` mode");
 			tracker_dbus_request_end (request, internal_error);
 			g_dbus_method_invocation_return_gerror (invocation, internal_error);
 

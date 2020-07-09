@@ -1543,7 +1543,7 @@ tracker_indexing_task_run (GTask        *task,
 	GVariant *v;
 	GError *error = NULL;
 	const gchar **flags;
-	const gchar *flags_for_process[] = {"for-process", NULL};
+	const gchar *flags_watch[] = {"watch-for-caller", NULL};
 
 	priv = tracker_miner_manager_get_instance_private (manager);
 
@@ -1554,7 +1554,7 @@ tracker_indexing_task_run (GTask        *task,
 	uri = g_file_get_uri (data->root);
 
 	if (data->for_process) {
-		flags = flags_for_process;
+		flags = flags_watch;
 	} else {
 		flags = NULL;
 	}

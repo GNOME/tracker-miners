@@ -34,7 +34,7 @@ typedef enum {
 } TrackerSerializationFormat;
 
 typedef enum {
-	TRACKER_INDEX_LOCATION_FLAG_FOR_PROCESS = 1 << 0,
+	TRACKER_INDEX_LOCATION_FLAG_WATCH_FOR_CALLER = 1 << 0,
 	TRACKER_INDEX_LOCATION_FLAG_AWAIT_MINER_FS = 1 << 1,
 	TRACKER_INDEX_LOCATION_FLAG_AWAIT_EXTRACT = 1 << 2,
 } TrackerIndexLocationFlags;
