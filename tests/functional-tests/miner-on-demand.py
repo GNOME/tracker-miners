@@ -56,7 +56,7 @@ class MinerOnDemandTest(fixtures.TrackerMinerTest):
         with self.await_document_inserted(testfile):
             with self.extractor.await_file_processed(testfile):
                 with self.miner_fs.await_file_processed(testfile):
-                    self.miner_fs.index_file(testfile.as_uri())
+                    self.miner_fs.index_location(testfile.as_uri())
         self.assertFileIndexed(testfile.as_uri())
 
     def test_index_file_not_found(self):
@@ -66,7 +66,7 @@ class MinerOnDemandTest(fixtures.TrackerMinerTest):
 
         self.assertFileNotIndexed('file:///test-missing')
         with self.assertRaises(GLib.GError) as e:
-            self.miner_fs.index_file('file:///test-missing')
+            self.miner_fs.index_location('file:///test-missing')
         assert e.exception.message.startswith('GDBus.Error:org.freedesktop.Tracker.Miner.Files.Index.Error.FileNotFound:')
 
     def await_failsafe_marker_inserted(self, graph, path, timeout=configuration.AWAIT_TIMEOUT):
@@ -87,7 +87,7 @@ class MinerOnDemandTest(fixtures.TrackerMinerTest):
         testfile = self.create_test_file('test-not-monitored/invalid.mp3')
 
         with self.extractor.await_file_processed(testfile, False, timeout=configuration.AWAIT_TIMEOUT):
-            self.miner_fs.index_file(testfile.as_uri())
+            self.miner_fs.index_location(testfile.as_uri())
 
     def test_index_directory_basic(self):
         """
@@ -114,7 +114,7 @@ class MinerOnDemandTest(fixtures.TrackerMinerTest):
         ]
 
         with self.miner_fs.await_files_processed(expected):
-            self.miner_fs.index_file(testdir.as_uri())
+            self.miner_fs.index_location(testdir.as_uri())
 
 
 if __name__ == "__main__":

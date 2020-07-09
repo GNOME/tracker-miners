@@ -192,9 +192,9 @@ class MinerFsHelper ():
         return Tracker.SparqlConnection.bus_new(
             'org.freedesktop.Tracker3.Miner.Files', None, self.bus)
 
-    def index_location(self, uri, flags):
+    def index_location(self, uri, flags=None):
         log.debug("IndexLocation(%s, %s)", uri, flags)
-        return self.index.IndexFile('(sas)', uri, flags)
+        return self.index.IndexLocation('(sas)', uri, flags or [])
 
     def await_file_processed(self, path, status=True):
         expected = [FileProcessedResult(path, status)]
