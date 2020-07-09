@@ -20,6 +20,8 @@
 #include "config-miners.h"
 
 #include <libtracker-miners-common/tracker-dbus.h>
+#include <libtracker-miners-common/tracker-enums.h>
+#include <libtracker-miners-common/tracker-miners-enum-types.h>
 #include <libtracker-sparql/tracker-sparql.h>
 #include <libtracker-miner/tracker-miner.h>
 
@@ -30,11 +32,9 @@
 static const gchar introspection_xml[] =
   "<node>"
   "  <interface name='org.freedesktop.Tracker3.Miner.Files.Index'>"
-  "    <method name='IndexFile'>"
-  "      <arg type='s' name='file_uri' direction='in' />"
-  "    </method>"
-  "    <method name='IndexFileForProcess'>"
-  "      <arg type='s' name='file_uri' direction='in' />"
+  "    <method name='IndexLocation'>"
+  "      <arg type='s' name='uri' direction='in' />"
+  "      <arg type='as' name='flags' direction='in' />"
   "    </method>"
   "  </interface>"
   "</node>";
@@ -87,6 +87,7 @@ G_DEFINE_TYPE_WITH_PRIVATE(TrackerMinerFilesIndex, tracker_miner_files_index, G_
 GQuark tracker_miner_index_error_quark (void);
 
 typedef enum {
+	TRACKER_MINER_INDEX_ERROR_UNKNOWN_FLAG,
 	TRACKER_MINER_INDEX_ERROR_FILE_NOT_FOUND,
 	TRACKER_MINER_INDEX_ERROR_DIRECTORIES_ONLY,
 	TRACKER_MINER_INDEX_ERROR_NOT_ELIGIBLE,
@@ -95,6 +96,7 @@ typedef enum {
 
 static const GDBusErrorEntry tracker_miner_index_error_entries[] =
 {
+	{TRACKER_MINER_INDEX_ERROR_UNKNOWN_FLAG, "org.freedesktop.Tracker.Miner.Files.Index.Error.UnknownFlag"},
 	{TRACKER_MINER_INDEX_ERROR_FILE_NOT_FOUND, "org.freedesktop.Tracker.Miner.Files.Index.Error.FileNotFound"},
 	{TRACKER_MINER_INDEX_ERROR_DIRECTORIES_ONLY, "org.freedesktop.Tracker.Miner.Files.Index.Error.DirectoriesOnly"},
 	{TRACKER_MINER_INDEX_ERROR_NOT_ELIGIBLE, "org.freedesktop.Tracker.Miner.Files.Index.Error.NotEligible"},
@@ -199,26 +201,69 @@ index_finalize (GObject *object)
 	g_object_unref (priv->files_miner);
 }
 
+static TrackerIndexLocationFlags
+parse_index_location_flags (const gchar **flags_strv,
+                            GError      **error)
+{
+	TrackerIndexLocationFlags flags = 0;
+	GFlagsClass *type_class;
+	GFlagsValue *value;
+	const gchar *flag_string;
+
+	type_class = g_type_class_ref (TRACKER_TYPE_INDEX_LOCATION_FLAGS);
+
+	for (flag_string = *flags_strv; flag_string; flag_string ++) {
+		value = g_flags_get_value_by_nick (type_class, flag_string);
+
+		if (value == NULL) {
+			g_set_error (error,
+			             TRACKER_MINER_INDEX_ERROR,
+			             TRACKER_MINER_INDEX_ERROR_UNKNOWN_FLAG,
+			             "Unknown flag %s",
+			             flag_string);
+			break;
+		}
+
+		flags |= value->value;
+	}
+
+	g_type_class_unref (type_class);
+
+	return flags;
+}
+
 static void
-handle_method_call_index_file (TrackerMinerFilesIndex *miner,
-                               GDBusMethodInvocation  *invocation,
-                               GVariant               *parameters,
-                               gboolean                watch_source)
+handle_method_call_index_location (TrackerMinerFilesIndex *miner,
+                                   GDBusMethodInvocation  *invocation,
+                                   GVariant               *parameters)
 {
 	TrackerMinerFilesIndexPrivate *priv;
 	TrackerDBusRequest *request;
-	GFile *file;
+	g_autoptr(GFile) file = NULL;
 	GFileInfo *file_info;
 	gboolean is_dir;
 	gboolean do_checks = FALSE;
-	GError *internal_error;
+	g_autoptr(GError) internal_error = NULL;
 	const gchar *file_uri;
+	g_autofree const gchar **flags_strv = NULL;
+	TrackerIndexLocationFlags flags;
+	gboolean watch_source;
 
 	priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (miner);
 
-	g_variant_get (parameters, "(&s)", &file_uri);
+	g_variant_get (parameters, "(&s^a&s)", &file_uri, &flags_strv);
 
 	tracker_gdbus_async_return_if_fail (file_uri != NULL, invocation);
+
+	flags = parse_index_location_flags (flags_strv, &internal_error);
+
+	if (internal_error != NULL) {
+		g_dbus_method_invocation_return_gerror (invocation, internal_error);
+
+		return;
+	}
+
+	watch_source = flags & TRACKER_INDEX_LOCATION_FLAG_FOR_PROCESS;
 
 	request = tracker_g_dbus_request_begin (invocation, "%s(uri:'%s')", __FUNCTION__, file_uri);
 
@@ -236,10 +281,6 @@ handle_method_call_index_file (TrackerMinerFilesIndex *miner,
 		tracker_dbus_request_end (request, internal_error);
 		g_dbus_method_invocation_return_gerror (invocation, internal_error);
 
-		g_error_free (internal_error);
-
-		g_object_unref (file);
-
 		return;
 	}
 
@@ -254,10 +295,6 @@ handle_method_call_index_file (TrackerMinerFilesIndex *miner,
 		                                      "File is not eligible to be indexed");
 		tracker_dbus_request_end (request, internal_error);
 		g_dbus_method_invocation_return_gerror (invocation, internal_error);
-
-		g_error_free (internal_error);
-
-		g_object_unref (file);
 
 		return;
 	}
@@ -306,13 +343,9 @@ handle_method_call_index_file (TrackerMinerFilesIndex *miner,
 		if (watch_source) {
 			internal_error = g_error_new_literal (TRACKER_MINER_INDEX_ERROR,
 			                                      TRACKER_MINER_INDEX_ERROR_DIRECTORIES_ONLY,
-			                                      "Only directories can be processed using IndexFileForProcess");
+			                                      "Only directories can be processed in `for-process` mode");
 			tracker_dbus_request_end (request, internal_error);
 			g_dbus_method_invocation_return_gerror (invocation, internal_error);
-
-			g_error_free (internal_error);
-
-			g_object_unref (file);
 
 			return;
 		} else {
@@ -323,8 +356,6 @@ handle_method_call_index_file (TrackerMinerFilesIndex *miner,
 
 	tracker_dbus_request_end (request, NULL);
 	g_dbus_method_invocation_return_value (invocation, NULL);
-
-	g_object_unref (file);
 }
 
 static void
@@ -342,10 +373,8 @@ handle_method_call (GDBusConnection       *connection,
 	tracker_gdbus_async_return_if_fail (miner != NULL, invocation);
 	tracker_gdbus_async_return_if_fail (TRACKER_IS_MINER_FILES_INDEX (miner), invocation);
 
-	if (g_strcmp0 (method_name, "IndexFile") == 0) {
-		handle_method_call_index_file (miner, invocation, parameters, FALSE);
-	} else if (g_strcmp0 (method_name, "IndexFileForProcess") == 0) {
-		handle_method_call_index_file (miner, invocation, parameters, TRUE);
+	if (g_strcmp0 (method_name, "IndexLocation") == 0) {
+		handle_method_call_index_location (miner, invocation, parameters);
 	} else {
 		g_assert_not_reached ();
 	}

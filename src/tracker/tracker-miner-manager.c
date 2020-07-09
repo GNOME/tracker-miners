@@ -47,9 +47,6 @@
 #define DISPLAY_NAME_KEY "DisplayName"
 #define DESCRIPTION_KEY "Comment"
 
-#define METHOD_INDEX_FILE "IndexFile"
-#define METHOD_INDEX_FILE_FOR_PROCESS "IndexFileForProcess"
-
 typedef struct TrackerMinerManagerPrivate TrackerMinerManagerPrivate;
 typedef struct MinerData MinerData;
 
@@ -1545,7 +1542,8 @@ tracker_indexing_task_run (GTask        *task,
 	gchar *uri;
 	GVariant *v;
 	GError *error = NULL;
-	const gchar *method_name;
+	const gchar **flags;
+	const gchar *flags_for_process[] = {"for-process", NULL};
 
 	priv = tracker_miner_manager_get_instance_private (manager);
 
@@ -1553,15 +1551,20 @@ tracker_indexing_task_run (GTask        *task,
 
 	tracker_indexing_status_start_watching (data->status, manager, 0, &error);
 
-	method_name = data->for_process ? METHOD_INDEX_FILE_FOR_PROCESS : METHOD_INDEX_FILE;
 	uri = g_file_get_uri (data->root);
+
+	if (data->for_process) {
+		flags = flags_for_process;
+	} else {
+		flags = NULL;
+	}
 
 	v = g_dbus_connection_call_sync (priv->connection,
 	                                 "org.freedesktop.Tracker3.Miner.Files",
 	                                 "/org/freedesktop/Tracker3/Miner/Files/Index",
 	                                 "org.freedesktop.Tracker3.Miner.Files.Index",
-	                                 method_name,
-	                                 g_variant_new ("(s)", uri),
+	                                 "IndexLocation",
+	                                 g_variant_new ("(sas)", uri, flags),
 	                                 NULL,
 	                                 G_DBUS_CALL_FLAGS_NONE,
 	                                 -1,

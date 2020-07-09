@@ -33,6 +33,12 @@ typedef enum {
 	TRACKER_SERIALIZATION_FORMAT_JSON_LD,
 } TrackerSerializationFormat;
 
+typedef enum {
+	TRACKER_INDEX_LOCATION_FLAG_FOR_PROCESS = 1 << 0,
+	TRACKER_INDEX_LOCATION_FLAG_AWAIT_MINER_FS = 1 << 1,
+	TRACKER_INDEX_LOCATION_FLAG_AWAIT_EXTRACT = 1 << 2,
+} TrackerIndexLocationFlags;
+
 G_END_DECLS
 
 #endif /* __TRACKER_ENUMS_H__ */
