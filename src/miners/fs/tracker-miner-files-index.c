@@ -20,6 +20,8 @@
 #include "config-miners.h"
 
 #include <libtracker-miners-common/tracker-dbus.h>
+#include <libtracker-miners-common/tracker-enums.h>
+#include <libtracker-miners-common/tracker-miners-enum-types.h>
 #include <libtracker-sparql/tracker-sparql.h>
 #include <libtracker-miner/tracker-miner.h>
 
@@ -30,28 +32,12 @@
 static const gchar introspection_xml[] =
   "<node>"
   "  <interface name='org.freedesktop.Tracker3.Miner.Files.Index'>"
-  "    <method name='IndexFile'>"
-  "      <arg type='s' name='file_uri' direction='in' />"
-  "    </method>"
-  "    <method name='IndexFileForProcess'>"
-  "      <arg type='s' name='file_uri' direction='in' />"
+  "    <method name='IndexLocation'>"
+  "      <arg type='s' name='uri' direction='in' />"
+  "      <arg type='as' name='flags' direction='in' />"
   "    </method>"
   "  </interface>"
   "</node>";
-
-/* If defined, then a file provided to be indexed MUST be a child in
- * an configured path. if undefined, any file can be indexed, however
- * it is up to applications to maintain files outside the configured
- * locations.
- */
-#undef REQUIRE_LOCATION_IN_CONFIG
-
-typedef struct {
-	TrackerDBusRequest *request;
-	GDBusMethodInvocation *invocation;
-	TrackerSparqlConnection *connection;
-	TrackerMinerFiles *miner_files;
-} MimeTypesData;
 
 typedef struct {
 	TrackerMinerFiles *files_miner;
@@ -87,6 +73,7 @@ G_DEFINE_TYPE_WITH_PRIVATE(TrackerMinerFilesIndex, tracker_miner_files_index, G_
 GQuark tracker_miner_index_error_quark (void);
 
 typedef enum {
+	TRACKER_MINER_INDEX_ERROR_UNKNOWN_FLAG,
 	TRACKER_MINER_INDEX_ERROR_FILE_NOT_FOUND,
 	TRACKER_MINER_INDEX_ERROR_DIRECTORIES_ONLY,
 	TRACKER_MINER_INDEX_ERROR_NOT_ELIGIBLE,
@@ -95,6 +82,7 @@ typedef enum {
 
 static const GDBusErrorEntry tracker_miner_index_error_entries[] =
 {
+	{TRACKER_MINER_INDEX_ERROR_UNKNOWN_FLAG, "org.freedesktop.Tracker.Miner.Files.Index.Error.UnknownFlag"},
 	{TRACKER_MINER_INDEX_ERROR_FILE_NOT_FOUND, "org.freedesktop.Tracker.Miner.Files.Index.Error.FileNotFound"},
 	{TRACKER_MINER_INDEX_ERROR_DIRECTORIES_ONLY, "org.freedesktop.Tracker.Miner.Files.Index.Error.DirectoriesOnly"},
 	{TRACKER_MINER_INDEX_ERROR_NOT_ELIGIBLE, "org.freedesktop.Tracker.Miner.Files.Index.Error.NotEligible"},
@@ -199,26 +187,131 @@ index_finalize (GObject *object)
 	g_object_unref (priv->files_miner);
 }
 
+static TrackerIndexLocationFlags
+parse_index_location_flags (const gchar **flags_strv,
+                            GError      **error)
+{
+	TrackerIndexLocationFlags flags = 0;
+	GFlagsClass *type_class;
+	GFlagsValue *value;
+
+	type_class = g_type_class_ref (TRACKER_TYPE_INDEX_LOCATION_FLAGS);
+
+	while (*flags_strv) {
+		const gchar *flag_string = *flags_strv;
+
+		value = g_flags_get_value_by_nick (type_class, flag_string);
+
+		if (value == NULL) {
+			g_set_error (error,
+			             TRACKER_MINER_INDEX_ERROR,
+			             TRACKER_MINER_INDEX_ERROR_UNKNOWN_FLAG,
+			             "Unknown flag %s",
+			             flag_string);
+			break;
+		}
+
+		flags |= value->value;
+
+		flags_strv ++;
+	}
+
+	g_type_class_unref (type_class);
+
+	return flags;
+}
+
+/* Returns TRUE if 'directory' is currently indexed by Tracker */
+static gboolean
+directory_is_configured_for_indexing (TrackerIndexingTree *indexing_tree,
+                                      GFile               *directory)
+{
+	GFile *root;
+	TrackerDirectoryFlags flags;
+
+	root = tracker_indexing_tree_get_root (indexing_tree, directory, &flags);
+
+	if (root) {
+		if (flags & TRACKER_DIRECTORY_FLAG_RECURSE) {
+			return TRUE;
+		} else if (g_file_equal (root, directory) && g_file_has_parent (directory, root)) {
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
 static void
-handle_method_call_index_file (TrackerMinerFilesIndex *miner,
-                               GDBusMethodInvocation  *invocation,
-                               GVariant               *parameters,
-                               gboolean                watch_source)
+index_directory (TrackerMinerFilesIndex *miner,
+                 GFile                  *directory,
+                 GDBusMethodInvocation  *invocation,
+                 gboolean                watch_for_caller)
 {
 	TrackerMinerFilesIndexPrivate *priv;
-	TrackerDBusRequest *request;
-	GFile *file;
-	GFileInfo *file_info;
-	gboolean is_dir;
-	gboolean do_checks = FALSE;
-	GError *internal_error;
-	const gchar *file_uri;
+	TrackerIndexingTree *indexing_tree;
+	gboolean is_watched, needs_watch = FALSE;
 
 	priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (miner);
 
-	g_variant_get (parameters, "(&s)", &file_uri);
+	indexing_tree = tracker_miner_fs_get_indexing_tree (TRACKER_MINER_FS (priv->files_miner));
+
+	if (directory_is_configured_for_indexing (indexing_tree, directory)) {
+		tracker_indexing_tree_notify_update (indexing_tree, directory, TRUE);
+		needs_watch = FALSE;
+	} else {
+		tracker_indexing_tree_add (indexing_tree, directory,
+			                       TRACKER_DIRECTORY_FLAG_RECURSE |
+			                       TRACKER_DIRECTORY_FLAG_PRIORITY |
+			                       TRACKER_DIRECTORY_FLAG_CHECK_MTIME |
+			                       TRACKER_DIRECTORY_FLAG_MONITOR);
+		needs_watch = TRUE;
+	}
+
+	/* If the directory had already subscribers, we want to add all
+	 * further watches, so the directory survives as long as there's
+	 * watchers.
+	 */
+	is_watched = tracker_miner_files_peer_listener_is_file_watched (priv->peer_listener, directory);
+
+	if (watch_for_caller && (is_watched || needs_watch)) {
+		tracker_miner_files_peer_listener_add_watch (priv->peer_listener,
+			                                         g_dbus_method_invocation_get_sender (invocation),
+			                                         directory);
+	}
+}
+
+static void
+handle_method_call_index_location (TrackerMinerFilesIndex *miner,
+                                   GDBusMethodInvocation  *invocation,
+                                   GVariant               *parameters)
+{
+	TrackerMinerFilesIndexPrivate *priv;
+	TrackerDBusRequest *request;
+	g_autoptr(GFile) file = NULL;
+	GFileInfo *file_info;
+	gboolean is_dir;
+	g_autoptr(GError) internal_error = NULL;
+	const gchar *file_uri;
+	g_autofree const gchar **flags_strv = NULL;
+	TrackerIndexLocationFlags flags;
+	gboolean watch_for_caller;
+
+	priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (miner);
+
+	g_variant_get (parameters, "(&s^a&s)", &file_uri, &flags_strv);
 
 	tracker_gdbus_async_return_if_fail (file_uri != NULL, invocation);
+
+	flags = parse_index_location_flags (flags_strv, &internal_error);
+
+	if (internal_error != NULL) {
+		g_dbus_method_invocation_return_gerror (invocation, internal_error);
+
+		return;
+	}
+
+	watch_for_caller = flags & TRACKER_INDEX_LOCATION_WATCH_FOR_CALLER;
 
 	request = tracker_g_dbus_request_begin (invocation, "%s(uri:'%s')", __FUNCTION__, file_uri);
 
@@ -236,81 +329,31 @@ handle_method_call_index_file (TrackerMinerFilesIndex *miner,
 		tracker_dbus_request_end (request, internal_error);
 		g_dbus_method_invocation_return_gerror (invocation, internal_error);
 
-		g_error_free (internal_error);
-
-		g_object_unref (file);
-
 		return;
 	}
 
 	is_dir = (g_file_info_get_file_type (file_info) == G_FILE_TYPE_DIRECTORY);
 	g_object_unref (file_info);
 
-#ifdef REQUIRE_LOCATION_IN_CONFIG
-	do_checks = TRUE;
-	if (!tracker_miner_files_is_file_eligible (priv->files_miner, file)) {
-		internal_error = g_error_new_literal (TRACKER_MINER_INDEX_ERROR,
-		                                      TRACKER_MINER_INDEX_ERROR_NOT_ELIGIBLE,
-		                                      "File is not eligible to be indexed");
-		tracker_dbus_request_end (request, internal_error);
-		g_dbus_method_invocation_return_gerror (invocation, internal_error);
-
-		g_error_free (internal_error);
-
-		g_object_unref (file);
-
-		return;
-	}
-#endif /* REQUIRE_LOCATION_IN_CONFIG */
-
 	if (is_dir) {
-		TrackerIndexingTree *indexing_tree;
-		TrackerDirectoryFlags flags;
-		gboolean is_watched, needs_watch = FALSE;
-		GFile *root;
-
-		indexing_tree = tracker_miner_fs_get_indexing_tree (TRACKER_MINER_FS (priv->files_miner));
-		root = tracker_indexing_tree_get_root (indexing_tree, file, &flags);
-
-		/* If the directory had already subscribers, we want to add all
-		 * further watches, so the directory survives as long as there's
-		 * watchers.
-		 */
-		is_watched = tracker_miner_files_peer_listener_is_file_watched (priv->peer_listener, file);
-
-		/* Check whether the requested dir is not over a (recursively)
-		 * watched directory already, in that case we don't add the
-		 * directory (nor add a watch if we're positive it comes from
-		 * config).
-		 */
-		if (!root ||
-		    (!(flags & TRACKER_DIRECTORY_FLAG_RECURSE) &&
-		     !g_file_equal (root, file) &&
-		     !g_file_has_parent (file, root))) {
-			tracker_indexing_tree_add (indexing_tree, file,
-			                           TRACKER_DIRECTORY_FLAG_RECURSE |
-			                           TRACKER_DIRECTORY_FLAG_PRIORITY |
-			                           TRACKER_DIRECTORY_FLAG_CHECK_MTIME |
-			                           TRACKER_DIRECTORY_FLAG_MONITOR);
-			needs_watch = TRUE;
-		} else {
-			tracker_indexing_tree_notify_update (indexing_tree, file, TRUE);
-		}
-
-		if (watch_source && (is_watched || needs_watch)) {
-			tracker_miner_files_peer_listener_add_watch (priv->peer_listener,
-			                                             g_dbus_method_invocation_get_sender (invocation),
-			                                             file);
-		}
+		index_directory (miner, file, invocation, watch_for_caller);
 	} else {
-		tracker_miner_fs_check_file (TRACKER_MINER_FS (priv->files_miner),
-		                             file, G_PRIORITY_HIGH, do_checks);
+		if (watch_for_caller) {
+			internal_error = g_error_new_literal (TRACKER_MINER_INDEX_ERROR,
+			                                      TRACKER_MINER_INDEX_ERROR_DIRECTORIES_ONLY,
+			                                      "Only directories can be processed in `watch-for-caller` mode");
+			tracker_dbus_request_end (request, internal_error);
+			g_dbus_method_invocation_return_gerror (invocation, internal_error);
+
+			return;
+		} else {
+			tracker_miner_fs_check_file (TRACKER_MINER_FS (priv->files_miner),
+			                             file, G_PRIORITY_HIGH, FALSE);
+		}
 	}
 
 	tracker_dbus_request_end (request, NULL);
 	g_dbus_method_invocation_return_value (invocation, NULL);
-
-	g_object_unref (file);
 }
 
 static void
@@ -328,10 +371,8 @@ handle_method_call (GDBusConnection       *connection,
 	tracker_gdbus_async_return_if_fail (miner != NULL, invocation);
 	tracker_gdbus_async_return_if_fail (TRACKER_IS_MINER_FILES_INDEX (miner), invocation);
 
-	if (g_strcmp0 (method_name, "IndexFile") == 0) {
-		handle_method_call_index_file (miner, invocation, parameters, FALSE);
-	} else if (g_strcmp0 (method_name, "IndexFileForProcess") == 0) {
-		handle_method_call_index_file (miner, invocation, parameters, TRUE);
+	if (g_strcmp0 (method_name, "IndexLocation") == 0) {
+		handle_method_call_index_location (miner, invocation, parameters);
 	} else {
 		g_assert_not_reached ();
 	}

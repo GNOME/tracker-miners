@@ -368,7 +368,7 @@ class MinerCrawlTest(fixtures.TrackerMinerTest):
             # indirectly by the new file)
             with open(document, 'w') as f:
                 f.write(DEFAULT_TEXT)
-            self.miner_fs.index_file(directory_uri)
+            self.miner_fs.index_location(directory_uri, [])
 
         new_urn = self.__get_file_urn(directory)
         # Ensure that children remain consistent, old and new ones

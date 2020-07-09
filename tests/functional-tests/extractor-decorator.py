@@ -66,7 +66,7 @@ class ExtractorDecoratorTest(fixtures.TrackerMinerTest):
             # deleted, so we should see the nie:title property change.
             with self.tracker.await_insert(fixtures.AUDIO_GRAPH, f'nie:title "{VALID_FILE_TITLE}"',
                                            timeout=cfg.AWAIT_TIMEOUT):
-                miner_fs.index_file(file_uri)
+                miner_fs.index_location(file_uri, [])
 
             title_result = store.query('SELECT ?title { <%s> nie:interpretedAs/nie:title ?title }' % file_uri)
             assert len(title_result) == 1

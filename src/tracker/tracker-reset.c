@@ -117,7 +117,7 @@ delete_info_recursively (GFile *file)
 
 	/* Request reindexing of this data, it was previously in the store. */
 	miner_manager = tracker_miner_manager_new_full (FALSE, NULL);
-	tracker_miner_manager_index_file (miner_manager, file, NULL, &error);
+	tracker_miner_manager_index_location (miner_manager, file, TRACKER_INDEX_LOCATION_FLAGS_NONE, NULL, &error);
 	g_object_unref (miner_manager);
 
 	if (error)

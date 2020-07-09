@@ -138,5 +138,5 @@ class MinerFsHelper ():
             self._target_wakeup_count = None
             GLib.source_remove(timeout_id)
 
-    def index_file(self, uri):
-        return self.index.IndexFile('(s)', uri)
+    def index_location(self, uri, flags=None):
+        return self.index.IndexLocation('(sas)', uri, flags or [])
