@@ -108,31 +108,14 @@ print_indexing_status (GFile                 *root,
 }
 
 static void
-index_file_cb (GObject      *source_object,
-               GAsyncResult *res,
-               gpointer      user_data)
+index_location_cb (GObject      *source_object,
+                   GAsyncResult *res,
+                   gpointer      user_data)
 {
 	GMainLoop *loop = user_data;
 	GError *error = NULL;
 
-	tracker_miner_manager_index_file_finish (TRACKER_MINER_MANAGER (source_object), res, &error);
-
-	if (error) {
-		g_error ("Error starting indexing: %s", error->message);
-	}
-
-	g_main_loop_quit (loop);
-}
-
-static void
-index_file_for_process_cb (GObject      *source_object,
-               GAsyncResult *res,
-               gpointer      user_data)
-{
-	GMainLoop *loop = user_data;
-	GError *error = NULL;
-
-	tracker_miner_manager_index_file_for_process_finish (TRACKER_MINER_MANAGER (source_object), res, NULL);
+	tracker_miner_manager_index_location_finish (TRACKER_MINER_MANAGER (source_object), res, NULL);
 
 	if (error) {
 		g_error ("Error starting indexing: %s", error->message);
@@ -212,14 +195,15 @@ index_run (void)
 	for (p = filenames; *p; p++) {
 		g_autoptr(GFile) file;
 		g_autoptr(TrackerIndexingStatus) status;
+		TrackerIndexLocationFlags flags = 0;
 
 		file = g_file_new_for_commandline_arg (*p);
 
 		if (monitor_mode) {
-			status = tracker_miner_manager_index_file_for_process_async (manager, file, NULL, index_file_for_process_cb, main_loop);
-		} else {
-			status = tracker_miner_manager_index_file_async (manager, file, NULL, index_file_cb, main_loop);
+			flags |= TRACKER_INDEX_LOCATION_FLAG_WATCH_FOR_CALLER;
 		}
+
+		status = tracker_miner_manager_index_location_async (manager, file, flags, NULL, index_location_cb, main_loop);
 
 		if (no_wait) {
 			/* We may detect an error straight away, even if we don't wait. */

@@ -26,6 +26,7 @@
 
 #include <gio/gio.h>
 
+#include <libtracker-miners-common/tracker-miners-enum-types.h>
 #include <tracker-indexing-status.h>
 
 G_BEGIN_DECLS
@@ -129,29 +130,20 @@ const gchar *        tracker_miner_manager_get_description    (TrackerMinerManag
                                                                const gchar          *miner);
 GDBusConnection *    tracker_miner_manager_get_dbus_connection (TrackerMinerManager *manager);
 
-TrackerIndexingStatus * tracker_miner_manager_index_file       (TrackerMinerManager  *manager,                                                                GFile                *file,
-                                                                GCancellable         *cancellable,
-                                                                GError              **error);
-TrackerIndexingStatus * tracker_miner_manager_index_file_async (TrackerMinerManager  *manager,
-                                                                GFile                *file,
-                                                                GCancellable         *cancellable,
-                                                                GAsyncReadyCallback   callback,
-                                                                gpointer              user_data);
-gboolean                tracker_miner_manager_index_file_finish        (TrackerMinerManager  *manager,
-                                                                        GAsyncResult         *result,
-                                                                        GError              **error);
-TrackerIndexingStatus * tracker_miner_manager_index_file_for_process   (TrackerMinerManager  *manager,
-                                                                        GFile                *file,
-                                                                        GCancellable         *cancellable,
-                                                                        GError              **error);
-TrackerIndexingStatus * tracker_miner_manager_index_file_for_process_async  (TrackerMinerManager  *manager,
-                                                                             GFile                *file,
-                                                                             GCancellable         *cancellable,
-                                                                             GAsyncReadyCallback   callback,
-                                                                             gpointer              user_data);
-gboolean                tracker_miner_manager_index_file_for_process_finish (TrackerMinerManager  *manager,
-                                                                             GAsyncResult         *result,
-                                                                             GError              **error);
+TrackerIndexingStatus * tracker_miner_manager_index_location        (TrackerMinerManager       *manager,
+                                                                     GFile                     *location,
+                                                                     TrackerIndexLocationFlags  flags,
+                                                                     GCancellable               *cancellable,
+                                                                     GError                    **error);
+TrackerIndexingStatus * tracker_miner_manager_index_location_async  (TrackerMinerManager       *manager,
+                                                                     GFile                     *location,
+                                                                     TrackerIndexLocationFlags  flags,
+                                                                     GCancellable              *cancellable,
+                                                                     GAsyncReadyCallback        callback,
+                                                                     gpointer                   user_data);
+gboolean                tracker_miner_manager_index_location_finish (TrackerMinerManager       *manager,
+                                                                     GAsyncResult              *result,
+                                                                     GError                   **error);
 
 G_END_DECLS
 

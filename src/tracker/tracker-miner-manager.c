@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include <libtracker-miners-common/tracker-dbus.h>
+#include <libtracker-miners-common/tracker-enums.h>
 #include <libtracker-miners-common/tracker-type-utils.h>
 #include <libtracker-miners-common/tracker-domain-ontology.h>
 
@@ -1481,16 +1482,16 @@ typedef struct {
 	TrackerIndexingStatus *status;
 
 	GFile *root;
-	gboolean for_process;
+	TrackerIndexLocationFlags flags;
 
 	GMainLoop *main_loop;
 } TrackerIndexingTaskData;
 
 static TrackerIndexingTaskData *
-tracker_indexing_task_data_new (GTask                 *task,
-                                TrackerIndexingStatus *status,
-                                GFile                 *root,
-                                gboolean               for_process)
+tracker_indexing_task_data_new (GTask                     *task,
+                                TrackerIndexingStatus     *status,
+                                GFile                     *root,
+                                TrackerIndexLocationFlags  flags)
 {
 	TrackerIndexingTaskData *data;
 
@@ -1499,7 +1500,7 @@ tracker_indexing_task_data_new (GTask                 *task,
 	data->status = g_object_ref (status);
 	data->task = g_object_ref (task);
 	data->root = g_object_ref (root);
-	data->for_process = for_process;
+	data->flags = flags;
 
 	data->main_loop = g_main_loop_new (NULL, 0);
 
@@ -1530,6 +1531,30 @@ tracker_indexing_task_complete_cb (TrackerIndexingStatus *status,
 	g_main_loop_quit (data->main_loop);
 }
 
+static gchar **
+index_location_flags_to_strv (TrackerIndexLocationFlags flags)
+{
+	GFlagsClass *typeclass;
+	GPtrArray *flags_array;
+	int i;
+
+	typeclass = g_type_class_ref (TRACKER_TYPE_INDEX_LOCATION_FLAGS);
+	flags_array = g_ptr_array_new ();
+
+	for (i = 0; i < typeclass->n_values; i++) {
+		GFlagsValue *value;
+
+		value = &typeclass->values[i];
+
+		if (flags & (value->value)) {
+			g_ptr_array_add (flags_array, (char *)value->value_nick);
+		}
+	}
+
+	g_type_class_unref (typeclass);
+	return (gchar **) g_ptr_array_free (flags_array, FALSE);
+}
+
 static void
 tracker_indexing_task_run (GTask        *task,
                            gpointer      source_object,
@@ -1540,10 +1565,9 @@ tracker_indexing_task_run (GTask        *task,
 	TrackerIndexingTaskData *data = task_data;
 	TrackerMinerManagerPrivate *priv;
 	gchar *uri;
+	gchar **flags_strv;
 	GVariant *v;
 	GError *error = NULL;
-	const gchar **flags;
-	const gchar *flags_watch[] = {"watch-for-caller", NULL};
 
 	priv = tracker_miner_manager_get_instance_private (manager);
 
@@ -1552,19 +1576,14 @@ tracker_indexing_task_run (GTask        *task,
 	tracker_indexing_status_start_watching (data->status, manager, 0, &error);
 
 	uri = g_file_get_uri (data->root);
-
-	if (data->for_process) {
-		flags = flags_watch;
-	} else {
-		flags = NULL;
-	}
+	flags_strv = index_location_flags_to_strv (data->flags);
 
 	v = g_dbus_connection_call_sync (priv->connection,
 	                                 "org.freedesktop.Tracker3.Miner.Files",
 	                                 "/org/freedesktop/Tracker3/Miner/Files/Index",
 	                                 "org.freedesktop.Tracker3.Miner.Files.Index",
 	                                 "IndexLocation",
-	                                 g_variant_new ("(sas)", uri, flags),
+	                                 g_variant_new ("(sas)", uri, flags_strv),
 	                                 NULL,
 	                                 G_DBUS_CALL_FLAGS_NONE,
 	                                 -1,
@@ -1572,6 +1591,7 @@ tracker_indexing_task_run (GTask        *task,
 	                                 &error);
 
 	g_free (uri);
+	g_free (flags_strv);
 
 	if (error) {
 		g_prefix_error (&error, "Unable to activate tracker-miner-fs: ");
@@ -1588,13 +1608,14 @@ tracker_indexing_task_run (GTask        *task,
 }
 
 /**
- * tracker_miner_manager_index_file:
+ * tracker_miner_manager_index_location:
  * @manager: a #TrackerMinerManager
- * @file: a #GFile instance of a file or directory
+ * @location: a #GFile instance of a file or directory
+ * @flags: values from #TrackerIndexLocationFlags
  * @cancellable: (allow-none): a #GCancellable, or %NULL
  * @error: return location for errors
  *
- * Instructs Tracker to index the location pointed to by @file, and waits
+ * Instructs Tracker to index the location pointed to by @location, and waits
  * until indexing is completely finished.
  *
  * The @error will be set if an error is encountered.
@@ -1604,10 +1625,11 @@ tracker_indexing_task_run (GTask        *task,
  * Since: 2.0
  **/
 TrackerIndexingStatus *
-tracker_miner_manager_index_file (TrackerMinerManager  *manager,
-                                  GFile                *file,
-                                  GCancellable         *cancellable,
-                                  GError              **error)
+tracker_miner_manager_index_location (TrackerMinerManager        *manager,
+                                      GFile                      *file,
+                                      TrackerIndexLocationFlags   flags,
+                                      GCancellable               *cancellable,
+                                      GError                    **error)
 {
 	GTask *task;
 	TrackerIndexingStatus *status;
@@ -1617,7 +1639,7 @@ tracker_miner_manager_index_file (TrackerMinerManager  *manager,
 
 	status = tracker_indexing_status_new (task, file);
 
-	data = tracker_indexing_task_data_new (task, status, file, FALSE);
+	data = tracker_indexing_task_data_new (task, status, file, flags);
 	g_task_set_task_data (task, data, (GDestroyNotify) tracker_indexing_task_data_free);
 
 	g_task_run_in_thread_sync (G_TASK (task), tracker_indexing_task_run);
@@ -1629,17 +1651,18 @@ tracker_miner_manager_index_file (TrackerMinerManager  *manager,
 }
 
 /**
- * tracker_miner_manager_index_file_async:
+ * tracker_miner_manager_index_location_async:
  * @manager: a #TrackerMinerManager
- * @file: a #GFile instance of a file or directory
+ * @location: a #GFile instance of a file or directory
+ * @flags: values from #TrackerIndexLocationFlags
  * @cancellable: (allow-none): a #GCancellable, or %NULL
  * @callback: (scope async): a #GAsyncReadyCallback to call when indexing is complete.
  * @user_data: the data to pass to the callback function
  *
- * Instructs Tracker to index the location pointed to by @file.
+ * Instructs Tracker to index the location pointed to by @location.
  *
  * The @callback will be called when the indexing is completed. You can then
- * call tracker_miner_manager_index_file_finish() to get the result.
+ * call tracker_miner_manager_index_location_finish() to get the result.
  *
  * You can monitor the progress of the indexing using the returned
  * #TrackerIndexingStatus instance.
@@ -1649,11 +1672,12 @@ tracker_miner_manager_index_file (TrackerMinerManager  *manager,
  * Since: 0.16
  **/
 TrackerIndexingStatus *
-tracker_miner_manager_index_file_async (TrackerMinerManager *manager,
-                                        GFile               *file,
-                                        GCancellable        *cancellable,
-                                        GAsyncReadyCallback  callback,
-                                        gpointer             user_data)
+tracker_miner_manager_index_location_async (TrackerMinerManager       *manager,
+                                            GFile                     *location,
+                                            TrackerIndexLocationFlags  flags,
+                                            GCancellable              *cancellable,
+                                            GAsyncReadyCallback        callback,
+                                            gpointer                   user_data)
 {
 	GTask *task;
 	TrackerIndexingStatus *status;
@@ -1661,9 +1685,9 @@ tracker_miner_manager_index_file_async (TrackerMinerManager *manager,
 
 	task = g_task_new (manager, cancellable, callback, user_data);
 
-	status = tracker_indexing_status_new (task, file);
+	status = tracker_indexing_status_new (task, location);
 
-	data = tracker_indexing_task_data_new (task, status, file, FALSE);
+	data = tracker_indexing_task_data_new (task, status, location, flags);
 	g_task_set_task_data (task, data, (GDestroyNotify) tracker_indexing_task_data_free);
 
 	g_task_run_in_thread (task, tracker_indexing_task_run);
@@ -1672,12 +1696,12 @@ tracker_miner_manager_index_file_async (TrackerMinerManager *manager,
 }
 
 /**
- * tracker_miner_manager_index_file_finish:
+ * tracker_miner_manager_index_location_finish:
  * @manager: a #TrackerMinerManager
  * @result: a #GAsyncResult
  * @error: return location for errors
  *
- * Finishes a request to index a file. See tracker_miner_manager_index_file_async()
+ * Finishes a request to index a file. See tracker_miner_manager_index_location_async()
  *
  * On failure @error will be set.
  *
@@ -1688,121 +1712,9 @@ tracker_miner_manager_index_file_async (TrackerMinerManager *manager,
  * Since: 0.16
  **/
 gboolean
-tracker_miner_manager_index_file_finish (TrackerMinerManager *manager,
-                                         GAsyncResult        *result,
-                                         GError             **error)
-{
-	return g_task_propagate_boolean (G_TASK (result), error);
-}
-
-/**
- * tracker_miner_manager_index_file_for_process:
- * @manager: a #TrackerMinerManager
- * @file: a #GFile instance of a file or directory
- * @cancellable: (allow-none): a #GCancellable, or %NULL
- * @error: return location for errors
- *
- * This function operates exactly the same way as
- * tracker_miner_manager_index_file() with the exception that if the
- * calling process dies, the indexing is cancelled. This API is useful
- * for cases where the calling process wants to tie the indexing
- * operation closely to its own lifetime.
- *
- * The @error will be set if an error is encountered while creating the task.
- *
- * Returns: (transfer full): a new #TrackerIndexingStatus instance
- *
- * Since: 1.10
- **/
-TrackerIndexingStatus *
-tracker_miner_manager_index_file_for_process (TrackerMinerManager  *manager,
-                                              GFile                *file,
-                                              GCancellable         *cancellable,
-                                              GError              **error)
-{
-	GTask *task;
-	TrackerIndexingStatus *status;
-	TrackerIndexingTaskData *data;
-
-	task = g_task_new (manager, cancellable, NULL, NULL);
-
-	status = tracker_indexing_status_new (task, file);
-
-	data = tracker_indexing_task_data_new (task, status, file, TRUE);
-	g_task_set_task_data (task, data, (GDestroyNotify) tracker_indexing_task_data_free);
-
-	g_task_run_in_thread_sync (G_TASK (task), tracker_indexing_task_run);
-
-	g_task_propagate_boolean (G_TASK (task), error);
-
-	return status;
-}
-
-/**
- * tracker_miner_manager_index_file_for_process_async:
- * @manager: a #TrackerMinerManager
- * @file: a #GFile instance of a file or directory
- * @cancellable: (allow-none): a #GCancellable, or %NULL
- * @callback: (scope async): a #GAsyncReadyCallback to call when indexing is complete.
- * @user_data: the data to pass to the callback function
- *
- * This function operates exactly the same way as
- * tracker_miner_manager_index_file() with the exception that if the
- * calling process dies, the indexing is cancelled. This API is useful
- * for cases where the calling process wants to tie the indexing
- * operation closely to its own lifetime.
- *
- * The @callback will be called when the indexing is completed. You can then
- * call tracker_miner_manager_index_file_finish() to get the result.
- *
- * You can monitor the progress of the indexing using the returned
- * #TrackerIndexingStatus instance.
- *
- * Since: 1.10
- **/
-TrackerIndexingStatus *
-tracker_miner_manager_index_file_for_process_async (TrackerMinerManager *manager,
-                                                    GFile               *file,
-                                                    GCancellable        *cancellable,
-                                                    GAsyncReadyCallback  callback,
-                                                    gpointer             user_data)
-{
-	GTask *task;
-	TrackerIndexingStatus *status;
-	TrackerIndexingTaskData *data;
-
-	task = g_task_new (manager, cancellable, callback, user_data);
-
-	status = tracker_indexing_status_new (task, file);
-
-	data = tracker_indexing_task_data_new (task, status, file, TRUE);
-	g_task_set_task_data (task, data, (GDestroyNotify) tracker_indexing_task_data_free);
-
-	g_task_run_in_thread (G_TASK (task), tracker_indexing_task_run);
-
-	return status;
-}
-
-/**
- * tracker_miner_manager_index_file_for_process_finish:
- * @manager: a #TrackerMinerManager
- * @result: a #GAsyncResult
- * @error: return location for errors
- *
- * Finishes a request to index a file. See tracker_miner_manager_index_file_for_process_async()
- *
- * On failure @error will be set.
- *
- * The results of indexing are available through the #TrackerIndexingStatus API.
- *
- * Returns: %TRUE on success, otherwise %FALSE.
- *
- * Since: 1.10
- **/
-gboolean
-tracker_miner_manager_index_file_for_process_finish (TrackerMinerManager  *manager,
-                                                     GAsyncResult         *result,
-                                                     GError              **error)
+tracker_miner_manager_index_location_finish (TrackerMinerManager *manager,
+                                             GAsyncResult        *result,
+                                             GError             **error)
 {
 	return g_task_propagate_boolean (G_TASK (result), error);
 }
