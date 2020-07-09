@@ -39,13 +39,6 @@ static const gchar introspection_xml[] =
   "  </interface>"
   "</node>";
 
-/* If defined, then a file provided to be indexed MUST be a child in
- * an configured path. if undefined, any file can be indexed, however
- * it is up to applications to maintain files outside the configured
- * locations.
- */
-#undef REQUIRE_LOCATION_IN_CONFIG
-
 typedef struct {
 	TrackerDBusRequest *request;
 	GDBusMethodInvocation *invocation;
@@ -287,19 +280,6 @@ handle_method_call_index_location (TrackerMinerFilesIndex *miner,
 	is_dir = (g_file_info_get_file_type (file_info) == G_FILE_TYPE_DIRECTORY);
 	g_object_unref (file_info);
 
-#ifdef REQUIRE_LOCATION_IN_CONFIG
-	do_checks = TRUE;
-	if (!tracker_miner_files_is_file_eligible (priv->files_miner, file)) {
-		internal_error = g_error_new_literal (TRACKER_MINER_INDEX_ERROR,
-		                                      TRACKER_MINER_INDEX_ERROR_NOT_ELIGIBLE,
-		                                      "File is not eligible to be indexed");
-		tracker_dbus_request_end (request, internal_error);
-		g_dbus_method_invocation_return_gerror (invocation, internal_error);
-
-		return;
-	}
-#endif /* REQUIRE_LOCATION_IN_CONFIG */
-
 	if (is_dir) {
 		TrackerIndexingTree *indexing_tree;
 		TrackerDirectoryFlags flags;
@@ -350,7 +330,7 @@ handle_method_call_index_location (TrackerMinerFilesIndex *miner,
 			return;
 		} else {
 			tracker_miner_fs_check_file (TRACKER_MINER_FS (priv->files_miner),
-			                             file, G_PRIORITY_HIGH, do_checks);
+			                             file, G_PRIORITY_HIGH, FALSE);
 		}
 	}
 
