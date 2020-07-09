@@ -118,7 +118,8 @@ class MinerOnDemandTest(fixtures.TrackerMinerTest):
 
     def test_index_location_invalid_flag(self):
         testdir = pathlib.Path(self.workdir).joinpath('test-not-monitored')
-        self.miner_fs.index_location(testdir.as_uri(), ['invalid-flag-which-should-trigger-an-error'])
+        with self.assertRaises(GLib.GError) as e:
+            self.miner_fs.index_location(testdir.as_uri(), ['invalid-flag-which-should-trigger-an-error'])
 
 
 
