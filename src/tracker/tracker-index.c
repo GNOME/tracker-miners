@@ -200,7 +200,7 @@ index_run (void)
 		file = g_file_new_for_commandline_arg (*p);
 
 		if (monitor_mode) {
-			flags |= TRACKER_INDEX_LOCATION_FLAG_WATCH_FOR_CALLER;
+			flags |= TRACKER_INDEX_LOCATION_WATCH_FOR_CALLER;
 		}
 
 		status = tracker_miner_manager_index_location_async (manager, file, flags, NULL, index_location_cb, main_loop);

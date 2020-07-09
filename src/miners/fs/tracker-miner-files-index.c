@@ -116,7 +116,7 @@ await_miner_fs_data_new (GFile                 *file,
 
 	data = g_slice_new0 (AwaitMinerFsData);
 	data->file = g_object_ref (file);
-	data->request = g_object_ref (request);
+	data->request = request;
 	data->invocation = g_object_ref (invocation);
 
 	return data;
@@ -224,11 +224,12 @@ parse_index_location_flags (const gchar **flags_strv,
 	TrackerIndexLocationFlags flags = 0;
 	GFlagsClass *type_class;
 	GFlagsValue *value;
-	const gchar *flag_string;
 
 	type_class = g_type_class_ref (TRACKER_TYPE_INDEX_LOCATION_FLAGS);
 
-	for (flag_string = *flags_strv; flag_string; flag_string ++) {
+	while (*flags_strv) {
+		const gchar *flag_string = *flags_strv;
+
 		value = g_flags_get_value_by_nick (type_class, flag_string);
 
 		if (value == NULL) {
@@ -241,6 +242,8 @@ parse_index_location_flags (const gchar **flags_strv,
 		}
 
 		flags |= value->value;
+
+		flags_strv ++;
 	}
 
 	g_type_class_unref (type_class);
@@ -381,12 +384,12 @@ handle_method_call_index_location (TrackerMinerFilesIndex *miner,
 		return;
 	}
 
-	watch_for_caller = flags & TRACKER_INDEX_LOCATION_FLAG_WATCH_FOR_CALLER;
+	watch_for_caller = flags & TRACKER_INDEX_LOCATION_WATCH_FOR_CALLER;
 
 	is_dir = (g_file_info_get_file_type (file_info) == G_FILE_TYPE_DIRECTORY);
 	g_object_unref (file_info);
 
-	if (flags & TRACKER_INDEX_LOCATION_FLAG_AWAIT_MINER_FS) {
+	if (flags & TRACKER_INDEX_LOCATION_AWAIT_MINER_FS) {
 		AwaitMinerFsData *data;
 
 		data = await_miner_fs_data_new (file, request, invocation);
@@ -415,7 +418,7 @@ handle_method_call_index_location (TrackerMinerFilesIndex *miner,
 		}
 	}
 
-	if (flags & TRACKER_INDEX_LOCATION_FLAG_AWAIT_MINER_FS) {
+	if (flags & TRACKER_INDEX_LOCATION_AWAIT_MINER_FS) {
 		/* DBus request will return in await_miner_fs_files_processed_cb */
 	} else {
 		tracker_dbus_request_end (request, NULL);
