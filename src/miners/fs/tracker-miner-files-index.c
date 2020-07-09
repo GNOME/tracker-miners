@@ -225,6 +225,66 @@ parse_index_location_flags (const gchar **flags_strv,
 	return flags;
 }
 
+/* Returns TRUE if 'directory' is currently indexed by Tracker */
+static gboolean
+directory_is_configured_for_indexing (TrackerIndexingTree *indexing_tree,
+                                      GFile               *directory)
+{
+	GFile *root;
+	TrackerDirectoryFlags flags;
+
+	root = tracker_indexing_tree_get_root (indexing_tree, directory, &flags);
+
+	if (root) {
+		if (flags & TRACKER_DIRECTORY_FLAG_RECURSE) {
+			return TRUE;
+		} else if (g_file_equal (root, directory) && g_file_has_parent (directory, root)) {
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
+static void
+index_directory (TrackerMinerFilesIndex *miner,
+                 GFile                  *directory,
+                 GDBusMethodInvocation  *invocation,
+                 gboolean                watch_for_caller)
+{
+	TrackerMinerFilesIndexPrivate *priv;
+	TrackerIndexingTree *indexing_tree;
+	gboolean is_watched, needs_watch = FALSE;
+
+	priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (miner);
+
+	indexing_tree = tracker_miner_fs_get_indexing_tree (TRACKER_MINER_FS (priv->files_miner));
+
+	if (directory_is_configured_for_indexing (indexing_tree, directory)) {
+		tracker_indexing_tree_notify_update (indexing_tree, directory, TRUE);
+		needs_watch = FALSE;
+	} else {
+		tracker_indexing_tree_add (indexing_tree, directory,
+			                       TRACKER_DIRECTORY_FLAG_RECURSE |
+			                       TRACKER_DIRECTORY_FLAG_PRIORITY |
+			                       TRACKER_DIRECTORY_FLAG_CHECK_MTIME |
+			                       TRACKER_DIRECTORY_FLAG_MONITOR);
+		needs_watch = TRUE;
+	}
+
+	/* If the directory had already subscribers, we want to add all
+	 * further watches, so the directory survives as long as there's
+	 * watchers.
+	 */
+	is_watched = tracker_miner_files_peer_listener_is_file_watched (priv->peer_listener, directory);
+
+	if (watch_for_caller && (is_watched || needs_watch)) {
+		tracker_miner_files_peer_listener_add_watch (priv->peer_listener,
+			                                         g_dbus_method_invocation_get_sender (invocation),
+			                                         directory);
+	}
+}
+
 static void
 handle_method_call_index_location (TrackerMinerFilesIndex *miner,
                                    GDBusMethodInvocation  *invocation,
@@ -235,12 +295,11 @@ handle_method_call_index_location (TrackerMinerFilesIndex *miner,
 	g_autoptr(GFile) file = NULL;
 	GFileInfo *file_info;
 	gboolean is_dir;
-	gboolean do_checks = FALSE;
 	g_autoptr(GError) internal_error = NULL;
 	const gchar *file_uri;
 	g_autofree const gchar **flags_strv = NULL;
 	TrackerIndexLocationFlags flags;
-	gboolean watch_source;
+	gboolean watch_for_caller;
 
 	priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (miner);
 
@@ -256,7 +315,7 @@ handle_method_call_index_location (TrackerMinerFilesIndex *miner,
 		return;
 	}
 
-	watch_source = flags & TRACKER_INDEX_LOCATION_FLAG_WATCH_FOR_CALLER;
+	watch_for_caller = flags & TRACKER_INDEX_LOCATION_FLAG_WATCH_FOR_CALLER;
 
 	request = tracker_g_dbus_request_begin (invocation, "%s(uri:'%s')", __FUNCTION__, file_uri);
 
@@ -281,46 +340,9 @@ handle_method_call_index_location (TrackerMinerFilesIndex *miner,
 	g_object_unref (file_info);
 
 	if (is_dir) {
-		TrackerIndexingTree *indexing_tree;
-		TrackerDirectoryFlags flags;
-		gboolean is_watched, needs_watch = FALSE;
-		GFile *root;
-
-		indexing_tree = tracker_miner_fs_get_indexing_tree (TRACKER_MINER_FS (priv->files_miner));
-		root = tracker_indexing_tree_get_root (indexing_tree, file, &flags);
-
-		/* If the directory had already subscribers, we want to add all
-		 * further watches, so the directory survives as long as there's
-		 * watchers.
-		 */
-		is_watched = tracker_miner_files_peer_listener_is_file_watched (priv->peer_listener, file);
-
-		/* Check whether the requested dir is not over a (recursively)
-		 * watched directory already, in that case we don't add the
-		 * directory (nor add a watch if we're positive it comes from
-		 * config).
-		 */
-		if (!root ||
-		    (!(flags & TRACKER_DIRECTORY_FLAG_RECURSE) &&
-		     !g_file_equal (root, file) &&
-		     !g_file_has_parent (file, root))) {
-			tracker_indexing_tree_add (indexing_tree, file,
-			                           TRACKER_DIRECTORY_FLAG_RECURSE |
-			                           TRACKER_DIRECTORY_FLAG_PRIORITY |
-			                           TRACKER_DIRECTORY_FLAG_CHECK_MTIME |
-			                           TRACKER_DIRECTORY_FLAG_MONITOR);
-			needs_watch = TRUE;
-		} else {
-			tracker_indexing_tree_notify_update (indexing_tree, file, TRUE);
-		}
-
-		if (watch_source && (is_watched || needs_watch)) {
-			tracker_miner_files_peer_listener_add_watch (priv->peer_listener,
-			                                             g_dbus_method_invocation_get_sender (invocation),
-			                                             file);
-		}
+		index_directory (miner, file, invocation, watch_for_caller);
 	} else {
-		if (watch_source) {
+		if (watch_for_caller) {
 			internal_error = g_error_new_literal (TRACKER_MINER_INDEX_ERROR,
 			                                      TRACKER_MINER_INDEX_ERROR_DIRECTORIES_ONLY,
 			                                      "Only directories can be processed in `watch-for-caller` mode");
