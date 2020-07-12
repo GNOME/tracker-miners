@@ -40,9 +40,8 @@ guint    tracker_priority_queue_get_length         (TrackerPriorityQueue *queue)
 GList *  tracker_priority_queue_add     (TrackerPriorityQueue *queue,
                                          gpointer              data,
                                          gint                  priority);
-void     tracker_priority_queue_foreach (TrackerPriorityQueue *queue,
-                                         GFunc                 func,
-                                         gpointer              user_data);
+void     tracker_priority_queue_clear   (TrackerPriorityQueue *queue,
+                                         GDestroyNotify        free_func);
 
 gboolean tracker_priority_queue_foreach_remove (TrackerPriorityQueue *queue,
                                                 GEqualFunc            compare_func,

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<node name="/">
+<node name="/" xmlns:doc="http://www.freedesktop.org/dbus/1.0/doc.dtd">
   <interface name="org.freedesktop.Tracker3.Miner">
     <annotation name="org.freedesktop.DBus.GLib.CSymbol" value="_tracker_miner_dbus"/>
     <method name="Start">
@@ -51,6 +51,11 @@
       <arg type="s" name="status" />
       <arg type="d" name="progress" />
       <arg type="i" name="remaining_time" />
+    </signal>
+    <signal name='FilesProcessed'>
+      <arg type='a(sbs)' name='files'>
+        <doc:doc><doc:summary>Array of (URI, success, message) for each processed file.</doc:summary></doc:doc>
+      </arg>
     </signal>
   </interface>
 </node>

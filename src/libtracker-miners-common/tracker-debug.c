@@ -25,6 +25,7 @@
 static const GDebugKey tracker_miners_debug_keys[] = {
   { "config", TRACKER_DEBUG_CONFIG },
   { "miner-fs-events", TRACKER_DEBUG_MINER_FS_EVENTS },
+  { "miner-fs-sparql", TRACKER_DEBUG_MINER_FS_SPARQL },
   { "monitors", TRACKER_DEBUG_MONITORS },
   { "statistics", TRACKER_DEBUG_STATISTICS },
   { "status", TRACKER_DEBUG_STATUS },

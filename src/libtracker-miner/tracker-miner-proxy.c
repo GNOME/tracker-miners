@@ -52,6 +52,9 @@ typedef struct {
 	gchar *dbus_path;
 	guint registration_id;
 	GHashTable *pauses;
+
+	GList *files_processed;
+	guint files_processed_timeout_id;
 } TrackerMinerProxyPrivate;
 
 typedef struct {
@@ -76,7 +79,7 @@ G_DEFINE_TYPE_WITH_CODE (TrackerMinerProxy, tracker_miner_proxy, G_TYPE_OBJECT,
                          G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE, tracker_miner_proxy_initable_iface_init))
 
 static const gchar introspection_xml[] =
-  "<node>"
+  "<node xmlns:doc=\"http://www.freedesktop.org/dbus/1.0/doc.dtd\">"
   "  <interface name='org.freedesktop.Tracker3.Miner'>"
   "    <method name='Start'>"
   "    </method>"
@@ -115,10 +118,17 @@ static const gchar introspection_xml[] =
   "      <arg type='d' name='progress' />"
   "      <arg type='i' name='remaining_time' />"
   "    </signal>"
+  "    <signal name='FilesProcessed'>"
+  "      <arg type='a(sbs)' name='files'>"
+  "        <doc:doc><doc:summary>Array of (URI, success, message) for each processed file.</doc:summary></doc:doc>"
+  "      </arg>"
+  "    </signal>"
   "  </interface>"
   "</node>";
 
 #define TRACKER_SERVICE "org.freedesktop.Tracker3"
+
+#define FILES_PROCESSED_INTERVAL_MSEC 200
 
 static PauseData *
 pause_data_new (const gchar *application,
@@ -730,6 +740,63 @@ miner_progress_cb (TrackerMiner      *miner,
 }
 
 static gboolean
+emit_files_processed (gpointer user_data)
+{
+	TrackerMinerProxy *proxy;
+	TrackerMinerProxyPrivate *priv;
+	GVariantBuilder builder;
+	GVariant *variant;
+	GList *l;
+
+	proxy = TRACKER_MINER_PROXY (user_data);
+	priv = tracker_miner_proxy_get_instance_private (proxy);
+
+	/* Assemble the individual GVariant values into a single array */
+	g_variant_builder_init (&builder, G_VARIANT_TYPE ("(a(sbs))"));
+	g_variant_builder_open (&builder, G_VARIANT_TYPE ("a(sbs)"));
+	for (l = g_list_reverse (priv->files_processed); l; l = l->next) {
+		g_variant_builder_add_value (&builder, l->data);
+	}
+	g_variant_builder_close (&builder);
+	variant = g_variant_builder_end (&builder);
+
+	/* Emit the signal. Variant reference is sunk here */
+	emit_dbus_signal (proxy, "FilesProcessed", variant);
+
+	priv->files_processed_timeout_id = 0;
+
+	g_list_free (priv->files_processed);
+	priv->files_processed = NULL;
+
+	return G_SOURCE_REMOVE;
+}
+
+static void
+miner_file_processed_cb (TrackerMiner      *miner,
+                         const gchar       *uri,
+                         gboolean           success,
+                         const gchar       *message,
+                         TrackerMinerProxy *proxy)
+{
+	TrackerMinerProxyPrivate *priv;
+	GVariant *variant;
+
+	priv = tracker_miner_proxy_get_instance_private (proxy);
+
+	/* For performance reasons, we group the internal signals and only emit
+	 * over D-Bus a few times a second.
+	 */
+	variant = g_variant_new ("(sbs)", uri, success, message ? message : "");
+
+	priv->files_processed = g_list_prepend (priv->files_processed, variant);
+	if (priv->files_processed_timeout_id == 0) {
+		priv->files_processed_timeout_id = g_timeout_add (FILES_PROCESSED_INTERVAL_MSEC,
+		                                                  (GSourceFunc) emit_files_processed,
+		                                                  proxy);
+	}
+}
+
+static gboolean
 tracker_miner_proxy_initable_init (GInitable     *initable,
                                    GCancellable  *cancellable,
                                    GError       **error)
@@ -773,6 +840,8 @@ tracker_miner_proxy_initable_init (GInitable     *initable,
 	                  G_CALLBACK (miner_resumed_cb), proxy);
 	g_signal_connect (priv->miner, "progress",
 	                  G_CALLBACK (miner_progress_cb), proxy);
+	g_signal_connect (priv->miner, "file-processed",
+	                  G_CALLBACK (miner_file_processed_cb), proxy);
 
 	return TRUE;
 }

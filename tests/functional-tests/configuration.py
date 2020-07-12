@@ -43,14 +43,20 @@ TEST_DBUS_DAEMON_CONFIG_FILE = config['TEST_DBUS_DAEMON_CONFIG_FILE']
 TRACKER_EXTRACT_PATH = config['TRACKER_EXTRACT_PATH']
 
 
+def cli_dir():
+    return config['TEST_CLI_DIR']
+
+
 def test_environment(tmpdir):
     return {
         'DCONF_PROFILE': config['TEST_DCONF_PROFILE'],
+        'TRACKER_CLI_SUBCOMMANDS_DIR': config['TEST_CLI_SUBCOMMANDS_DIR'],
         'TRACKER_TEST_DOMAIN_ONTOLOGY_RULE': config['TEST_DOMAIN_ONTOLOGY_RULE'],
         'TRACKER_EXTRACTOR_RULES_DIR': config['TEST_EXTRACTOR_RULES_DIR'],
         'TRACKER_EXTRACTORS_DIR': config['TEST_EXTRACTORS_DIR'],
         'GSETTINGS_SCHEMA_DIR': config['TEST_GSETTINGS_SCHEMA_DIR'],
         'TRACKER_LANGUAGE_STOP_WORDS_DIR': config['TEST_LANGUAGE_STOP_WORDS_DIR'],
+        'TRACKER_MINER_SERVICES_DIR': config['TEST_MINER_SERVICES_DIR'],
         'TRACKER_WRITEBACK_MODULES_DIR': config['TEST_WRITEBACK_MODULES_DIR'],
         'XDG_CACHE_HOME': os.path.join(tmpdir, 'cache'),
         'XDG_CONFIG_HOME': os.path.join(tmpdir, 'config'),

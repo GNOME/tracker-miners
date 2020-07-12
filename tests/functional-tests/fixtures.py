@@ -23,10 +23,10 @@ Fixtures used by the tracker-miners functional-tests.
 """
 
 import gi
+gi.require_version('Gio', '2.0')
 gi.require_version('Gst', '1.0')
 gi.require_version('Tracker', '3.0')
-gi.require_version('Gio', '2.0')
-from gi.repository import GLib, Gio
+from gi.repository import Gio, GLib
 from gi.repository import Tracker
 
 import errno
@@ -37,12 +37,13 @@ import pathlib
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import unittest as ut
 
 import trackertestutils.helpers
 import configuration as cfg
-from minerhelper import MinerFsHelper
+import helpers
 
 log = logging.getLogger(__name__)
 
@@ -64,9 +65,24 @@ def tracker_test_main():
         handler_stderr.addFilter(logging.Filter('trackertestutils.dbusdaemon.stderr'))
         handler_stdout = logging.StreamHandler(stream=sys.stderr)
         handler_stdout.addFilter(logging.Filter('trackertestutils.dbusdaemon.stdout'))
+        handler_test_fixtures = logging.StreamHandler(stream=sys.stdout)
+        handler_test_fixtures.addFilter(logging.Filter('fixtures'))
         logging.basicConfig(level=logging.INFO,
-                            handlers=[handler_stderr, handler_stdout],
+                            handlers=[handler_stderr, handler_stdout,
+                                      handler_test_fixtures],
                             format='%(message)s')
+
+    # Avoid the test process sending itself SIGTERM via the GDBusConnection
+    # 'exit-on-close' feature.
+    #
+    # This can happen if something calls a g_bus_get_*() function -- I saw
+    # problems when I started using GFile in a test, which causes GIO and GVFS
+    # to connect to the session bus in the background. There may be an
+    # underlying bug at work, but anyway it's important that our tests don't
+    # randomly terminate themselves.
+    #
+    session_bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+    session_bus.set_exit_on_close(False)
 
     ut.main(failfast=True, verbosity=2)
 
@@ -109,9 +125,10 @@ class TrackerMinerTest(ut.TestCase):
 
             self.sandbox.set_config(self.config())
 
-            self.miner_fs = MinerFsHelper(self.sandbox.get_session_bus_connection())
+            self.miner_fs = helpers.MinerFsHelper(self.sandbox.get_session_bus_connection())
             self.miner_fs.start()
-            self.miner_fs.start_watching_progress()
+
+            self.extractor = helpers.ExtractorHelper(self.sandbox.get_session_bus_connection())
 
             self.tracker = trackertestutils.helpers.StoreHelper(
                 self.miner_fs.get_sparql_connection())
@@ -121,7 +138,8 @@ class TrackerMinerTest(ut.TestCase):
 
     def tearDown(self):
         self.sandbox.stop()
-        cfg.remove_monitored_test_dir(self.workdir)
+        #cfg.remove_monitored_test_dir(self.workdir)
+        log.info("DIR AT %s", self.workdir)
 
     def path(self, filename):
         return os.path.join(self.workdir, filename)
@@ -137,8 +155,32 @@ class TrackerMinerTest(ut.TestCase):
         if self.tracker.ask("ASK { <%s> a rdfs:Resource }" % urn) == True:
             self.fail("Resource <%s> should not exist" % urn)
 
-    def await_document_inserted(self, path, content=None):
+    def assertFileNotIndexed(self, url_or_path):
+        if isinstance(url_or_path, pathlib.Path):
+            url = url_or_path.as_uri()
+        else:
+            assert url_or_path.startswith('file://')
+            url = url_or_path
+
+        if self.tracker.ask("ASK { ?r a rdfs:Resource ; nie:url <%s> }" % url) == True:
+            self.fail("File <%s> should not be indexed" % url)
+
+    def assertFileIndexed(self, url_or_path):
+        if isinstance(url_or_path, pathlib.Path):
+            url = url_or_path.as_uri()
+        else:
+            assert url_or_path.startswith('file://')
+            url = url_or_path
+
+        if self.tracker.ask("ASK { ?r a rdfs:Resource ; nie:url <%s> }" % url) == False:
+            self.fail("File <%s> should be indexed, but is not." % url)
+
+    def await_document_inserted(self, path, content=None, timeout=cfg.AWAIT_TIMEOUT):
         """Wraps await_insert() context manager."""
+
+        # Safety check, you can get confused if you pass a URI because
+        # pathlib.Path.as_uri() will convert a valid URI into an invalid one.
+        assert isinstance(path, pathlib.Path) or not path.startswith('file://')
         url = self.uri(path)
 
         expected = [
@@ -150,7 +192,8 @@ class TrackerMinerTest(ut.TestCase):
             content_escaped = Tracker.sparql_escape_string(content)
             expected += [f'nie:plainTextContent "{content_escaped}"']
 
-        return self.tracker.await_insert(DOCUMENTS_GRAPH, '; '.join(expected), timeout=cfg.AWAIT_TIMEOUT)
+        return self.tracker.await_insert(
+            DOCUMENTS_GRAPH, '; '.join(expected), timeout=timeout)
 
     def await_document_uri_change(self, resource_id, from_path, to_path):
         """Wraps await_update() context manager."""
@@ -456,3 +499,48 @@ class TrackerWritebackTest (TrackerMinerTest):
         raise Exception(
             "Timeout waiting for %s to be updated (mtime has not changed)" %
             filename)
+
+
+class CliError(Exception):
+    pass
+
+
+class TrackerCommandLineTestCase(TrackerMinerTest):
+    def setUp(self):
+        super(TrackerCommandLineTestCase, self).setUp()
+
+        self.extra_env = cfg.test_environment(self.workdir)
+
+        path = os.environ.get('PATH', []).split(':')
+        self.extra_env['PATH'] = ':'.join([cfg.cli_dir()] + path)
+
+        self.extra_env['DBUS_SESSION_BUS_ADDRESS'] = self.sandbox.daemon.address
+
+        self.tracker_cli = shutil.which('tracker3', path=self.extra_env['PATH'])
+
+    def run_cli(self, command):
+        command = [self.tracker_cli] + [str(c) for c in command]
+
+        log.info("env %s %s",
+                 ' '.join('%s=%s' % (k,v) for k,v in self.extra_env.items()),
+                 ' '.join(command))
+
+        env = os.environ.copy().update(self.extra_env)
+        result = subprocess.run(command, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, env=env)
+
+        if len(result.stdout) > 0:
+            log.debug("stdout: %s", result.stdout.decode('utf-8'))
+        if len(result.stderr) > 0:
+            log.debug("stderr: %s", result.stderr.decode('utf-8'))
+
+        if result.returncode != 0:
+            error = result.stderr.decode('utf-8')
+            if len(error) == 0:
+                error = result.stdout.decode('utf-8')
+            raise CliError('\n'.join([
+                "CLI command failed.",
+                "Command: %s" % ' '.join(command),
+                "Error: %s" % error]))
+
+        return result.stdout.decode('utf-8')

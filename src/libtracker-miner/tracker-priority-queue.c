@@ -177,14 +177,14 @@ insert_node (TrackerPriorityQueue *queue,
 }
 
 void
-tracker_priority_queue_foreach (TrackerPriorityQueue *queue,
-                                GFunc                 func,
-                                gpointer              user_data)
+tracker_priority_queue_clear (TrackerPriorityQueue *queue,
+                              GDestroyNotify        free_func)
 {
 	g_return_if_fail (queue != NULL);
-	g_return_if_fail (func != NULL);
+	g_return_if_fail (free_func != NULL);
 
-	g_queue_foreach (&queue->queue, func, user_data);
+	g_queue_clear_full (&queue->queue, free_func);
+
 }
 
 gboolean

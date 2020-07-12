@@ -27,6 +27,7 @@
 #endif
 
 #include <glib.h>
+#include <glib-unix.h>
 #include <glib/gi18n.h>
 #include <gio/gio.h>
 #include <locale.h>
@@ -36,36 +37,20 @@
 #include "tracker-dbus.h"
 #include "tracker-miner-manager.h"
 
-static gchar **reindex_mime_types;
-static gboolean index_file;
-static gboolean backup;
-static gboolean restore;
-static gboolean import;
+static gboolean file_arg;
+static gboolean monitor_mode;
+static gboolean no_wait;
 static gchar **filenames;
 
-#define INDEX_OPTIONS_ENABLED()	  \
-	((filenames && g_strv_length (filenames) > 0) || \
-	 (index_file || \
-	  backup || \
-	  restore || \
-	  import) || \
-	 reindex_mime_types)
-
 static GOptionEntry entries[] = {
-	{ "reindex-mime-type", 'm', 0, G_OPTION_ARG_STRING_ARRAY, &reindex_mime_types,
-	  N_("Tell miners to reindex files which match the mime type supplied (for new extractors), use -m MIME1 -m MIME2"),
-	  N_("MIME") },
-	{ "file", 'f', 0, G_OPTION_ARG_NONE, &index_file,
-	  N_("Tell miners to (re)index a given file"),
-	  N_("FILE") },
-	{ "backup", 'b', 0, G_OPTION_ARG_NONE, &backup,
-	  N_("Backup current index / database to the file provided"),
+	{ "file", 'f', 0, G_OPTION_ARG_NONE, &file_arg,
+	 N_("Does nothing, provided for compatibility with Tracker 2.0"),
+	 NULL },
+	{ "monitor", 'm', 0, G_OPTION_ARG_NONE, &monitor_mode,
+	  N_("Trigger indexing and wait for CTRL+C, removing the data again on exit."),
 	  NULL },
-	{ "restore", 'o', 0, G_OPTION_ARG_NONE, &restore,
-	  N_("Restore a database from a previous backup (see --backup)"),
-	  NULL },
-	{ "import", 'i', 0, G_OPTION_ARG_NONE, &import,
-	  N_("Import a dataset from the provided file (in Turtle format)"),
+	{ "no-wait", 'w', 0, G_OPTION_ARG_NONE, &no_wait,
+	  N_("Don't wait for processing to complete, exit immediately."),
 	  NULL },
 	{ G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &filenames,
 	  N_("FILE"),
@@ -73,80 +58,145 @@ static GOptionEntry entries[] = {
 	{ NULL }
 };
 
-static gboolean
-has_valid_uri_scheme (const gchar *uri)
+GMainLoop *main_loop;
+
+static void
+print_indexing_status (GFile                 *root,
+                       TrackerIndexingStatus *status)
 {
-	const gchar *s;
+	g_autofree gchar *uri = g_file_get_uri (root);
+	g_autoptr(GList) error_list = NULL;
 
-	s = uri;
+	error_list = tracker_indexing_status_get_errors (status);
 
-	if (!g_ascii_isalpha (*s)) {
+	if (tracker_indexing_status_get_n_indexed_files (status) == 1) {
+		if (error_list) {
+			const gchar *message = error_list->data;
+			g_print ("%s\n", message);
+		} else {
+			/* TRANSLATORS: %s is a URI. */
+			g_print (_("File %s was processed successfully."), uri);
+			g_print ("\n");
+		}
+	} else {
+		GList *node;
+
+		if (tracker_indexing_status_get_completed (status)) {
+			if (error_list) {
+				/* TRANSLATORS: %s is a URI. */
+				g_print (_("Indexing of %s completed with errors."), uri);
+			} else {
+				/* TRANSLATORS: %s is a URI. */
+				g_print (_("Indexing of %s completed."), uri);
+			}
+			g_print ("\n");
+		}
+
+		if (error_list) {
+			for (node = error_list; node; node=node->next) {
+				const gchar *message = node->data;
+				g_print ("  * %s\n", message);
+			}
+		}
+
+		g_print (_("%i files were added to the index."),
+		         tracker_indexing_status_get_n_indexed_files (status));
+		g_print ("\n");
+	}
+
+	g_list_free_full (error_list, g_free);
+}
+
+static void
+index_file_cb (GObject      *source_object,
+               GAsyncResult *res,
+               gpointer      user_data)
+{
+	GMainLoop *loop = user_data;
+	GError *error = NULL;
+
+	tracker_miner_manager_index_file_finish (TRACKER_MINER_MANAGER (source_object), res, &error);
+
+	if (error) {
+		g_error ("Error starting indexing: %s", error->message);
+	}
+
+	g_main_loop_quit (loop);
+}
+
+static void
+index_file_for_process_cb (GObject      *source_object,
+               GAsyncResult *res,
+               gpointer      user_data)
+{
+	GMainLoop *loop = user_data;
+	GError *error = NULL;
+
+	tracker_miner_manager_index_file_for_process_finish (TRACKER_MINER_MANAGER (source_object), res, NULL);
+
+	if (error) {
+		g_error ("Error starting indexing: %s", error->message);
+	}
+
+	g_main_loop_quit (loop);
+}
+
+static gboolean
+g_file_is_directory (GFile *path)
+{
+	g_autoptr(GFileInfo) info = NULL;
+	g_autoptr(GError) error = NULL;
+
+	info = g_file_query_info (path,
+	                          G_FILE_ATTRIBUTE_STANDARD_TYPE,
+	                          G_FILE_QUERY_INFO_NONE,
+	                          NULL,
+	                          &error);
+
+	if (error) {
+		g_warning ("Error checking if %s is a directory: %s.",
+		           g_file_peek_path(path), error->message);
 		return FALSE;
 	}
 
-	do {
-		s++;
-	} while (g_ascii_isalnum (*s) || *s == '+' || *s == '.' || *s == '-');
-
-	return (*s == ':');
+	return (g_file_info_get_file_type (info) == G_FILE_TYPE_DIRECTORY);
 }
 
-static gchar *
-get_uri_from_arg (const gchar *arg)
+static gboolean
+sigterm_cb (gpointer user_data)
 {
-	gchar *uri;
+	g_message ("Received signal");
 
-	/* support both, URIs and local file paths */
-	if (has_valid_uri_scheme (arg)) {
-		uri = g_strdup (arg);
-	} else {
-		GFile *file;
+	g_main_loop_quit (user_data);
 
-		file = g_file_new_for_commandline_arg (arg);
-		uri = g_file_get_uri (file);
-		g_object_unref (file);
-	}
-
-	return uri;
-}
-
-static int
-reindex_mimes (void)
-{
-	GError *error = NULL;
-	TrackerMinerManager *manager;
-
-	/* Auto-start the miners here if we need to */
-	manager = tracker_miner_manager_new_full (TRUE, &error);
-	if (!manager) {
-		g_printerr (_("Could not reindex mimetypes, manager could not be created, %s"),
-		            error ? error->message : _("No error given"));
-		g_printerr ("\n");
-		g_clear_error (&error);
-		return EXIT_FAILURE;
-	}
-
-	tracker_miner_manager_reindex_by_mimetype (manager, (GStrv) reindex_mime_types, &error);
-	if (error) {
-		g_printerr ("%s: %s\n",
-		            _("Could not reindex mimetypes"),
-		            error->message);
-		g_error_free (error);
-		return EXIT_FAILURE;
-	}
-
-	g_print ("%s\n", _("Reindexing mime types was successful"));
-	g_object_unref (manager);
-
-	return EXIT_SUCCESS;
+	return G_SOURCE_REMOVE;
 }
 
 static gint
-index_or_reindex_file (void)
+index_run (void)
 {
-	TrackerMinerManager *manager;
-	GError *error = NULL;
+	g_autoptr(TrackerMinerManager) manager;
+	g_autoptr(GMainLoop) main_loop;
+	g_autoptr(GError) error = NULL;
+	gboolean success = TRUE;
 	gchar **p;
+
+	/* Check we were only passed directories. IndexFileForProcess doesn't work
+	 * for files. */
+	if (monitor_mode) {
+		for (p = filenames; *p; p++) {
+			g_autoptr(GFile) path = NULL;
+
+			path = g_file_new_for_commandline_arg (*p);
+
+			if (!g_file_is_directory (path)) {
+				g_printerr (_("Could not index file %s: in `--monitor` mode, "
+				              "only directories can be indexed.\n"),
+				            g_file_peek_path (path));
+				return EXIT_FAILURE;
+			}
+		}
+	}
 
 	/* Auto-start the miners here if we need to */
 	manager = tracker_miner_manager_new_full (TRUE, &error);
@@ -154,253 +204,59 @@ index_or_reindex_file (void)
 		g_printerr (_("Could not (re)index file, manager could not be created, %s"),
 		            error ? error->message : _("No error given"));
 		g_printerr ("\n");
-		g_clear_error (&error);
 		return EXIT_FAILURE;
 	}
 
-	for (p = filenames; *p; p++) {
-		GFile *file;
-
-		file = g_file_new_for_commandline_arg (*p);
-		tracker_miner_manager_index_file (manager, file, NULL, &error);
-
-		if (error) {
-			g_printerr ("%s: %s\n",
-			            _("Could not (re)index file"),
-			            error->message);
-			g_error_free (error);
-			return EXIT_FAILURE;
-		}
-
-		g_print ("%s\n", _("(Re)indexing file was successful"));
-		g_object_unref (file);
-	}
-
-	g_object_unref (manager);
-
-	return EXIT_SUCCESS;
-}
-
-static int
-import_turtle_files (void)
-{
-	TrackerSparqlConnection *connection;
-	GError *error = NULL;
-	gchar **p;
-
-	connection = tracker_sparql_connection_bus_new ("org.freedesktop.Tracker3.Miner.Files",
-	                                                NULL, NULL, &error);
-
-	if (!connection) {
-		g_printerr ("%s: %s\n",
-		            _("Could not establish a connection to Tracker"),
-		            error ? error->message : _("No error given"));
-		g_clear_error (&error);
-		return EXIT_FAILURE;
-	}
+	main_loop = g_main_loop_new (NULL, 0);
 
 	for (p = filenames; *p; p++) {
-		GError *error = NULL;
-		GFile *file;
-		gchar *query, *uri;
-
-		g_print ("%s:'%s'\n",
-		         _("Importing Turtle file"),
-		         *p);
+		g_autoptr(GFile) file;
+		g_autoptr(TrackerIndexingStatus) status;
 
 		file = g_file_new_for_commandline_arg (*p);
-		uri = g_file_get_uri (file);
-		query = g_strdup_printf ("LOAD <%s>", uri);
-		tracker_sparql_connection_update (connection, query,
-						  NULL,
-						  &error);
-		g_free (query);
-		g_free (uri);
-		g_object_unref (file);
 
-		if (error) {
-			g_printerr ("  %s, %s\n",
-			            _("Unable to import Turtle file"),
-			            error->message);
-
-			g_error_free (error);
-			continue;
+		if (monitor_mode) {
+			status = tracker_miner_manager_index_file_for_process_async (manager, file, NULL, index_file_for_process_cb, main_loop);
+		} else {
+			status = tracker_miner_manager_index_file_async (manager, file, NULL, index_file_cb, main_loop);
 		}
 
-		g_print ("  %s\n", _("Done"));
+		if (no_wait) {
+			/* We may detect an error straight away, even if we don't wait. */
+			if (tracker_indexing_status_had_error (status)) {
+				print_indexing_status (file, status);
+				success = FALSE;
+			} else {
+				g_print ("Successfully enqueued %s for indexing.", *p);
+				success &= TRUE;
+			}
+		} else {
+			/* Run the main loop until the indexing completes, at which point
+			 * index_file_cb() will quit this loop.
+			 */
+			g_main_loop_run (main_loop);
+
+			print_indexing_status (file, status);
+
+			success &= !(tracker_indexing_status_had_error (status));
+		}
+	}
+
+	if (monitor_mode) {
+		g_print (_("Press CTRL+C to exit and remove the files from the index."));
 		g_print ("\n");
-	}
 
-	g_object_unref (connection);
+		g_unix_signal_add (SIGINT, sigterm_cb, main_loop);
+		g_unix_signal_add (SIGTERM, sigterm_cb, main_loop);
 
-	return EXIT_SUCCESS;
-}
+		g_main_loop_run (main_loop);
+	} else {
+		g_print (_("Files may not be monitored for changes. Use --monitor mode to "
+		           "avoid stale data being left in your Tracker index."));
+		g_print ("\n");
+	};
 
-static int
-backup_index (void)
-{
-	GDBusConnection *connection;
-	GDBusProxy *proxy;
-	GError *error = NULL;
-	GVariant *v;
-	gchar *uri;
-
-	if (!tracker_dbus_get_connection ("org.freedesktop.Tracker3",
-	                                  "/org/freedesktop/Tracker3/Backup",
-	                                  "org.freedesktop.Tracker3.Backup",
-	                                  G_DBUS_PROXY_FLAGS_NONE,
-	                                  &connection,
-	                                  &proxy)) {
-		return EXIT_FAILURE;
-	}
-
-	uri = get_uri_from_arg (filenames[0]);
-
-	g_print ("%s\n", _("Backing up database"));
-	g_print ("  %s\n", uri);
-
-	/* Backup/Restore can take some time */
-	g_dbus_proxy_set_default_timeout (proxy, G_MAXINT);
-
-	v = g_dbus_proxy_call_sync (proxy,
-	                            "Save",
-	                            g_variant_new ("(s)", uri),
-	                            G_DBUS_CALL_FLAGS_NONE,
-	                            -1,
-	                            NULL,
-	                            &error);
-
-	if (proxy) {
-		g_object_unref (proxy);
-	}
-
-	if (error) {
-		g_critical ("%s, %s",
-		            _("Could not backup database"),
-		            error ? error->message : _("No error given"));
-		g_clear_error (&error);
-		g_free (uri);
-
-		return EXIT_FAILURE;
-	}
-
-	if (v) {
-		g_variant_unref (v);
-	}
-
-	g_free (uri);
-
-	return EXIT_SUCCESS;
-}
-
-static int
-restore_index (void)
-{
-	GDBusConnection *connection;
-	GDBusProxy *proxy;
-	GError *error = NULL;
-	GVariant *v;
-	gchar *uri;
-
-	if (!tracker_dbus_get_connection ("org.freedesktop.Tracker3",
-	                                  "/org/freedesktop/Tracker3/Backup",
-	                                  "org.freedesktop.Tracker3.Backup",
-	                                  G_DBUS_PROXY_FLAGS_NONE,
-	                                  &connection,
-	                                  &proxy)) {
-		return EXIT_FAILURE;
-	}
-
-	uri = get_uri_from_arg (filenames[0]);
-
-	g_print ("%s\n", _("Restoring database from backup"));
-	g_print ("  %s\n", uri);
-
-	/* Backup/Restore can take some time */
-	g_dbus_proxy_set_default_timeout (proxy, G_MAXINT);
-
-	v = g_dbus_proxy_call_sync (proxy,
-	                            "Restore",
-	                            g_variant_new ("(s)", uri),
-	                            G_DBUS_CALL_FLAGS_NONE,
-	                            -1,
-	                            NULL,
-	                            &error);
-
-	if (proxy) {
-		g_object_unref (proxy);
-	}
-
-	if (error) {
-		g_critical ("%s, %s",
-		            _("Could not backup database"),
-		            error ? error->message : _("No error given"));
-		g_clear_error (&error);
-		g_free (uri);
-
-		return EXIT_FAILURE;
-	}
-
-	if (v) {
-		g_variant_unref (v);
-	}
-
-	g_free (uri);
-
-	return EXIT_SUCCESS;
-}
-
-static int
-index_run (void)
-{
-	if (reindex_mime_types) {
-		return reindex_mimes ();
-	}
-
-	if (index_file) {
-		return index_or_reindex_file ();
-	}
-
-	if (import) {
-		return import_turtle_files ();
-	}
-
-	if (backup) {
-		return backup_index ();
-	}
-
-	if (restore) {
-		return restore_index ();
-	}
-
-	/* All known options have their own exit points */
-	g_printerr("Use `tracker index --file` when giving a specific file or "
-	           "directory to index. See `tracker help index` for more "
-	           "information.\n");
-
-	return EXIT_FAILURE;
-}
-
-static int
-index_run_default (void)
-{
-	GOptionContext *context;
-	gchar *help;
-
-	context = g_option_context_new (NULL);
-	g_option_context_add_main_entries (context, entries, NULL);
-	help = g_option_context_get_help (context, TRUE, NULL);
-	g_option_context_free (context);
-	g_printerr ("%s\n", help);
-	g_free (help);
-
-	return EXIT_FAILURE;
-}
-
-static gboolean
-index_options_enabled (void)
-{
-	return INDEX_OPTIONS_ENABLED ();
+	return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 int
@@ -409,7 +265,6 @@ main (int argc, const char **argv)
 	GOptionContext *context;
 	GError *error = NULL;
 	const gchar *failed;
-	gint actions = 0;
 
 	setlocale (LC_ALL, "");
 
@@ -431,42 +286,22 @@ main (int argc, const char **argv)
 
 	g_option_context_free (context);
 
-	if (backup) {
-		actions++;
-	}
-
-	if (restore) {
-		actions++;
-	}
-
-	if (index_file) {
-		actions++;
-	}
-
-	if (import) {
-		actions++;
-	}
-
-	if (actions > 1) {
-		failed = _("Only one action (--backup, --restore, --index-file or --import) can be used at a time");
-	} else if (actions > 0 && (!filenames || g_strv_length (filenames) < 1)) {
-		failed = _("Missing one or more files which are required");
-	} else if ((backup || restore) && (filenames && g_strv_length (filenames) > 1)) {
-		failed = _("Only one file can be used with --backup and --restore");
-	} else if (actions > 0 && (reindex_mime_types && g_strv_length (reindex_mime_types) > 0)) {
-		failed = _("Actions (--backup, --restore, --index-file and --import) can not be used with --reindex-mime-type");
+	if (!filenames || g_strv_length (filenames) < 1) {
+		failed = _("Please specify one or more locations to index.");
+	} else if (monitor_mode && no_wait) {
+		failed = _("The --monitor-mode and --no-wait options are incompatible");
 	} else {
 		failed = NULL;
 	}
 
 	if (failed) {
-		g_printerr ("%s\n\n", failed);
+		g_printerr ("%s\n", failed);
 		return EXIT_FAILURE;
 	}
 
-	if (index_options_enabled ()) {
-		return index_run ();
+	if (file_arg) {
+		g_message ("The --file arg is no longer needed.");
 	}
 
-	return index_run_default ();
+	return index_run ();
 }

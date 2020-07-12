@@ -139,38 +139,6 @@ test_priority_queue_find (void)
 }
 
 static void
-foreach_testing_cb (G_GNUC_UNUSED gpointer data,
-                                  gpointer user_data)
-{
-        gint *counter = (gint *)user_data;
-        (*counter) += 1;
-}
-
-static void
-test_priority_queue_foreach (void)
-{
-        TrackerPriorityQueue *queue;
-        gint                  counter = 0;
-
-        queue = tracker_priority_queue_new ();
-        
-        tracker_priority_queue_add (queue, g_strdup ("x"), 10);
-        tracker_priority_queue_add (queue, g_strdup ("x"), 20);        
-        tracker_priority_queue_add (queue, g_strdup ("x"), 30);
-
-        tracker_priority_queue_foreach (queue, foreach_testing_cb, &counter);
-
-        g_assert_cmpint (counter, ==, 3);
-
-        while (!tracker_priority_queue_is_empty (queue)) {
-            gchar *text = (gchar *) tracker_priority_queue_pop (queue, NULL);
-            g_free (text);
-        }
-
-        tracker_priority_queue_unref (queue);
-}
-
-static void
 test_priority_queue_foreach_remove (void)
 {
         TrackerPriorityQueue *queue;
@@ -250,8 +218,6 @@ main (int    argc,
 	                 test_priority_queue_peek);
 	g_test_add_func ("/libtracker-miner/tracker-priority-queue/find",
 	                 test_priority_queue_find);
-	g_test_add_func ("/libtracker-miner/tracker-priority-queue/foreach",
-	                 test_priority_queue_foreach);
 	g_test_add_func ("/libtracker-miner/tracker-priority-queue/foreach_remove",
 	                 test_priority_queue_foreach_remove);
 
