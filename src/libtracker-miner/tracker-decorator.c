@@ -56,11 +56,6 @@ struct _TrackerDecoratorInfo {
 	gint ref_count;
 };
 
-struct _ClassInfo {
-	gchar *class_name;
-	gint priority;
-};
-
 struct _SparqlUpdate {
 	gchar *sparql;
 	gint id;
@@ -69,13 +64,14 @@ struct _SparqlUpdate {
 struct _TrackerDecoratorPrivate {
 	TrackerNotifier *notifier;
 
-	GArray *classes; /* Array of ClassInfo */
 	gchar **class_names;
 
 	gssize n_remaining_items;
 	gssize n_processed_items;
 
 	GQueue item_cache; /* Queue of TrackerDecoratorInfo */
+
+	GStrv priority_graphs;
 
 	/* Arrays of tracker IDs */
 	GArray *prepended_ids;
@@ -102,7 +98,6 @@ struct _TrackerDecoratorPrivate {
 enum {
 	PROP_CLASS_NAMES = 1,
 	PROP_COMMIT_BATCH_SIZE,
-	PROP_PRIORITY_RDF_TYPES,
 };
 
 enum {
@@ -580,10 +575,13 @@ decorator_cancel_active_tasks (TrackerDecorator *decorator)
 	g_hash_table_remove_all (priv->tasks);
 }
 
-static gchar *
-create_query_string (TrackerDecorator  *decorator,
-                     gchar            **select_clauses)
+static gboolean
+append_graph_patterns (TrackerDecorator *decorator,
+                       GString          *query,
+                       gboolean          priority,
+                       gboolean          first)
 {
+	TrackerDecoratorPrivate *priv = decorator->priv;
 	const gchar *graphs[] = {
 		"tracker:Audio",
 		"tracker:Pictures",
@@ -591,7 +589,32 @@ create_query_string (TrackerDecorator  *decorator,
 		"tracker:Software",
 		"tracker:Documents",
 	};
+	gint i;
+
+	for (i = 0; i < G_N_ELEMENTS (graphs); i++) {
+		if (priority !=
+		    (priv->priority_graphs &&
+		     g_strv_contains ((const gchar * const *) priv->priority_graphs, graphs[i])))
+			continue;
+
+		if (!first)
+			g_string_append (query, "UNION ");
+
+		g_string_append_printf (query,
+		                        "{ GRAPH %s { ?urn a nfo:FileDataObject } } ",
+		                        graphs[i]);
+		first = FALSE;
+	}
+
+	return first;
+}
+
+static gchar *
+create_query_string (TrackerDecorator  *decorator,
+                     gchar            **select_clauses)
+{
 	GString *query;
+	gboolean first;
 	gint i;
 
 	query = g_string_new ("SELECT ");
@@ -602,15 +625,9 @@ create_query_string (TrackerDecorator  *decorator,
 
 	g_string_append (query, "{ ");
 
-	for (i = 0; i < G_N_ELEMENTS (graphs); i++) {
-		if (i > 0) {
-			g_string_append (query, "UNION ");
-		}
-
-		g_string_append_printf (query,
-		                        "{ GRAPH %s { ?urn a nfo:FileDataObject } } ",
-		                        graphs[i]);
-	}
+	/* Add priority graphs first, so they come up first in the query */
+	first = append_graph_patterns (decorator, query, TRUE, TRUE);
+	append_graph_patterns (decorator, query, FALSE, first);
 
 	g_string_append_printf (query,
 	                        "FILTER (NOT EXISTS {"
@@ -862,38 +879,6 @@ tracker_decorator_get_property (GObject    *object,
 }
 
 static void
-decorator_add_class (TrackerDecorator *decorator,
-                     const gchar      *class)
-{
-	TrackerDecoratorPrivate *priv = decorator->priv;
-	ClassInfo info;
-
-	info.class_name = g_strdup (class);
-	info.priority = G_PRIORITY_DEFAULT;
-	g_array_append_val (priv->classes, info);
-}
-
-static void
-decorator_set_classes (TrackerDecorator  *decorator,
-                       const gchar      **classes)
-{
-	TrackerDecoratorPrivate *priv = decorator->priv;
-	gint i;
-
-	g_strfreev (priv->class_names);
-	priv->class_names = g_strdupv ((gchar **) classes);
-
-	if (priv->classes->len > 0) {
-		g_array_remove_range (priv->classes, 0,
-		                      priv->classes->len);
-	}
-
-	for (i = 0; classes[i]; i++) {
-		decorator_add_class (decorator, classes[i]);
-	}
-}
-
-static void
 tracker_decorator_set_property (GObject      *object,
                                 guint         param_id,
                                 const GValue *value,
@@ -905,15 +890,8 @@ tracker_decorator_set_property (GObject      *object,
 	priv = decorator->priv;
 
 	switch (param_id) {
-	case PROP_CLASS_NAMES:
-		decorator_set_classes (decorator, g_value_get_boxed (value));
-		break;
 	case PROP_COMMIT_BATCH_SIZE:
 		priv->batch_size = g_value_get_int (value);
-		break;
-	case PROP_PRIORITY_RDF_TYPES:
-		tracker_decorator_set_priority_rdf_types (decorator,
-		                                          g_value_get_boxed (value));
 		break;
 	default:
 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, param_id, pspec);
@@ -1003,6 +981,7 @@ tracker_decorator_finalize (GObject *object)
 
 	g_clear_object (&priv->remaining_items_query);
 	g_clear_object (&priv->item_count_query);
+	g_strfreev (priv->priority_graphs);
 
 	g_cancellable_cancel (priv->cancellable);
 	g_clear_object (&priv->cancellable);
@@ -1019,7 +998,6 @@ tracker_decorator_finalize (GObject *object)
 
 	g_strfreev (priv->class_names);
 	g_hash_table_destroy (priv->tasks);
-	g_array_unref (priv->classes);
 	g_array_unref (priv->prepended_ids);
 	g_clear_pointer (&priv->sparql_buffer, g_array_unref);
 	g_clear_pointer (&priv->commit_buffer, g_array_unref);
@@ -1103,14 +1081,6 @@ tracker_decorator_class_init (TrackerDecoratorClass *klass)
 	                                                   0, G_MAXINT, DEFAULT_BATCH_SIZE,
 	                                                   G_PARAM_READWRITE |
 	                                                   G_PARAM_STATIC_STRINGS));
-	g_object_class_install_property (object_class,
-	                                 PROP_PRIORITY_RDF_TYPES,
-	                                 g_param_spec_boxed ("priority-rdf-types",
-	                                                     "Priority RDF types",
-	                                                     "rdf:type that needs to be extracted first",
-	                                                     G_TYPE_STRV,
-	                                                     G_PARAM_WRITABLE |
-	                                                     G_PARAM_STATIC_STRINGS));
 	/**
 	 * TrackerDecorator::items-available:
 	 * @decorator: the #TrackerDecorator
@@ -1149,19 +1119,11 @@ tracker_decorator_class_init (TrackerDecoratorClass *klass)
 }
 
 static void
-class_info_clear (ClassInfo *info)
-{
-	g_free (info->class_name);
-}
-
-static void
 tracker_decorator_init (TrackerDecorator *decorator)
 {
 	TrackerDecoratorPrivate *priv;
 
 	decorator->priv = priv = tracker_decorator_get_instance_private (decorator);
-	priv->classes = g_array_new (FALSE, FALSE, sizeof (ClassInfo));
-	g_array_set_clear_func (priv->classes, (GDestroyNotify) class_info_clear);
 	priv->blocklist_items = g_sequence_new (NULL);
 	priv->prepended_ids = g_array_new (FALSE, FALSE, sizeof (gint));
 	priv->batch_size = DEFAULT_BATCH_SIZE;
@@ -1354,63 +1316,14 @@ tracker_decorator_next_finish (TrackerDecorator  *decorator,
 	return g_task_propagate_pointer (G_TASK (result), error);
 }
 
-static gint
-class_compare_func (const ClassInfo *a,
-                    const ClassInfo *b)
-{
-	return b->priority - a->priority;
-}
-
-static void
-decorator_set_class_priority (TrackerDecorator *decorator,
-                              const gchar      *class,
-                              gint              priority)
+void
+tracker_decorator_set_priority_graphs (TrackerDecorator    *decorator,
+                                       const gchar * const *graphs)
 {
 	TrackerDecoratorPrivate *priv = decorator->priv;
-	ClassInfo *info;
-	gint i;
 
-	for (i = 0; i < priv->classes->len; i++) {
-		info = &g_array_index (priv->classes, ClassInfo, i);
-
-		if (strcmp (info->class_name, class) != 0)
-			continue;
-
-		info->priority = priority;
-		break;
-	}
-}
-
-/**
- * tracker_decorator_set_priority_rdf_types:
- * @decorator: a #TrackerDecorator
- * @rdf_types: a string array of rdf types
- *
- * Re-evaluate the priority queues internally to ensure that
- * @rdf_types are handled before all other content. This is useful for
- * applications that need their content available sooner than the
- * standard time it would take to index content.
- *
- * Since: 0.18
- **/
-void
-tracker_decorator_set_priority_rdf_types (TrackerDecorator    *decorator,
-                                          const gchar * const *rdf_types)
-{
-	TrackerDecoratorPrivate *priv;
-	gint i;
-
-	g_return_if_fail (TRACKER_DECORATOR (decorator));
-	g_return_if_fail (rdf_types != NULL);
-
-	priv = decorator->priv;
-
-	for (i = 0; rdf_types[i]; i++) {
-		decorator_set_class_priority (decorator, rdf_types[i],
-		                              G_PRIORITY_HIGH);
-	}
-
-	g_array_sort (priv->classes, (GCompareFunc) class_compare_func);
+	g_strfreev (priv->priority_graphs);
+	priv->priority_graphs = g_strdupv ((gchar **) graphs);
 	decorator_rebuild_cache (decorator);
 }
 

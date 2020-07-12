@@ -3,8 +3,6 @@ sources = [
     'tracker-extract-watchdog.c',
     'tracker-main.c',
     'tracker-miner-files.c',
-    'tracker-miner-files-index.c',
-    'tracker-miner-files-peer-listener.c',
     'tracker-storage.c',
 ]
 

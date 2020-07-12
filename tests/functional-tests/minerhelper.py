@@ -45,6 +45,7 @@ class MinerFsHelper ():
     MINERFS_BUSNAME = "org.freedesktop.Tracker3.Miner.Files"
     MINERFS_OBJ_PATH = "/org/freedesktop/Tracker3/Miner/Files"
     MINER_IFACE = "org.freedesktop.Tracker3.Miner"
+    MINERFS_INDEX_BUSNAME = "org.freedesktop.Tracker3.Miner.Files.Index"
     MINERFS_INDEX_OBJ_PATH = "/org/freedesktop/Tracker3/Miner/Files/Index"
     MINER_INDEX_IFACE = "org.freedesktop.Tracker3.Miner.Files.Index"
 
@@ -61,7 +62,7 @@ class MinerFsHelper ():
 
         self.index = Gio.DBusProxy.new_sync(
             self.bus, Gio.DBusProxyFlags.DO_NOT_AUTO_START_AT_CONSTRUCTION, None,
-            self.MINERFS_BUSNAME, self.MINERFS_INDEX_OBJ_PATH, self.MINER_INDEX_IFACE)
+            self.MINERFS_INDEX_BUSNAME, self.MINERFS_INDEX_OBJ_PATH, self.MINER_INDEX_IFACE)
 
     def start(self):
         self.miner_fs.Start()
@@ -139,4 +140,4 @@ class MinerFsHelper ():
             GLib.source_remove(timeout_id)
 
     def index_file(self, uri):
-        return self.index.IndexFile('(s)', uri)
+        return self.index.IndexFile('(sas)', uri, [])
