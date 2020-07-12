@@ -7,6 +7,8 @@ config_json_full_path = meson.current_build_dir() / 'configuration.json'
 dconf_profile_full_path = meson.current_source_dir() / 'trackertest'
 tracker_extractors_dir = meson.current_build_dir() / '..' / '..' / 'src' / 'tracker-extract'
 
+testconf.set('TEST_CLI_DIR', tracker_uninstalled_cli_dir)
+testconf.set('TEST_CLI_SUBCOMMANDS_DIR', tracker_uninstalled_cli_subcommands_dir)
 testconf.set('TEST_DBUS_DAEMON_CONFIG_FILE', build_root / 'tests' / 'test-bus.conf')
 testconf.set('TEST_DCONF_PROFILE', dconf_profile_full_path)
 testconf.set('TEST_DOMAIN_ONTOLOGY_RULE', meson.current_build_dir() / 'test-domain.rule')
@@ -115,6 +117,7 @@ functional_tests = [
   'fts-file-operations',
   'fts-stopwords',
   'extractor-decorator',
+  'cli',
 ]
 
 if libcue.found()
