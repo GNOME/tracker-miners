@@ -1406,67 +1406,6 @@ tracker_miner_manager_error_quark (void)
 	return error_quark;
 }
 
-/**
- * tracker_miner_manager_reindex_by_mimetype:
- * @manager: a #TrackerMinerManager
- * @mimetypes: (in): an array of mimetypes (E.G. "text/plain"). All items
- * with a mimetype in that list will be reindexed.
- * @error: (out callee-allocates) (transfer full) (allow-none): return location for errors
- *
- * Tells the filesystem miner to reindex any file with a mimetype in
- * the @mimetypes list.
- *
- * On failure @error will be set.
- *
- * Returns: %TRUE on success, otherwise %FALSE.
- *
- * Since: 0.10
- **/
-gboolean
-tracker_miner_manager_reindex_by_mimetype (TrackerMinerManager  *manager,
-                                           const GStrv           mimetypes,
-                                           GError              **error)
-{
-	TrackerMinerManagerPrivate *priv;
-	GVariant *v;
-	GError *new_error = NULL;
-
-	g_return_val_if_fail (TRACKER_IS_MINER_MANAGER (manager), FALSE);
-	g_return_val_if_fail (mimetypes != NULL, FALSE);
-
-	if (!tracker_miner_manager_is_active (manager,
-	                                      "org.freedesktop.Tracker3.Miner.Files")) {
-		g_set_error_literal (error,
-		                     TRACKER_MINER_MANAGER_ERROR,
-		                     TRACKER_MINER_MANAGER_ERROR_NOT_AVAILABLE,
-		                     "Filesystem miner is not active");
-		return FALSE;
-	}
-
-	priv = tracker_miner_manager_get_instance_private (manager);
-
-	v = g_dbus_connection_call_sync (priv->connection,
-	                                 "org.freedesktop.Tracker3.Miner.Files",
-	                                 "/org/freedesktop/Tracker3/Miner/Files/Index",
-	                                 "org.freedesktop.Tracker3.Miner.Files.Index",
-	                                 "ReindexMimeTypes",
-	                                 g_variant_new ("(^as)", mimetypes),
-	                                 NULL,
-	                                 G_DBUS_CALL_FLAGS_NONE,
-	                                 -1,
-	                                 NULL,
-	                                 &new_error);
-
-	if (new_error) {
-		g_propagate_error (error, new_error);
-		return FALSE;
-	}
-
-	g_variant_unref (v);
-
-	return FALSE;
-}
-
 static gboolean
 miner_manager_index_file_sync (TrackerMinerManager *manager,
                                const gchar         *method_name,

@@ -30,9 +30,6 @@
 static const gchar introspection_xml[] =
   "<node>"
   "  <interface name='org.freedesktop.Tracker3.Miner.Files.Index'>"
-  "    <method name='ReindexMimeTypes'>"
-  "      <arg type='as' name='mime_types' direction='in' />"
-  "    </method>"
   "    <method name='IndexFile'>"
   "      <arg type='s' name='file_uri' direction='in' />"
   "    </method>"
@@ -202,136 +199,6 @@ index_finalize (GObject *object)
 	g_object_unref (priv->files_miner);
 }
 
-static MimeTypesData *
-mime_types_data_new (TrackerDBusRequest      *request,
-                     GDBusMethodInvocation   *invocation,
-                     TrackerSparqlConnection *connection,
-                     TrackerMinerFiles       *miner_files)
-{
-	MimeTypesData *mtd;
-
-	mtd = g_slice_new0 (MimeTypesData);
-
-	mtd->miner_files = g_object_ref (miner_files);
-	mtd->request = request;
-	mtd->invocation = invocation;
-	mtd->connection = g_object_ref (connection);
-
-	return mtd;
-}
-
-static void
-mime_types_data_destroy (gpointer data)
-{
-	MimeTypesData *mtd;
-
-	mtd = data;
-
-	g_object_unref (mtd->miner_files);
-	g_object_unref (mtd->connection);
-
-	g_slice_free (MimeTypesData, mtd);
-}
-
-static void
-mime_types_cb (GObject      *object,
-               GAsyncResult *result,
-               gpointer      user_data)
-{
-	MimeTypesData *mtd = user_data;
-	TrackerSparqlCursor *cursor;
-	GError *error = NULL;
-
-	cursor = tracker_sparql_connection_query_finish (TRACKER_SPARQL_CONNECTION (object),
-	                                                 result,
-	                                                 &error);
-
-	if (cursor) {
-		tracker_dbus_request_comment (mtd->request,
-		                              "Found files that will need reindexing");
-
-		while (tracker_sparql_cursor_next (cursor, NULL, NULL)) {
-			GFile *file;
-			const gchar *url;
-
-			url = tracker_sparql_cursor_get_string (cursor, 0, NULL);
-			file = g_file_new_for_uri (url);
-			tracker_miner_fs_check_file (TRACKER_MINER_FS (mtd->miner_files),
-			                             file, G_PRIORITY_HIGH, FALSE);
-			g_object_unref (file);
-		}
-
-		tracker_dbus_request_end (mtd->request, NULL);
-		g_dbus_method_invocation_return_value (mtd->invocation, NULL);
-	} else {
-		tracker_dbus_request_end (mtd->request, error);
-		g_dbus_method_invocation_return_gerror (mtd->invocation, error);
-	}
-
-	mime_types_data_destroy (user_data);
-}
-
-static void
-tracker_miner_files_index_reindex_mime_types (TrackerMinerFilesIndex *miner,
-                                              GDBusMethodInvocation  *invocation,
-                                              GVariant               *parameters)
-{
-	TrackerMinerFilesIndexPrivate *priv;
-	GString *query;
-	TrackerSparqlConnection *connection;
-	TrackerDBusRequest *request;
-	gint len, i;
-	GStrv mime_types = NULL;
-
-	priv = TRACKER_MINER_FILES_INDEX_GET_PRIVATE (miner);
-
-	g_variant_get (parameters, "(^a&s)", &mime_types);
-
-	len = mime_types ? g_strv_length (mime_types) : 0;
-
-	tracker_gdbus_async_return_if_fail (len > 0, invocation);
-
-	request = tracker_g_dbus_request_begin (invocation, "%s(%d mime types)",
-	                                        __FUNCTION__,
-	                                        len);
-
-	connection = tracker_miner_get_connection (TRACKER_MINER (priv->files_miner));
-
-	tracker_dbus_request_comment (request,
-	                              "Attempting to reindex the following mime types:");
-
-	query = g_string_new ("SELECT ?url "
-	                      "WHERE {"
-	                      "  ?resource nie:url ?url ;"
-	                      "  nie:interpretedAs/nie:mimeType ?mime ."
-	                      "  FILTER(");
-
-	for (i = 0; i < len; i++) {
-		tracker_dbus_request_comment (request, "  %s", mime_types[i]);
-		g_string_append_printf (query, "?mime = '%s'", mime_types[i]);
-
-		if (i < len - 1) {
-			g_string_append (query, " || ");
-		}
-	}
-
-	g_string_append (query, ") }");
-
-	/* FIXME: save last call id */
-	tracker_sparql_connection_query_async (connection,
-	                                       query->str,
-	                                       NULL,
-	                                       mime_types_cb,
-	                                       mime_types_data_new (request,
-	                                                            invocation,
-	                                                            connection,
-	                                                            priv->files_miner));
-
-	g_string_free (query, TRUE);
-	g_object_unref (connection);
-	g_free (mime_types);
-}
-
 static void
 handle_method_call_index_file (TrackerMinerFilesIndex *miner,
                                GDBusMethodInvocation  *invocation,
@@ -461,9 +328,7 @@ handle_method_call (GDBusConnection       *connection,
 	tracker_gdbus_async_return_if_fail (miner != NULL, invocation);
 	tracker_gdbus_async_return_if_fail (TRACKER_IS_MINER_FILES_INDEX (miner), invocation);
 
-	if (g_strcmp0 (method_name, "ReindexMimeTypes") == 0) {
-		tracker_miner_files_index_reindex_mime_types (miner, invocation, parameters);
-	} else if (g_strcmp0 (method_name, "IndexFile") == 0) {
+	if (g_strcmp0 (method_name, "IndexFile") == 0) {
 		handle_method_call_index_file (miner, invocation, parameters, FALSE);
 	} else if (g_strcmp0 (method_name, "IndexFileForProcess") == 0) {
 		handle_method_call_index_file (miner, invocation, parameters, TRUE);
