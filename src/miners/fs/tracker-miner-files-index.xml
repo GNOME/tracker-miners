@@ -2,17 +2,11 @@
 
 <node name="/">
   <interface name="org.freedesktop.Tracker3.Miner.Files.Index">
-    <method name="ReindexMimeTypes">
-      <annotation name="org.freedesktop.DBus.GLib.Async" value="true"/>
-      <arg type="as" name="mime_types" direction="in" />
-    </method>
-    <method name="IndexFile">
-      <annotation name="org.freedesktop.DBus.GLib.Async" value="true"/>
-      <arg type="s" name="file_uri" direction="in" />
-    </method>
-    <method name="IndexFileForProcess">
-      <annotation name="org.freedesktop.DBus.GLib.Async" value="true"/>
-      <arg type="s" name="file_uri" direction="in" />
+    <method name='IndexLocation'>"
+      <arg type='s' name='uri' direction='in' />"
+      <arg type='as' name='flags' direction='in'>"
+        <doc:doc><doc:summary>Allowed values: watch-for-caller, await-miner-fs, await-extract</doc:summary></doc:doc>
+      </arg>
     </method>
   </interface>
 </node>
