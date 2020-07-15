@@ -211,14 +211,10 @@ tracker_guarantee_resource_utf8_string (TrackerResource *resource,
                                         const gchar     *key,
                                         const gchar     *value)
 {
-	const gchar *end;
 	gchar *str;
 
-	if (!g_utf8_validate (value, -1, &end)) {
-		if (end == value)
-			return FALSE;
-
-		str = g_strndup (value, end - value);
+	if (!g_utf8_validate (value, -1, NULL)) {
+		str = g_utf8_make_valid (value, -1);
 		tracker_resource_set_string (resource, key, str);
 		g_free (str);
 	} else {
