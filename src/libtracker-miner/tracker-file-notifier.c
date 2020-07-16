@@ -49,6 +49,7 @@ enum {
 	FILE_UPDATED,
 	FILE_DELETED,
 	FILE_MOVED,
+	FILE_IGNORED_DURING_CRAWL,
 	DIRECTORY_STARTED,
 	DIRECTORY_FINISHED,
 	FINISHED,
@@ -197,12 +198,19 @@ crawler_check_file_cb (TrackerCrawler *crawler,
                        gpointer        user_data)
 {
 	TrackerFileNotifierPrivate *priv;
+	gboolean use;
 
 	priv = tracker_file_notifier_get_instance_private (user_data);
 
-	return tracker_indexing_tree_file_is_indexable (priv->indexing_tree,
-	                                                file,
-	                                                G_FILE_TYPE_REGULAR);
+	use = tracker_indexing_tree_file_is_indexable (priv->indexing_tree,
+	                                               file,
+	                                               G_FILE_TYPE_REGULAR);
+
+	if (!use) {
+		g_signal_emit (TRACKER_FILE_NOTIFIER (user_data), signals[FILE_IGNORED_DURING_CRAWL], 0, file);
+	}
+
+	return use;
 }
 
 static gboolean
@@ -212,6 +220,7 @@ crawler_check_directory_cb (TrackerCrawler *crawler,
 {
 	TrackerFileNotifierPrivate *priv;
 	GFile *root, *canonical;
+	gboolean use;
 
 	priv = tracker_file_notifier_get_instance_private (user_data);
 	g_assert (priv->current_index_root != NULL);
@@ -228,9 +237,15 @@ crawler_check_directory_cb (TrackerCrawler *crawler,
 		return FALSE;
 	}
 
-	return tracker_indexing_tree_file_is_indexable (priv->indexing_tree,
-	                                                directory,
-	                                                G_FILE_TYPE_DIRECTORY);
+	use = tracker_indexing_tree_file_is_indexable (priv->indexing_tree,
+	                                               directory,
+	                                               G_FILE_TYPE_DIRECTORY);
+
+	if (!use) {
+		g_signal_emit (TRACKER_FILE_NOTIFIER (user_data), signals[FILE_IGNORED_DURING_CRAWL], 0, directory);
+	}
+
+	return use;
 }
 
 static gboolean
@@ -1731,6 +1746,16 @@ tracker_file_notifier_class_init (TrackerFileNotifierClass *klass)
 		              NULL,
 		              G_TYPE_NONE,
 		              2, G_TYPE_FILE, G_TYPE_FILE);
+	signals[FILE_IGNORED_DURING_CRAWL] =
+		g_signal_new ("file-ignored-during-crawl",
+		              G_TYPE_FROM_CLASS (klass),
+		              G_SIGNAL_RUN_LAST,
+		              G_STRUCT_OFFSET (TrackerFileNotifierClass,
+		                               file_ignored_during_crawl),
+		              NULL, NULL,
+		              NULL,
+		              G_TYPE_NONE,
+		              1, G_TYPE_FILE);
 	signals[DIRECTORY_STARTED] =
 		g_signal_new ("directory-started",
 		              G_TYPE_FROM_CLASS (klass),

@@ -78,8 +78,6 @@ struct _TrackerMinerFS {
  * @finished: Called when all processing has been performed.
  * @process_file_attributes: Called when the metadata associated with
  * a file's attributes changes, for example, the mtime.
- * @finished_root: Called when all resources on a particular root URI
- * have been processed.
  * @remove_file: Called when a file is removed.
  * @remove_children: Called when children have been removed.
  * @move_file: Called when a file has moved.
@@ -103,12 +101,6 @@ typedef struct {
 	gboolean (* process_file_attributes)  (TrackerMinerFS       *fs,
 	                                       GFile                *file,
 					       GTask                *task);
-	void     (* finished_root)            (TrackerMinerFS       *fs,
-	                                       GFile                *root,
-	                                       gint                  directories_found,
-	                                       gint                  directories_ignored,
-	                                       gint                  files_found,
-	                                       gint                  files_ignored);
 	gchar *  (* remove_file)              (TrackerMinerFS       *fs,
 	                                       GFile                *file);
 	gchar *  (* remove_children)          (TrackerMinerFS       *fs,

@@ -183,6 +183,8 @@ get_metadata_cb (TrackerExtract *extract,
 	g_hash_table_remove (priv->recovery_files, tracker_decorator_info_get_url (data->decorator_info));
 
 	if (error) {
+		g_message ("Extraction failed: %s\n", error ? error->message : "no error given");
+
 		decorator_ignore_file (data->file, data->decorator);
 		tracker_decorator_info_complete_error (data->decorator_info, error);
 	} else {
