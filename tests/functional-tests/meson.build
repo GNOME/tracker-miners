@@ -95,12 +95,15 @@ if totem_plparser.found()
   extractor_tests += 'playlists/playlist-test-1'
 endif
 
+if poppler.found()
+  extractor_tests += 'office/pdf-doc'
+endif
+
 if libgsf.found()
   extractor_tests += [
     'office/oasis-doc',
     'office/office-doc',
     'office/powerpoint',
-    'office/pdf-doc',
     'office/ps-doc',
     'office/ps-doc-atend',
   ]
