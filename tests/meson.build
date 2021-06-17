@@ -14,6 +14,4 @@ test_bus_conf_file = configure_file(
   output: 'test-bus.conf',
   configuration: conf)
 
-if get_option('functional_tests')
-  subdir('functional-tests')
-endif
+subdir('functional-tests')
